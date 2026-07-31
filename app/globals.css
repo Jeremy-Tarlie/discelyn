@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  @apply bg-ink-950 font-sans text-mist-100 antialiased;
+  background-image: theme("backgroundImage.grid-fade"),
+    theme("backgroundImage.noise-soft");
+  background-attachment: fixed;
+}
+
+::selection {
+  @apply bg-signal/30 text-mist-100;
+}
+
+a {
+  @apply underline-offset-4;
+}

@@ -1,26 +1,29 @@
-# Étape 1 : Utiliser une image Node.js officielle comme image de base
-FROM node:18-alpine AS builder
-
-# Étape 2 : Créer et définir le répertoire de travail
+FROM node:22-alpine AS deps
 WORKDIR /app
-
-# Étape 3 : Copier package.json et package-lock.json (ou yarn.lock) pour installer les dépendances
 COPY package.json package-lock.json ./
+RUN npm ci
 
-# Étape 4 : Installer les dépendances avec --legacy-peer-deps
-RUN npm install --legacy-peer-deps
-
-# Vérifier les dépendances installées
-RUN npm list --depth=0
-
-# Étape 5 : Copier le reste du code source dans le conteneur
+FROM node:22-alpine AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN npx prisma generate && npm run build
 
-# Étape 6 : Construire l'application Next.js pour la production
-RUN npm run build
-
-# Étape 11 : Exposer le port sur lequel l'application Next.js fonctionnera
+FROM node:22-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN apk add --no-cache wget
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+COPY --from=builder /app/generated ./generated
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY scripts/docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
 EXPOSE 3000
-
-# Étape 12 : Lancer l'application en mode production
-CMD ["npm", "start"]
+CMD ["./docker-entrypoint.sh"]

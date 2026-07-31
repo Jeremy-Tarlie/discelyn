@@ -1,0 +1,74 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: botly
+      POSTGRES_PASSWORD: botly
+      POSTGRES_DB: botly
+    ports:
+      - "5432:5432"
+    volumes:
+      - botly_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U botly -d botly"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://botly:botly@db:5432/botly?schema=public
+      BOT_RUNTIME_URL: http://runtime:4001
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "-qO-",
+          "http://127.0.0.1:3000/api/health",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  runtime:
+    build:
+      context: .
+      dockerfile: bot-runtime/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://botly:botly@db:5432/botly?schema=public
+      BOT_RUNTIME_PORT: "4001"
+    ports:
+      - "4001:4001"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "-qO-",
+          "http://127.0.0.1:4001/health",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  botly_pg:
