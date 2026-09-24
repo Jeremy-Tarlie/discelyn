@@ -43,7 +43,14 @@ export function GuildHealthPanel({
   }, [botId, t]);
 
   useEffect(() => {
-    void reload();
+    let cancelled = false;
+    void (async () => {
+      await Promise.resolve();
+      if (!cancelled) await reload();
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [reload]);
 
   const mark = (status: HealthCheck["status"]) => {

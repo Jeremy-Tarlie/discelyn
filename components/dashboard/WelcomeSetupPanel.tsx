@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { FORMATION_TEMPLATE } from "@/lib/templates/formation";
 
 type GuildChannel = {
@@ -63,6 +64,8 @@ export function WelcomeSetupPanel({
   onModulesChange: (modules: string[]) => void;
   welcomeConfigured: boolean;
 }) {
+  const t = useTranslations("dashboard.welcomeSetup");
+  const tc = useTranslations("common");
   const router = useRouter();
   const [channels, setChannels] = useState<GuildChannel[]>([]);
   const [channelsLoading, setChannelsLoading] = useState(false);
@@ -92,7 +95,7 @@ export function WelcomeSetupPanel({
         };
         if (!response.ok) {
           if (!cancelled) {
-            setChannelsError(data.error ?? "Impossible de charger les salons");
+            setChannelsError(data.error ?? t("channelsLoadFailed"));
           }
           return;
         }
@@ -107,7 +110,7 @@ export function WelcomeSetupPanel({
           }
         }
       } catch {
-        if (!cancelled) setChannelsError("Erreur réseau");
+        if (!cancelled) setChannelsError(tc("networkError"));
       } finally {
         if (!cancelled) setChannelsLoading(false);
       }
@@ -116,7 +119,7 @@ export function WelcomeSetupPanel({
     return () => {
       cancelled = true;
     };
-  }, [botId, botPresent, onWelcomeChannelIdChange]);
+  }, [botId, botPresent, onWelcomeChannelIdChange, t, tc]);
 
   function applyFormationTemplate() {
     onWelcomeMessageChange(FORMATION_TEMPLATE.welcomeMessage);
@@ -126,9 +129,7 @@ export function WelcomeSetupPanel({
     if (rules) onRulesChannelIdChange(rules.id);
     if (!welcome) pendingTemplateRef.current = true;
     else pendingTemplateRef.current = false;
-    setMessage(
-      "Template formation appliqué — choisis les salons # puis enregistre."
-    );
+    setMessage(t("templateApplied"));
   }
 
   function insertPlaceholder(token: "{mention}" | "{user}" | "{rules}") {
@@ -164,14 +165,14 @@ export function WelcomeSetupPanel({
       });
       const data = (await response.json()) as { error?: string };
       if (!response.ok) {
-        setError(data.error ?? "Sauvegarde impossible");
+        setError(data.error ?? t("saveFailed"));
         return;
       }
       onModulesChange(nextModules);
-      setMessage("Welcome enregistré — embed formation + mentions # actives.");
+      setMessage(t("saved"));
       router.refresh();
     } catch {
-      setError("Erreur réseau");
+      setError(tc("networkError"));
     } finally {
       setSaving(false);
     }
@@ -189,6 +190,7 @@ export function WelcomeSetupPanel({
     rulesChannelId.length > 0 &&
     !channels.some((channel) => channel.id === rulesChannelId);
   const rulesLabel = channels.find((c) => c.id === rulesChannelId)?.name;
+  const learnerPreview = t("previewLearner");
 
   return (
     <section className="relative overflow-hidden rounded-2xl border border-signal/35 bg-surface shadow-[inset_4px_0_0_0_theme(colors.signal.DEFAULT)]">
@@ -198,15 +200,12 @@ export function WelcomeSetupPanel({
             <StepBadge n={3} done={welcomeConfigured} />
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-wider text-signal">
-                Étape 3 / 3
+                {t("stepLabel")}
               </p>
               <h2 className="mt-1 font-display text-lg text-page-fg">
-                Accueil apprenant
+                {t("title")}
               </h2>
-              <p className="mt-1 max-w-xl text-sm text-soft">
-                Embed formation + salon # cliquable — pas un simple texte comme
-                sur un bot hobby.
-              </p>
+              <p className="mt-1 max-w-xl text-sm text-soft">{t("body")}</p>
             </div>
           </div>
           <button
@@ -214,14 +213,14 @@ export function WelcomeSetupPanel({
             onClick={applyFormationTemplate}
             className="rounded-full border border-signal/40 px-4 py-2 text-sm text-signal hover:bg-signal/10"
           >
-            Template formation
+            {t("templateCta")}
           </button>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block space-y-1.5 text-sm text-soft">
-            <span className="font-medium text-page-fg">Salon welcome</span>
-            <span className="block text-xs">Où poster l’embed d’accueil</span>
+            <span className="font-medium text-page-fg">{t("welcomeChannel")}</span>
+            <span className="block text-xs">{t("welcomeChannelHint")}</span>
             {showChannelSelect ? (
               <select
                 value={welcomeChannelId}
@@ -231,12 +230,12 @@ export function WelcomeSetupPanel({
               >
                 <option value="">
                   {channelsLoading && channels.length === 0
-                    ? "Chargement…"
-                    : "Choisir un salon #"}
+                    ? t("loadingChannels")
+                    : t("pickChannel")}
                 </option>
                 {orphanWelcome ? (
                   <option value={welcomeChannelId}>
-                    Salon configuré ({welcomeChannelId})
+                    {t("configuredChannel", { id: welcomeChannelId })}
                   </option>
                 ) : null}
                 {channels.map((channel) => (
@@ -250,16 +249,14 @@ export function WelcomeSetupPanel({
                 value={welcomeChannelId}
                 onChange={(e) => onWelcomeChannelIdChange(e.target.value)}
                 className={fieldClass}
-                placeholder="ID salon welcome"
+                placeholder={t("welcomeChannelPlaceholder")}
               />
             )}
           </label>
 
           <label className="block space-y-1.5 text-sm text-soft">
-            <span className="font-medium text-page-fg">Salon règles</span>
-            <span className="block text-xs">
-              Remplace {"{rules}"} par une vraie mention Discord
-            </span>
+            <span className="font-medium text-page-fg">{t("rulesChannel")}</span>
+            <span className="block text-xs">{t("rulesChannelHint")}</span>
             {showChannelSelect ? (
               <select
                 value={rulesChannelId}
@@ -269,12 +266,12 @@ export function WelcomeSetupPanel({
               >
                 <option value="">
                   {channelsLoading && channels.length === 0
-                    ? "Chargement…"
-                    : "Choisir #règles / #infos"}
+                    ? t("loadingChannels")
+                    : t("pickRulesChannel")}
                 </option>
                 {orphanRules ? (
                   <option value={rulesChannelId}>
-                    Salon configuré ({rulesChannelId})
+                    {t("configuredChannel", { id: rulesChannelId })}
                   </option>
                 ) : null}
                 {channels.map((channel) => (
@@ -288,14 +285,14 @@ export function WelcomeSetupPanel({
                 value={rulesChannelId}
                 onChange={(e) => onRulesChannelIdChange(e.target.value)}
                 className={fieldClass}
-                placeholder="ID salon règles"
+                placeholder={t("rulesChannelPlaceholder")}
               />
             )}
           </label>
         </div>
 
         <label className="block space-y-1.5 text-sm text-soft">
-          <span className="font-medium text-page-fg">Corps du message</span>
+          <span className="font-medium text-page-fg">{t("messageBody")}</span>
           <textarea
             value={welcomeMessage}
             onChange={(e) => onWelcomeMessageChange(e.target.value)}
@@ -306,7 +303,7 @@ export function WelcomeSetupPanel({
         </label>
 
         <div className="flex flex-wrap items-center gap-2 text-xs text-soft">
-          <span>Placeholders :</span>
+          <span>{t("placeholders")}</span>
           {(
             [
               "{mention}",
@@ -318,7 +315,7 @@ export function WelcomeSetupPanel({
               key={token}
               type="button"
               onClick={() => insertPlaceholder(token)}
-              title={`Insérer ${token}`}
+              title={t("insertPlaceholder", { token })}
               className="rounded-full border border-line bg-surface-muted px-2.5 py-1 font-mono text-page-fg hover:border-signal/40 hover:text-signal"
             >
               {token}
@@ -326,22 +323,22 @@ export function WelcomeSetupPanel({
           ))}
         </div>
 
-        <div className="rounded-xl border border-line bg-ink-900 px-4 py-3 text-sm text-mist-100">
+        <div className="rounded-xl border border-line bg-[color:var(--surface-muted)] px-4 py-3 text-sm text-[color:var(--page-fg)]">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-signal">
-            Aperçu Discord (embed)
+            {t("previewLabel")}
           </p>
-          <p className="mt-2 font-display text-base">Bienvenue — config</p>
-          <p className="mt-1 whitespace-pre-wrap text-mist-200">
+          <p className="mt-2 font-display text-base">{t("previewTitle")}</p>
+          <p className="mt-1 whitespace-pre-wrap text-[color:var(--muted)]">
             {(welcomeMessage || FORMATION_TEMPLATE.welcomeMessage)
-              .replaceAll("{mention}", "@apprenant")
-              .replaceAll("{user}", "apprenant")
+              .replaceAll("{mention}", `@${learnerPreview}`)
+              .replaceAll("{user}", learnerPreview)
               .replaceAll(
                 "{rules}",
-                rulesLabel ? `#${rulesLabel}` : "#règles (à lier)"
+                rulesLabel ? `#${rulesLabel}` : t("previewRulesFallback")
               )}
           </p>
-          <p className="mt-3 border-t border-white/10 pt-2 text-xs text-mist-300">
-            Support formation · /ticket → accès · facturation · contenu
+          <p className="mt-3 border-t border-[color:var(--border)] pt-2 text-xs text-[color:var(--muted)]">
+            {t("previewFooter")}
           </p>
         </div>
 
@@ -355,10 +352,10 @@ export function WelcomeSetupPanel({
           disabled={saving || !welcomeChannelId}
           className="rounded-full bg-signal px-5 py-2.5 text-sm font-semibold text-ink-950 hover:bg-signal-glow disabled:opacity-60"
         >
-          {saving ? "Enregistrement…" : "Enregistrer le welcome"}
+          {saving ? t("saving") : t("save")}
         </button>
         {message ? <p className="text-sm text-signal">{message}</p> : null}
-        {error ? <p className="text-sm text-red-400">{error}</p> : null}
+        {error ? <p className="text-sm text-warn">{error}</p> : null}
       </div>
     </section>
   );

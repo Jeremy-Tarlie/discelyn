@@ -16,6 +16,7 @@ function ensureDefaultCookies(response: NextResponse, request: NextRequest) {
       path: "/",
       maxAge: LOCALE_COOKIE_MAX_AGE,
       sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
     });
   }
   if (!request.cookies.get(THEME_COOKIE)?.value) {
@@ -23,6 +24,7 @@ function ensureDefaultCookies(response: NextResponse, request: NextRequest) {
       path: "/",
       maxAge: THEME_COOKIE_MAX_AGE,
       sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
     });
   }
 }

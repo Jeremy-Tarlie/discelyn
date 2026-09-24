@@ -3,15 +3,9 @@ import { assertAuthEnv } from "@/lib/auth";
 import { getAppEnvironment } from "@/lib/demo";
 
 export async function register() {
-  if (process.env.NEXT_RUNTIME === "nodejs") {
-    if (process.env.SENTRY_DSN) {
-      Sentry.init({
-        dsn: process.env.SENTRY_DSN,
-        tracesSampleRate: 0.1,
-        environment: process.env.NODE_ENV,
-      });
-    }
+  // Sentry Node est initialisé via sentry.server.config.ts (éviter double init).
 
+  if (process.env.NEXT_RUNTIME === "nodejs") {
     const appEnv = getAppEnvironment();
     const required = [
       "DATABASE_URL",
@@ -23,17 +17,27 @@ export async function register() {
     ] as const;
 
     const missing: string[] = required.filter((name) => !process.env[name]);
-    if (process.env.BOT_RUNTIME_URL && !process.env.BOT_RUNTIME_SECRET) {
-      missing.push("BOT_RUNTIME_SECRET");
-    }
 
-    // Staging + prod : chiffrement + cron obligatoires (expiry / relances claim).
+    // Aligné avec preflight : staging/prod exigent chiffrement + cron + runtime secret.
     if (appEnv === "production" || appEnv === "staging") {
       if (!process.env.TOKEN_ENCRYPTION_KEY) {
         missing.push("TOKEN_ENCRYPTION_KEY");
       }
       if (!process.env.CRON_SECRET) {
         missing.push("CRON_SECRET");
+      }
+      if (!process.env.BOT_RUNTIME_SECRET) {
+        missing.push("BOT_RUNTIME_SECRET");
+      }
+    }
+
+    if (appEnv === "production" && !process.env.REDIS_URL) {
+      missing.push("REDIS_URL");
+    }
+
+    if (process.env.BOT_RUNTIME_URL && !process.env.BOT_RUNTIME_SECRET) {
+      if (!missing.includes("BOT_RUNTIME_SECRET")) {
+        missing.push("BOT_RUNTIME_SECRET");
       }
     }
 
@@ -58,6 +62,7 @@ export async function register() {
     Sentry.init({
       dsn: process.env.SENTRY_DSN,
       tracesSampleRate: 0.05,
+      environment: process.env.APP_ENV || process.env.NODE_ENV,
     });
   }
 }

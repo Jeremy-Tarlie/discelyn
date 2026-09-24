@@ -15,6 +15,10 @@ import {
   revokeBySubscriptionId,
 } from "@/lib/learner-access";
 import { rateLimit } from "@/lib/rate-limit";
+import {
+  claimStripeEvent,
+  releaseStripeEventClaim,
+} from "@/lib/stripe-idempotency";
 
 export const runtime = "nodejs";
 
@@ -65,7 +69,6 @@ async function handleCheckoutCompleted(
   if (
     !shouldOpenAccessFromCheckout({
       paymentStatus: session.payment_status,
-      sessionStatus: session.status,
     })
   ) {
     return;
@@ -142,8 +145,8 @@ async function handleCheckoutCompleted(
   });
 
   if (result.soldOut) {
-    console.warn(
-      `[access-webhook] sold out product=${product.id} session=${session.id}`
+    console.error(
+      `[access-webhook] OVERSOLD product=${product.id} session=${session.id} — remboursement auto tenté`
     );
   }
 }
@@ -231,6 +234,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: "invalid signature" }, { status: 400 });
   }
 
+  const claimed = await claimStripeEvent(event);
+  if (!claimed) {
+    return NextResponse.json({ received: true, duplicate: true });
+  }
+
   try {
     switch (event.type) {
       case "checkout.session.completed": {
@@ -275,6 +283,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         break;
     }
   } catch (error) {
+    await releaseStripeEventClaim(event.id);
     console.error("[access-webhook] handler error", error);
     return NextResponse.json({ error: "handler failed" }, { status: 500 });
   }

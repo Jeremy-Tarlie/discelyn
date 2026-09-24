@@ -6,7 +6,8 @@ import {
   canUseProduct,
 } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
-import { affiliateCreateSchema } from "@/lib/access-validation";
+import { affiliateCreateSchemaFor } from "@/lib/access-validation";
+import { listAffiliatesForUser } from "@/lib/dashboard-data";
 import { affiliateRefUrl } from "@/lib/learner-access";
 import { rateLimit } from "@/lib/rate-limit";
 import { getRequestLocale } from "@/lib/locale";
@@ -16,6 +17,13 @@ export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   const locale = getRequestLocale(request);
+  const limited = await rateLimit(request, {
+    namespace: "affiliates-get",
+    limit: 60,
+    windowMs: 60_000,
+  });
+  if (!limited.ok) return limited.response;
+
   const user = await requireUser();
   if (!user) {
     return NextResponse.json(
@@ -24,35 +32,8 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const affiliates = await prisma.affiliate.findMany({
-    where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
-  });
-
-  const withStats = await Promise.all(
-    affiliates.map(async (aff) => {
-      const [clicks, paid, claimed] = await Promise.all([
-        prisma.affiliateClick.count({ where: { affiliateId: aff.id } }),
-        prisma.learnerAccess.count({ where: { affiliateId: aff.id } }),
-        prisma.learnerAccess.count({
-          where: {
-            affiliateId: aff.id,
-            status: { in: ["ACTIVE", "AWAITING_JOIN"] },
-          },
-        }),
-      ]);
-      return {
-        ...aff,
-        refUrl: affiliateRefUrl(aff.code),
-        clicks,
-        paid,
-        claimed,
-        createdAt: aff.createdAt.toISOString(),
-      };
-    })
-  );
-
-  return NextResponse.json({ affiliates: withStats });
+  const affiliates = await listAffiliatesForUser(user.id);
+  return NextResponse.json({ affiliates });
 }
 
 export async function POST(request: NextRequest) {
@@ -91,7 +72,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const parsed = affiliateCreateSchema.safeParse(body);
+  const parsed = affiliateCreateSchemaFor(locale).safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: parsed.error.issues[0]?.message ?? tApi(locale, "invalidData") },

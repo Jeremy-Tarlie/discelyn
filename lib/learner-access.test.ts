@@ -57,30 +57,28 @@ describe("extractPriceIdFromSession", () => {
 });
 
 describe("boucle checkout → accès", () => {
-  it("ouvre l’accès si paid ou session complete", () => {
+  it("ouvre l’accès seulement si paid ou no_payment_required", () => {
     expect(
       shouldOpenAccessFromCheckout({
         paymentStatus: "paid",
-        sessionStatus: "open",
+      })
+    ).toBe(true);
+    expect(
+      shouldOpenAccessFromCheckout({
+        paymentStatus: "no_payment_required",
       })
     ).toBe(true);
     expect(
       shouldOpenAccessFromCheckout({
         paymentStatus: "unpaid",
-        sessionStatus: "complete",
-      })
-    ).toBe(true);
-    expect(
-      shouldOpenAccessFromCheckout({
-        paymentStatus: "unpaid",
-        sessionStatus: "open",
       })
     ).toBe(false);
   });
 
-  it("révoque sur unpaid/canceled", () => {
+  it("révoque sur unpaid/canceled — pas past_due", () => {
     expect(shouldRevokeOnSubscriptionStatus("unpaid")).toBe(true);
     expect(shouldRevokeOnSubscriptionStatus("canceled")).toBe(true);
+    expect(shouldRevokeOnSubscriptionStatus("past_due")).toBe(false);
     expect(shouldRevokeOnSubscriptionStatus("active")).toBe(false);
   });
 

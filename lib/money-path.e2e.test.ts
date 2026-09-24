@@ -3,11 +3,15 @@
  * checkout → AWAITING_JOIN (multi-guild) → grantPendingOnJoin → ACTIVE → revoke.
  *
  * Discord mocké ; Postgres réel (DATABASE_URL).
- * Skip si DATABASE_URL absent.
+ * DATABASE_URL est obligatoire (sinon échec, jamais de skip).
  */
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
-const runDb = Boolean(process.env.DATABASE_URL);
+if (!process.env.DATABASE_URL) {
+  throw new Error(
+    "DATABASE_URL obligatoire pour money-path.e2e.test.ts (Postgres requis)"
+  );
+}
 
 const mockGrantGuildRole = vi.fn();
 const mockRevokeGuildRole = vi.fn();
@@ -28,7 +32,7 @@ vi.mock("@/lib/outbound-webhooks", () => ({
   dispatchOutboundWebhooks: (...args: unknown[]) => mockDispatch(...args),
 }));
 
-describe.runIf(runDb)("E2E money path (DB)", () => {
+describe("E2E money path (DB)", () => {
   const suffix = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const guildA = "411111111111111111";
   const guildB = "422222222222222222";
@@ -212,11 +216,5 @@ describe.runIf(runDb)("E2E money path (DB)", () => {
     expect(types).toContain("awaiting_join");
     expect(types).toContain("role_granted");
     expect(types).toContain("access_revoked");
-  });
-});
-
-describe.runIf(!runDb)("E2E money path (skipped)", () => {
-  it("skip — DATABASE_URL absent", () => {
-    expect(runDb).toBe(false);
   });
 });

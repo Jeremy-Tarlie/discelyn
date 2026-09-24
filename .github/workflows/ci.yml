@@ -30,7 +30,7 @@ jobs:
       DISCORD_CLIENT_ID: "000000000000000000"
       DISCORD_CLIENT_SECRET: ci-discord-client-secret
       DISCORD_BOT_TOKEN: ci.fake.discord.bot.token
-      BOT_RUNTIME_URL: http://127.0.0.1:3100
+      BOT_RUNTIME_URL: http://127.0.0.1:4001
       BOT_RUNTIME_SECRET: ci-runtime-secret
       TOKEN_ENCRYPTION_KEY: ci-token-encryption-key-for-tests
       CRON_SECRET: ci-cron-secret-for-tests
@@ -51,10 +51,8 @@ jobs:
       - run: npm run typecheck:runtime
       - run: npm run lint
       - run: npm test
-      - name: E2E money path (DB)
-        run: npm run test:e2e
       - name: DB smoke (schema reachable)
-        run: node --input-type=module -e "import { PrismaClient } from './generated/prisma/client.js'; import { PrismaPg } from '@prisma/adapter-pg'; const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) }); const n = await prisma.user.count(); console.log('users', n); await prisma.\$disconnect();"
+        run: node scripts/db-smoke.mjs
       - name: Preflight staging env
         run: node scripts/preflight-prod.mjs
       - run: npm run build

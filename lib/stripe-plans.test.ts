@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
   isPlanId,
+  mapStripeSubscriptionStatus,
   planFromMetadata,
   planFromPriceId,
   resolveSubscriptionPlan,
@@ -91,13 +92,40 @@ describe("resolveSubscriptionPlan", () => {
     ).toEqual({ plan: "FREE", conserved: true });
   });
 
-  it("préfère metadata planId", () => {
+  it("préfère le price ID à la metadata (anti-fraude)", () => {
+    const prev = process.env.STRIPE_PRICE_OPS;
+    process.env.STRIPE_PRICE_OPS = "price_ops_real";
+    try {
+      expect(
+        resolveSubscriptionPlan({
+          metadata: { planId: "SCALE" },
+          priceId: "price_ops_real",
+          existingPlan: "FREE",
+        })
+      ).toEqual({ plan: "OPS", conserved: false });
+    } finally {
+      if (prev === undefined) delete process.env.STRIPE_PRICE_OPS;
+      else process.env.STRIPE_PRICE_OPS = prev;
+    }
+  });
+
+  it("utilise metadata seulement si price inconnu", () => {
     expect(
       resolveSubscriptionPlan({
         metadata: { planId: "STARTER" },
-        priceId: null,
+        priceId: "price_unknown",
         existingPlan: "FREE",
       })
     ).toEqual({ plan: "STARTER", conserved: false });
+  });
+});
+
+describe("mapStripeSubscriptionStatus", () => {
+  it("mappe les statuts connus et refuse ACTIVE par défaut", () => {
+    expect(mapStripeSubscriptionStatus("active")).toBe("ACTIVE");
+    expect(mapStripeSubscriptionStatus("past_due")).toBe("PAST_DUE");
+    expect(mapStripeSubscriptionStatus("weird_future_status")).toBe(
+      "INCOMPLETE"
+    );
   });
 });

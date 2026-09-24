@@ -11,13 +11,13 @@ import {
   newClaimToken,
   revokeLearnerAccess,
 } from "@/lib/learner-access";
+import { listLearnersForUser } from "@/lib/dashboard-data";
 import { getOrgStripeClient } from "@/lib/org-stripe";
 import { appBaseUrl } from "@/lib/learner-access";
 import { rateLimit } from "@/lib/rate-limit";
 import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
 import { z } from "zod";
-import type { LearnerAccessStatus, LearnerAccessSource } from "@/generated/prisma/client";
 
 export const runtime = "nodejs";
 
@@ -54,42 +54,16 @@ export async function GET(request: NextRequest) {
 
   const status = request.nextUrl.searchParams.get("status");
   const productId = request.nextUrl.searchParams.get("productId");
-  const q = request.nextUrl.searchParams.get("q")?.trim();
+  const q = request.nextUrl.searchParams.get("q")?.trim() ?? null;
   const source = request.nextUrl.searchParams.get("source");
   const wantExport = request.nextUrl.searchParams.get("export") === "1";
 
-  const where = {
-    bot: { userId: user.id },
-    ...(status
-      ? { status: status as LearnerAccessStatus }
-      : {}),
-    ...(productId ? { accessProductId: productId } : {}),
-    ...(source ? { source: source as LearnerAccessSource } : {}),
-    ...(q
-      ? {
-          OR: [
-            { customerEmail: { contains: q, mode: "insensitive" as const } },
-            { discordUserId: { contains: q } },
-          ],
-        }
-      : {}),
-  };
-
-  const rows = await prisma.learnerAccess.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
+  const learners = await listLearnersForUser(user.id, {
+    status,
+    productId,
+    q,
+    source,
     take: wantExport ? EXPORT_LIMIT : 100,
-    include: {
-      product: {
-        select: {
-          id: true,
-          name: true,
-          accessEndsAt: true,
-          billingMode: true,
-        },
-      },
-      affiliate: { select: { id: true, code: true, label: true } },
-    },
   });
 
   if (wantExport) {
@@ -113,7 +87,7 @@ export async function GET(request: NextRequest) {
       "created_at",
     ];
     const lines = [header.join(",")];
-    for (const row of rows) {
+    for (const row of learners) {
       lines.push(
         [
           row.id,
@@ -128,11 +102,11 @@ export async function GET(request: NextRequest) {
           row.affiliate?.code ?? "",
           row.stripeCustomerId ?? "",
           row.stripeSubscriptionId ?? "",
-          row.grantedAt?.toISOString() ?? "",
-          row.revokedAt?.toISOString() ?? "",
+          row.grantedAt ?? "",
+          row.revokedAt ?? "",
           csvEscape(row.revokeReason ?? ""),
-          row.product.accessEndsAt?.toISOString() ?? "",
-          row.createdAt.toISOString(),
+          row.accessEndsAt ?? "",
+          row.createdAt,
         ].join(",")
       );
     }
@@ -146,27 +120,7 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  return NextResponse.json({
-    learners: rows.map((row) => ({
-      id: row.id,
-      status: row.status,
-      source: row.source,
-      customerEmail: row.customerEmail,
-      discordUserId: row.discordUserId,
-      amountTotal: row.amountTotal,
-      currency: row.currency,
-      stripeCustomerId: row.stripeCustomerId,
-      claimUrl: row.claimToken ? claimUrl(row.claimToken) : null,
-      claimReminderCount: row.claimReminderCount,
-      grantedAt: row.grantedAt?.toISOString() ?? null,
-      revokedAt: row.revokedAt?.toISOString() ?? null,
-      revokeReason: row.revokeReason,
-      createdAt: row.createdAt.toISOString(),
-      product: row.product,
-      affiliate: row.affiliate,
-      accessEndsAt: row.product.accessEndsAt?.toISOString() ?? null,
-    })),
-  });
+  return NextResponse.json({ learners });
 }
 
 export async function POST(request: NextRequest) {

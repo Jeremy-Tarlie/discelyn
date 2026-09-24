@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   createSingleUseInvite,
@@ -11,11 +12,11 @@ import { getPlan, type PlanId } from "@/lib/plans";
 import { parseBotConfig } from "@/lib/bot-config";
 import {
   isProductSoldOut,
-  newAccessCodePlain,
   parseOnboardingSteps,
   releaseSeat,
   tryReserveSeat,
 } from "@/lib/access-seats";
+import { syncPaymentLinkAvailability } from "@/lib/access-payment-link";
 import { hashAccessCode, normalizeAccessCode } from "@/lib/access-code-crypto";
 import {
   expandGuildRoleTargets,
@@ -25,6 +26,7 @@ import {
   dispatchOutboundWebhooks,
   type OutboundEvent,
 } from "@/lib/outbound-webhooks";
+import { getOrgStripeClient } from "@/lib/org-stripe";
 
 export {
   extractDiscordUserIdFromSession,
@@ -148,8 +150,13 @@ async function ensurePrimaryGrant(input: {
 
 export { ensurePrimaryGrant };
 
+type CheckoutOpenResult =
+  | { accessId: string; claimToken: string | null; soldOut?: false }
+  | { accessId: ""; claimToken: null; soldOut: true };
+
 /**
  * Après paiement : crée l’accès + claim, ou grant immédiat si discord_user_id connu.
+ * Réservation siège + create dans une transaction (évite compteur dérivé).
  */
 export async function openLearnerAccessFromCheckout(input: {
   productId: string;
@@ -166,69 +173,238 @@ export async function openLearnerAccessFromCheckout(input: {
   currency?: string | null;
   affiliateId?: string | null;
   userId: string;
-}): Promise<{ accessId: string; claimToken: string | null; soldOut?: boolean }> {
-  const existing = await prisma.learnerAccess.findUnique({
-    where: { stripeCheckoutSessionId: input.stripeCheckoutSessionId },
-    select: { id: true, claimToken: true },
-  });
-  if (existing) {
-    return { accessId: existing.id, claimToken: existing.claimToken };
+}): Promise<CheckoutOpenResult> {
+  type TxResult =
+    | { kind: "existing"; accessId: string; claimToken: string | null }
+    | { kind: "created"; accessId: string; claimToken: string }
+    | { kind: "sold_out" };
+
+  let txResult: TxResult;
+  try {
+    txResult = await prisma.$transaction(async (tx) => {
+      const existing = await tx.learnerAccess.findUnique({
+        where: { stripeCheckoutSessionId: input.stripeCheckoutSessionId },
+        select: { id: true, claimToken: true },
+      });
+      if (existing) {
+        return {
+          kind: "existing" as const,
+          accessId: existing.id,
+          claimToken: existing.claimToken,
+        };
+      }
+
+      const reserved = await tryReserveSeat(input.productId, tx);
+      if (!reserved) {
+        return { kind: "sold_out" as const };
+      }
+
+      const claimToken = newClaimToken();
+      try {
+        const access = await tx.learnerAccess.create({
+          data: {
+            accessProductId: input.productId,
+            botId: input.botId,
+            guildId: input.guildId,
+            status: "PENDING_CLAIM",
+            source: "STRIPE",
+            customerEmail: input.customerEmail,
+            discordUserId: input.discordUserIdFromMetadata,
+            claimToken,
+            claimTokenExpiresAt: new Date(Date.now() + CLAIM_TTL_MS),
+            stripeCheckoutSessionId: input.stripeCheckoutSessionId,
+            stripePaymentIntentId: input.stripePaymentIntentId,
+            stripeSubscriptionId: input.stripeSubscriptionId,
+            stripeCustomerId: input.stripeCustomerId,
+            amountTotal: input.amountTotal ?? null,
+            amountSubtotal: input.amountSubtotal ?? null,
+            currency: input.currency ?? null,
+            affiliateId: input.affiliateId ?? null,
+          },
+        });
+        return {
+          kind: "created" as const,
+          accessId: access.id,
+          claimToken,
+        };
+      } catch (err) {
+        await releaseSeat(input.productId, tx);
+        if (
+          err instanceof Prisma.PrismaClientKnownRequestError &&
+          err.code === "P2002"
+        ) {
+          const raced = await tx.learnerAccess.findUnique({
+            where: { stripeCheckoutSessionId: input.stripeCheckoutSessionId },
+            select: { id: true, claimToken: true },
+          });
+          if (raced) {
+            return {
+              kind: "existing" as const,
+              accessId: raced.id,
+              claimToken: raced.claimToken,
+            };
+          }
+        }
+        throw err;
+      }
+    });
+  } catch (err) {
+    throw err;
   }
 
-  const reserved = await tryReserveSeat(input.productId);
-  if (!reserved) {
-    await recordEventPlaceholderSoldOut(input);
+  if (txResult.kind === "sold_out") {
+    await recordOversoldCheckout(input);
+    await syncPaymentLinkAvailability(input.productId);
     return { accessId: "", claimToken: null, soldOut: true };
   }
 
-  const claimToken = newClaimToken();
-  const access = await prisma.learnerAccess.create({
-    data: {
-      accessProductId: input.productId,
-      botId: input.botId,
-      guildId: input.guildId,
-      status: "PENDING_CLAIM",
-      source: "STRIPE",
-      customerEmail: input.customerEmail,
-      discordUserId: input.discordUserIdFromMetadata,
-      claimToken,
-      claimTokenExpiresAt: new Date(Date.now() + CLAIM_TTL_MS),
-      stripeCheckoutSessionId: input.stripeCheckoutSessionId,
-      stripePaymentIntentId: input.stripePaymentIntentId,
-      stripeSubscriptionId: input.stripeSubscriptionId,
-      stripeCustomerId: input.stripeCustomerId,
-      amountTotal: input.amountTotal ?? null,
-      amountSubtotal: input.amountSubtotal ?? null,
-      currency: input.currency ?? null,
-      affiliateId: input.affiliateId ?? null,
-    },
-  });
+  if (txResult.kind === "existing") {
+    return { accessId: txResult.accessId, claimToken: txResult.claimToken };
+  }
 
-  await recordEvent(access.id, "payment_received", {
+  await recordEvent(txResult.accessId, "payment_received", {
     sessionId: input.stripeCheckoutSessionId,
     amountTotal: input.amountTotal ?? null,
   });
   await notifyOutbound(input.userId, "payment_received", {
-    accessId: access.id,
+    accessId: txResult.accessId,
     productId: input.productId,
     email: input.customerEmail,
     amountTotal: input.amountTotal ?? null,
   });
 
+  await syncPaymentLinkAvailability(input.productId);
+
   if (input.discordUserIdFromMetadata) {
-    await fulfillDiscordAccess(access.id);
+    await fulfillDiscordAccess(txResult.accessId);
   }
 
-  return { accessId: access.id, claimToken };
+  return { accessId: txResult.accessId, claimToken: txResult.claimToken };
 }
 
-async function recordEventPlaceholderSoldOut(input: {
+async function attemptOversoldRefund(input: {
+  userId: string;
+  stripePaymentIntentId: string | null;
+  stripeSubscriptionId: string | null;
+}): Promise<{
+  refundStatus: "refunded" | "refund_failed" | "skipped";
+  stripeRefundId: string | null;
+  refundError: string | null;
+}> {
+  const stripe = await getOrgStripeClient(input.userId);
+  if (!stripe) {
+    return {
+      refundStatus: "skipped",
+      stripeRefundId: null,
+      refundError: "stripe_not_configured",
+    };
+  }
+
+  try {
+    if (input.stripeSubscriptionId) {
+      await stripe.subscriptions.cancel(input.stripeSubscriptionId, {
+        invoice_now: false,
+        prorate: false,
+      });
+    }
+
+    if (!input.stripePaymentIntentId) {
+      return {
+        refundStatus: "skipped",
+        stripeRefundId: null,
+        refundError: "no_payment_intent",
+      };
+    }
+
+    const refund = await stripe.refunds.create({
+      payment_intent: input.stripePaymentIntentId,
+      reason: "requested_by_customer",
+      metadata: { botly_reason: "oversold" },
+    });
+    return {
+      refundStatus: "refunded",
+      stripeRefundId: refund.id,
+      refundError: null,
+    };
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message.slice(0, 500) : "refund_failed";
+    console.error("[access] oversold refund failed", message);
+    return {
+      refundStatus: "refund_failed",
+      stripeRefundId: null,
+      refundError: message,
+    };
+  }
+}
+
+async function recordOversoldCheckout(input: {
   productId: string;
+  botId: string;
+  userId: string;
+  customerEmail: string | null;
   stripeCheckoutSessionId: string;
+  stripePaymentIntentId: string | null;
+  stripeSubscriptionId: string | null;
+  amountTotal?: number | null;
+  currency?: string | null;
 }): Promise<void> {
-  console.warn(
-    `[access] sold out product=${input.productId} session=${input.stripeCheckoutSessionId}`
+  console.error(
+    `[access] OVERSOLD product=${input.productId} session=${input.stripeCheckoutSessionId}`
   );
+
+  // Claim d’abord (unique session) pour éviter double-refund sur retry Stripe.
+  let claimed = false;
+  try {
+    await prisma.accessOversoldEvent.create({
+      data: {
+        userId: input.userId,
+        accessProductId: input.productId,
+        botId: input.botId,
+        stripeCheckoutSessionId: input.stripeCheckoutSessionId,
+        stripePaymentIntentId: input.stripePaymentIntentId,
+        customerEmail: input.customerEmail,
+        amountTotal: input.amountTotal ?? null,
+        currency: input.currency ?? null,
+        refundStatus: "pending",
+      },
+    });
+    claimed = true;
+  } catch (err) {
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === "P2002"
+    ) {
+      return;
+    }
+    console.warn("[access] oversold persist failed", err);
+    return;
+  }
+
+  if (!claimed) return;
+
+  const refund = await attemptOversoldRefund({
+    userId: input.userId,
+    stripePaymentIntentId: input.stripePaymentIntentId,
+    stripeSubscriptionId: input.stripeSubscriptionId,
+  });
+
+  await prisma.accessOversoldEvent.update({
+    where: { stripeCheckoutSessionId: input.stripeCheckoutSessionId },
+    data: {
+      refundStatus: refund.refundStatus,
+      stripeRefundId: refund.stripeRefundId,
+      refundError: refund.refundError,
+    },
+  });
+
+  await notifyOutbound(input.userId, "sold_out", {
+    productId: input.productId,
+    sessionId: input.stripeCheckoutSessionId,
+    email: input.customerEmail,
+    amountTotal: input.amountTotal ?? null,
+    refundStatus: refund.refundStatus,
+  });
 }
 
 /** Redeem code manuel → PENDING_CLAIM ou grant. */
@@ -267,42 +443,61 @@ export async function openLearnerAccessFromCode(input: {
     return { ok: false, error: "sold_out" };
   }
 
-  const reserved = await tryReserveSeat(row.product.id);
-  if (!reserved) return { ok: false, error: "sold_out" };
+  const claimToken = newClaimToken();
+  const guildId = row.product.bot.guildId;
 
-  const updated = await prisma.accessCode.updateMany({
-    where: {
-      id: row.id,
-      redemptions: { lt: row.maxRedemptions },
-      active: true,
-    },
-    data: { redemptions: { increment: 1 } },
-  });
-  if (updated.count === 0) {
-    await releaseSeat(row.product.id);
-    return { ok: false, error: "code_exhausted" };
+  let accessId: string;
+  try {
+    accessId = await prisma.$transaction(async (tx) => {
+      const reserved = await tryReserveSeat(row.product.id, tx);
+      if (!reserved) {
+        throw new Error("sold_out");
+      }
+
+      const updated = await tx.accessCode.updateMany({
+        where: {
+          id: row.id,
+          redemptions: { lt: row.maxRedemptions },
+          active: true,
+        },
+        data: { redemptions: { increment: 1 } },
+      });
+      if (updated.count === 0) {
+        await releaseSeat(row.product.id, tx);
+        throw new Error("code_exhausted");
+      }
+
+      const access = await tx.learnerAccess.create({
+        data: {
+          accessProductId: row.product.id,
+          botId: row.product.botId,
+          guildId,
+          status: "PENDING_CLAIM",
+          source: "ACCESS_CODE",
+          discordUserId: input.discordUserId ?? null,
+          claimToken,
+          claimTokenExpiresAt: new Date(Date.now() + CLAIM_TTL_MS),
+        },
+      });
+      return access.id;
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "create_failed";
+    if (msg === "sold_out" || msg === "code_exhausted") {
+      return { ok: false, error: msg };
+    }
+    console.warn("[access] code redeem create failed", err);
+    return { ok: false, error: "create_failed" };
   }
 
-  const claimToken = newClaimToken();
-  const access = await prisma.learnerAccess.create({
-    data: {
-      accessProductId: row.product.id,
-      botId: row.product.botId,
-      guildId: row.product.bot.guildId,
-      status: "PENDING_CLAIM",
-      source: "ACCESS_CODE",
-      discordUserId: input.discordUserId ?? null,
-      claimToken,
-      claimTokenExpiresAt: new Date(Date.now() + CLAIM_TTL_MS),
-    },
-  });
-  await recordEvent(access.id, "code_redeemed", { codeId: row.id });
+  await recordEvent(accessId, "code_redeemed", { codeId: row.id });
+  await syncPaymentLinkAvailability(row.product.id);
 
   if (input.discordUserId) {
-    await fulfillDiscordAccess(access.id);
+    await fulfillDiscordAccess(accessId);
   }
 
-  return { ok: true, accessId: access.id, claimToken };
+  return { ok: true, accessId, claimToken };
 }
 
 /** Claim OAuth ou metadata : tente le grant de rôle (tous les guild grants). */
@@ -523,6 +718,29 @@ export async function revokeLearnerAccess(
   if (!access) return;
   if (access.status === "REVOKED" || access.status === "EXPIRED") return;
 
+  const nextStatus = reason === "cohort_ended" ? "EXPIRED" : "REVOKED";
+
+  // Claim atomique du revoke : un seul gagnant libère le siège.
+  const claimed = await prisma.$transaction(async (tx) => {
+    const updated = await tx.learnerAccess.updateMany({
+      where: {
+        id: access.id,
+        status: { in: ["PENDING_CLAIM", "AWAITING_JOIN", "ACTIVE"] },
+      },
+      data: {
+        status: nextStatus,
+        revokedAt: new Date(),
+        revokeReason: reason,
+        claimToken: null,
+      },
+    });
+    if (updated.count === 0) return false;
+    await releaseSeat(access.accessProductId, tx);
+    return true;
+  });
+
+  if (!claimed) return;
+
   const grantRows = await loadGuildGrants(access.accessProductId);
   const targets = expandGuildRoleTargets({
     primaryGuildId: access.guildId,
@@ -543,25 +761,8 @@ export async function revokeLearnerAccess(
     }
   }
 
-  const wasCounted =
-    access.status === "PENDING_CLAIM" ||
-    access.status === "AWAITING_JOIN" ||
-    access.status === "ACTIVE";
-
-  await prisma.learnerAccess.update({
-    where: { id: access.id },
-    data: {
-      status: reason === "cohort_ended" ? "EXPIRED" : "REVOKED",
-      revokedAt: new Date(),
-      revokeReason: reason,
-      claimToken: null,
-    },
-  });
   await recordEvent(access.id, "access_revoked", { reason });
-
-  if (wasCounted) {
-    await releaseSeat(access.accessProductId);
-  }
+  await syncPaymentLinkAvailability(access.accessProductId);
 
   const event: OutboundEvent =
     reason === "cohort_ended" ? "expired" : "revoked";

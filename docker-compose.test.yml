@@ -1,0 +1,19 @@
+# Postgres isolé pour Vitest / E2E DB (port 5433).
+# Ne touche pas au volume de docker-compose.yml (app).
+services:
+  test-db:
+    image: postgres:16-alpine
+    container_name: botly-test-pg
+    ports:
+      - "127.0.0.1:5433:5432"
+    environment:
+      POSTGRES_USER: botly
+      POSTGRES_PASSWORD: botly
+      POSTGRES_DB: botly
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U botly -d botly"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    tmpfs:
+      - /var/lib/postgresql/data

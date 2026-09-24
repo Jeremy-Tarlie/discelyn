@@ -51,12 +51,12 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     <div className="mx-auto max-w-4xl space-y-8">
       {params.diagnostic ? (
         <div className="rounded-xl border border-signal/40 bg-signal/10 px-4 py-3 text-sm text-signal">
-          Diagnostic ✓
+          {t("diagnosticOk")}
         </div>
       ) : null}
       {params.setup ? (
         <div className="rounded-xl border border-signal/40 bg-signal/10 px-4 py-3 text-sm text-signal">
-          Setup ✓
+          {t("setupOk")}
         </div>
       ) : null}
 
@@ -65,8 +65,12 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           {firstName ? t("hello", { name: firstName }) : t("helloGuest")}
         </h1>
         <p className="mt-2 text-soft">
-          Plan {plan.name} · {accessProducts}/{plan.maxAccessProducts} produit
-          {plan.maxAccessProducts > 1 ? "s" : ""} accès
+          {t("planSummary", {
+            plan: plan.name,
+            used: accessProducts,
+            max: plan.maxAccessProducts,
+            plural: plan.maxAccessProducts > 1 ? "s" : "",
+          })}
         </p>
       </div>
 
@@ -122,7 +126,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
             {t("yourBotsSecondary")}
           </h2>
           <Link href="/dashboard/bots" className="text-sm text-signal">
-            Gérer
+            {t("manageBots")}
           </Link>
         </div>
         {bots.length === 0 ? (

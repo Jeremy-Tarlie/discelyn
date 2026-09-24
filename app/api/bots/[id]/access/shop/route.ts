@@ -10,7 +10,7 @@ import { postAccessShop } from "@/lib/discord-roles";
 import { rateLimit } from "@/lib/rate-limit";
 import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
-import { z } from "zod";
+import { postShopSchemaFor } from "@/lib/access-validation";
 
 export const runtime = "nodejs";
 
@@ -18,16 +18,10 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-const postShopSchema = z.object({
-  channelId: z
-    .string()
-    .trim()
-    .regex(/^\d{17,20}$/, "ID de salon Discord invalide"),
-});
-
 /** Poster l’embed boutique (boutons Payment Link) dans un salon Discord. */
 export async function POST(request: NextRequest, context: RouteContext) {
   const locale = getRequestLocale(request);
+  const postShopSchema = postShopSchemaFor(locale);
   const limited = await rateLimit(request, {
     namespace: "access-shop-post",
     limit: 20,

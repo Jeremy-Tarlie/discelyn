@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { DiscordIcon } from "@/components/landing/DiscordIcon";
 import { LocaleSwitcher } from "@/components/i18n/LocaleSwitcher";
 import { ThemeSwitcher } from "@/components/theme/ThemeSwitcher";
+import { SiteHeaderMobileNav } from "@/components/landing/SiteHeaderMobileNav";
 import { getRequestTheme } from "@/lib/theme";
 
 export async function SiteHeader({
@@ -20,9 +21,13 @@ export async function SiteHeader({
     { href: "/comment-ca-marche", label: t("howItWorks") },
   ];
 
+  const ctaHref = signedIn ? "/dashboard" : "/login";
+  const ctaLabel = signedIn ? tc("dashboard") : tc("try");
+  const discordIcon = <DiscordIcon className="h-4 w-4 text-[#5865F2]" />;
+
   return (
     <header className="sticky top-0 z-30 border-b border-[color:var(--border)] bg-[color:var(--header-bg)] backdrop-blur-xl">
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-6 py-3">
+      <div className="relative mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-6 py-3">
         <Link
           href="/"
           className="flex items-center gap-2.5 font-display text-lg font-bold tracking-tight text-[color:var(--page-fg)]"
@@ -57,12 +62,20 @@ export async function SiteHeader({
             </Link>
           ) : null}
           <Link
-            href={signedIn ? "/dashboard" : "/login"}
-            className="inline-flex items-center gap-2 rounded-full bg-[#1a1c21] px-3.5 py-2 text-sm font-bold text-white transition hover:bg-[#2b2d31] dark:bg-white dark:text-[#1a1c21] dark:hover:bg-white/90"
+            href={ctaHref}
+            className="hidden items-center gap-2 rounded-full bg-[#1a1c21] px-3.5 py-2 text-sm font-bold text-white transition hover:bg-[#2b2d31] sm:inline-flex dark:bg-white dark:text-[#1a1c21] dark:hover:bg-white/90"
           >
-            <DiscordIcon className="h-4 w-4 text-[#5865F2]" />
-            {signedIn ? tc("dashboard") : tc("try")}
+            {discordIcon}
+            {ctaLabel}
           </Link>
+          <SiteHeaderMobileNav
+            links={links}
+            signedIn={signedIn}
+            loginLabel={tc("login")}
+            ctaHref={ctaHref}
+            ctaLabel={ctaLabel}
+            ctaIcon={discordIcon}
+          />
         </div>
       </div>
     </header>

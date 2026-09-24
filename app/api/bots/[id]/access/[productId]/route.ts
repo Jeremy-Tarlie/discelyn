@@ -7,7 +7,7 @@ import {
 } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
-import { accessProductUpdateSchema } from "@/lib/access-validation";
+import { accessProductUpdateSchemaFor } from "@/lib/access-validation";
 import { ensurePrimaryGrant } from "@/lib/learner-access";
 import { rateLimit } from "@/lib/rate-limit";
 import { getRequestLocale } from "@/lib/locale";
@@ -67,7 +67,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     );
   }
 
-  const parsed = accessProductUpdateSchema.safeParse(body);
+  const parsed = accessProductUpdateSchemaFor(locale).safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: parsed.error.issues[0]?.message ?? tApi(locale, "invalidData") },

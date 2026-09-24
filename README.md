@@ -73,8 +73,15 @@ Variables minimales : `NEXTAUTH_SECRET`, `DISCORD_CLIENT_ID`,
 `APP_ENV=development`. Pour le grant-on-join runtime→web : `WEB_INTERNAL_URL`
 (défaut local `http://localhost:3000`). Voir `.env.example`.
 
-En **production** et **staging** : `TOKEN_ENCRYPTION_KEY` + `CRON_SECRET`
-(fail-fast au boot). `TOKEN_ENCRYPTION_KEY` est aussi requis pour brancher le
+### Tests
+
+`npm test` / `npm run test:e2e` démarrent (si besoin) un Postgres dédié via
+`docker-compose.test.yml` sur le port **5433** (`BOTLY_TEST_DATABASE_URL`).
+Docker doit tourner. En CI, `DATABASE_URL` du service Postgres est réutilisé.
+
+En **production** et **staging** : `TOKEN_ENCRYPTION_KEY` + `CRON_SECRET` +
+`BOT_RUNTIME_SECRET` (fail-fast au boot). En **production** : `REDIS_URL`
+également obligatoire. `TOKEN_ENCRYPTION_KEY` est aussi requis pour brancher le
 Stripe formation (`sk_` / `whsec_` chiffrés).
 
 Le compose démarre `access-cron` (15 min) + `retention-cron` (1 h).

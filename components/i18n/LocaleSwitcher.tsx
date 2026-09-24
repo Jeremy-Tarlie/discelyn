@@ -1,12 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useTransition } from "react";
 import type { Locale } from "@/i18n/config";
 
 export function LocaleSwitcher({ className = "" }: { className?: string }) {
   const locale = useLocale() as Locale;
+  const t = useTranslations("common");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -26,13 +27,14 @@ export function LocaleSwitcher({ className = "" }: { className?: string }) {
     <div
       className={`inline-flex items-center gap-0.5 rounded-full border border-[color:var(--border)] bg-black/[0.04] p-0.5 text-xs font-semibold dark:bg-black/20 ${className}`}
       role="group"
-      aria-label="Language"
+      aria-label={t("language")}
     >
       {(["fr", "en"] as const).map((code) => (
         <button
           key={code}
           type="button"
           disabled={pending}
+          aria-pressed={locale === code}
           onClick={() => setLocale(code)}
           className={`rounded-full px-2.5 py-1 uppercase transition ${
             locale === code

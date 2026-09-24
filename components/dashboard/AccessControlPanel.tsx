@@ -100,7 +100,14 @@ export function AccessControlPanel({
   }, [botId, t, tc]);
 
   useEffect(() => {
-    void reload();
+    let cancelled = false;
+    void (async () => {
+      await Promise.resolve();
+      if (!cancelled) await reload();
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [reload]);
 
   useEffect(() => {

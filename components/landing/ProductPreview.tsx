@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { useTranslations } from "next-intl";
 
 type Stage = "typing" | "welcome" | "ticket" | "warn" | "pause";
 
@@ -35,22 +36,33 @@ function TypingDots() {
   );
 }
 
+function subscribeReducedMotion(onChange: () => void): () => void {
+  const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+  media.addEventListener("change", onChange);
+  return () => media.removeEventListener("change", onChange);
+}
+
+function getReducedMotionSnapshot(): boolean {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function getReducedMotionServerSnapshot(): boolean {
+  return false;
+}
+
 /**
  * Mock Discord façon concurrents (Ticket Tool / MEE6) :
  * rail serveurs + catégories + messages animés.
  */
 export function ProductPreview() {
+  const t = useTranslations("home.preview");
   const [stageIndex, setStageIndex] = useState(0);
-  const [reduceMotion, setReduceMotion] = useState(false);
+  const reduceMotion = useSyncExternalStore(
+    subscribeReducedMotion,
+    getReducedMotionSnapshot,
+    getReducedMotionServerSnapshot
+  );
   const stage = STAGE_ORDER[stageIndex] ?? "welcome";
-
-  useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReduceMotion(media.matches);
-    const onChange = () => setReduceMotion(media.matches);
-    media.addEventListener("change", onChange);
-    return () => media.removeEventListener("change", onChange);
-  }, []);
 
   useEffect(() => {
     if (reduceMotion) return;
@@ -83,7 +95,6 @@ export function ProductPreview() {
       <div className="absolute -inset-4 rounded-[1.75rem] bg-[#5865F2]/20 blur-3xl md:-inset-6" />
       <div className="relative animate-float-tilt overflow-hidden rounded-2xl border border-white/20 bg-[#1e1f22] shadow-[0_40px_100px_rgba(0,0,0,0.75),0_0_0_1px_rgba(88,101,242,0.15)]">
         <div className="flex h-[22rem] sm:h-[24rem]">
-          {/* Server rail */}
           <div className="flex w-14 shrink-0 flex-col items-center gap-2 bg-[#1e1f22] py-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-signal text-sm font-bold text-ink-950 transition hover:rounded-xl">
               B
@@ -96,48 +107,50 @@ export function ProductPreview() {
             </div>
           </div>
 
-          {/* Channels */}
           <aside className="hidden w-[9.5rem] shrink-0 flex-col bg-[#2b2d31] sm:flex">
             <div className="border-b border-black/20 px-3 py-3">
               <p className="truncate text-sm font-semibold text-white">
-                Formation Ops
+                {t("serverName")}
               </p>
             </div>
             <div className="space-y-3 overflow-hidden p-2 text-[11px]">
               <div>
                 <p className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-wide text-[#949ba4]">
-                  Info
+                  {t("catInfo")}
                 </p>
-                <p className="rounded px-2 py-1 text-[#949ba4]"># bienvenue</p>
-                <p className="rounded px-2 py-1 text-[#949ba4]"># annonces</p>
+                <p className="rounded px-2 py-1 text-[#949ba4]">
+                  {t("chWelcome")}
+                </p>
+                <p className="rounded px-2 py-1 text-[#949ba4]">
+                  {t("chAnnounce")}
+                </p>
               </div>
               <div>
                 <p className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-wide text-[#949ba4]">
-                  Support
+                  {t("catSupport")}
                 </p>
                 <p className="animate-channel-pulse rounded bg-white/10 px-2 py-1 font-medium text-white">
-                  # ticket-42
+                  {t("chTicket")}
                 </p>
               </div>
               <div>
                 <p className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-wide text-[#949ba4]">
-                  Staff
+                  {t("catStaff")}
                 </p>
-                <p className="rounded px-2 py-1 text-[#949ba4]"># mods-log</p>
+                <p className="rounded px-2 py-1 text-[#949ba4]">{t("chMods")}</p>
               </div>
             </div>
           </aside>
 
-          {/* Chat */}
           <div className="flex min-w-0 flex-1 flex-col bg-[#313338]">
             <div className="flex items-center gap-2 border-b border-black/20 px-4 py-3">
               <span className="text-[#949ba4]">#</span>
               <span className="text-sm font-semibold text-white">
-                ticket-42
+                {t("channelTitle")}
               </span>
               <span className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-signal/15 px-2 py-0.5 text-[10px] font-medium text-signal">
                 <span className="h-1.5 w-1.5 animate-live-dot rounded-full bg-signal" />
-                live
+                {t("live")}
               </span>
             </div>
 
@@ -153,15 +166,17 @@ export function ProductPreview() {
                     <p className="text-sm">
                       <span className="font-medium text-signal">Botly</span>
                       <span className="ml-2 text-[10px] text-[#949ba4]">
-                        à l’instant
+                        {t("justNow")}
                       </span>
                     </p>
                     <p className="mt-0.5 text-sm leading-snug text-[#dbdee1]">
-                      Bienvenue promo Mars — rôle{" "}
-                      <span className="rounded bg-[#5865F2]/30 px-1 text-[#c9cdfb]">
-                        @Apprenant
-                      </span>{" "}
-                      attribué.
+                      {t.rich("welcomeMsg", {
+                        role: () => (
+                          <span className="rounded bg-[#5865F2]/30 px-1 text-[#c9cdfb]">
+                            {t("role")}
+                          </span>
+                        ),
+                      })}
                     </p>
                   </div>
                 </div>
@@ -174,10 +189,10 @@ export function ProductPreview() {
                   </div>
                   <div className="min-w-0 flex-1 rounded-lg border-l-4 border-signal bg-[#2b2d31] px-3 py-2">
                     <p className="text-xs font-semibold text-signal">
-                      Ticket ouvert
+                      {t("ticketTitle")}
                     </p>
                     <p className="mt-1 text-sm text-[#dbdee1]">
-                      Salon privé créé. Staff notifié. Historique conservé.
+                      {t("ticketBody")}
                     </p>
                   </div>
                 </div>
@@ -190,11 +205,9 @@ export function ProductPreview() {
                   </div>
                   <div className="min-w-0 flex-1 rounded-lg border-l-4 border-warn bg-[#2b2d31] px-3 py-2">
                     <p className="text-xs font-semibold text-warn">
-                      /warn · enregistré
+                      {t("warnTitle")}
                     </p>
-                    <p className="mt-1 text-sm text-[#dbdee1]">
-                      Infractions exportables (Ops/Scale) — utile audit / litige.
-                    </p>
+                    <p className="mt-1 text-sm text-[#dbdee1]">{t("warnBody")}</p>
                   </div>
                 </div>
               ) : null}
@@ -202,7 +215,7 @@ export function ProductPreview() {
 
             <div className="border-t border-black/10 px-3 pb-3 pt-2">
               <div className="rounded-lg bg-[#383a40] px-3 py-2.5 text-sm text-[#949ba4]">
-                Message #ticket-42
+                {t("composer")}
               </div>
             </div>
           </div>

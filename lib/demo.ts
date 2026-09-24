@@ -40,11 +40,11 @@ export function assertStripeKeyAllowedForEnvironment(secretKey: string): void {
   }
   if (
     env === "production" &&
-    process.env.STRICT_STRIPE_LIVE === "1" &&
-    secretKey.startsWith("sk_test_")
+    secretKey.startsWith("sk_test_") &&
+    process.env.ALLOW_STRIPE_TEST_IN_PROD !== "1"
   ) {
     throw new Error(
-      "STRICT_STRIPE_LIVE=1 : clé Stripe test refusée en production."
+      "APP_ENV=production : clé Stripe test (sk_test_) refusée. Définir ALLOW_STRIPE_TEST_IN_PROD=1 uniquement pour un dry-run temporaire."
     );
   }
 }

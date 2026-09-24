@@ -6,7 +6,7 @@ import {
   canUseProduct,
 } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
-import { guildGrantSchema } from "@/lib/access-validation";
+import { guildGrantSchemaFor } from "@/lib/access-validation";
 import { rateLimit } from "@/lib/rate-limit";
 import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     );
   }
 
-  const parsed = guildGrantSchema.safeParse(body);
+  const parsed = guildGrantSchemaFor(locale).safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: parsed.error.issues[0]?.message ?? tApi(locale, "invalidData") },

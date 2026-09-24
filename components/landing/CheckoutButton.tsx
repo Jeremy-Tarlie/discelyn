@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import type { PlanId } from "@/lib/plans";
 
 type CheckoutOfferId = PlanId | "SETUP" | "DIAGNOSTIC";
@@ -14,6 +15,8 @@ export function CheckoutButton({
   label: string;
   variant?: "primary" | "ghost";
 }) {
+  const t = useTranslations("pricing");
+  const tc = useTranslations("common");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,14 +42,14 @@ export function CheckoutButton({
           window.location.assign("/login");
           return;
         }
-        setError(data.error ?? "Erreur Stripe");
+        setError(data.error ?? t("checkoutFailed"));
         setLoading(false);
         return;
       }
 
       window.location.assign(data.url);
     } catch {
-      setError("Réseau indisponible");
+      setError(tc("networkError"));
       setLoading(false);
     }
   }
@@ -64,9 +67,9 @@ export function CheckoutButton({
         disabled={loading}
         className={`w-full rounded-lg px-5 py-3 text-sm font-semibold transition duration-300 disabled:opacity-60 ${classes}`}
       >
-        {loading ? "Redirection…" : label}
+        {loading ? tc("redirecting") : label}
       </button>
-      {error ? <p className="text-center text-xs text-red-400">{error}</p> : null}
+      {error ? <p className="text-center text-xs text-warn">{error}</p> : null}
     </div>
   );
 }

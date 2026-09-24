@@ -5,8 +5,16 @@ import {
   LOCALE_COOKIE,
   LOCALE_COOKIE_MAX_AGE,
 } from "@/i18n/config";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
+  const limited = await rateLimit(request, {
+    namespace: "locale",
+    limit: 30,
+    windowMs: 60_000,
+  });
+  if (!limited.ok) return limited.response;
+
   let body: unknown;
   try {
     body = await request.json();

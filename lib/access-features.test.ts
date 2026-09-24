@@ -4,13 +4,7 @@ import {
   isProductSoldOut,
   parseOnboardingSteps,
 } from "@/lib/access-seats-pure";
-
-const OUTBOUND_EVENTS = [
-  "payment_received",
-  "role_granted",
-  "revoked",
-  "expired",
-] as const;
+import { OUTBOUND_EVENTS } from "@/lib/outbound-webhooks";
 
 describe("access seats helpers", () => {
   it("detects sold out", () => {
@@ -31,6 +25,7 @@ describe("outbound webhook signing", () => {
   it("includes expected event names", () => {
     expect(OUTBOUND_EVENTS).toContain("payment_received");
     expect(OUTBOUND_EVENTS).toContain("role_granted");
+    expect(OUTBOUND_EVENTS).toContain("sold_out");
   });
 
   it("hmac is stable", () => {

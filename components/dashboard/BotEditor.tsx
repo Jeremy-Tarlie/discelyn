@@ -152,6 +152,14 @@ export function BotEditor({
     ]);
   }
 
+  function removeReactionRole(index: number) {
+    setReactionRoles((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function removeCommand(index: number) {
+    setCommands((prev) => prev.filter((_, i) => i !== index));
+  }
+
   async function save() {
     setSaving(true);
     setError(null);
@@ -229,7 +237,7 @@ export function BotEditor({
           {t("guildLimit", { count: plan.maxGuilds })}
         </span>
         {lastError ? (
-          <span className="mt-1 block text-red-400">{lastError}</span>
+          <span className="mt-1 block text-warn">{lastError}</span>
         ) : null}
       </div>
 
@@ -530,7 +538,10 @@ export function BotEditor({
         )}
         <div className="space-y-3">
           {reactionRoles.map((row, index) => (
-            <div key={index} className="grid gap-2 sm:grid-cols-3">
+            <div
+              key={index}
+              className="grid gap-2 sm:grid-cols-[1fr_1fr_1fr_auto]"
+            >
               <input
                 value={row.messageId}
                 onChange={(e) => {
@@ -540,6 +551,7 @@ export function BotEditor({
                 }}
                 placeholder={te("messageIdPlaceholder")}
                 className={fieldClass}
+                aria-label={te("messageIdPlaceholder")}
               />
               <input
                 value={row.emoji}
@@ -550,6 +562,7 @@ export function BotEditor({
                 }}
                 placeholder={te("emojiPlaceholder")}
                 className={fieldClass}
+                aria-label={te("emojiPlaceholder")}
               />
               <input
                 value={row.roleId}
@@ -560,7 +573,16 @@ export function BotEditor({
                 }}
                 placeholder={te("roleIdPlaceholder")}
                 className={fieldClass}
+                aria-label={te("roleIdPlaceholder")}
               />
+              <button
+                type="button"
+                onClick={() => removeReactionRole(index)}
+                className="rounded-full border border-line px-3 py-2 text-xs text-warn hover:border-warn"
+                aria-label={te("remove")}
+              >
+                {te("remove")}
+              </button>
             </div>
           ))}
         </div>
@@ -599,7 +621,10 @@ export function BotEditor({
         )}
         <div className="space-y-3">
           {commands.map((command, index) => (
-            <div key={index} className="grid gap-2 sm:grid-cols-2">
+            <div
+              key={index}
+              className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]"
+            >
               <input
                 value={command.name}
                 onChange={(e) => {
@@ -609,6 +634,7 @@ export function BotEditor({
                 }}
                 placeholder={te("commandNamePlaceholder")}
                 className={fieldClass}
+                aria-label={te("commandNamePlaceholder")}
               />
               <input
                 value={command.response}
@@ -619,7 +645,16 @@ export function BotEditor({
                 }}
                 placeholder={te("commandResponsePlaceholder")}
                 className={fieldClass}
+                aria-label={te("commandResponsePlaceholder")}
               />
+              <button
+                type="button"
+                onClick={() => removeCommand(index)}
+                className="rounded-full border border-line px-3 py-2 text-xs text-warn hover:border-warn"
+                aria-label={te("remove")}
+              >
+                {te("remove")}
+              </button>
             </div>
           ))}
         </div>
@@ -635,7 +670,7 @@ export function BotEditor({
           {saving ? t("saving") : te("save")}
         </button>
         {message ? <span className="text-sm text-signal">{message}</span> : null}
-        {error ? <span className="text-sm text-red-400">{error}</span> : null}
+        {error ? <span className="text-sm text-warn">{error}</span> : null}
       </div>
       </>
       )}

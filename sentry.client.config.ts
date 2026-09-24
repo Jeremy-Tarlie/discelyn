@@ -20,5 +20,6 @@ if (dsn && readConsent() === "all") {
     dsn,
     tracesSampleRate: 0.05,
     replaysSessionSampleRate: 0,
+    environment: process.env.NEXT_PUBLIC_APP_ENV || process.env.NODE_ENV,
   });
 }

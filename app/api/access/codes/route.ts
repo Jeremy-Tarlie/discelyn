@@ -6,7 +6,7 @@ import {
   canUseProduct,
 } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
-import { accessCodeCreateSchema } from "@/lib/access-validation";
+import { accessCodeCreateSchemaFor } from "@/lib/access-validation";
 import {
   accessCodePrefix,
   hashAccessCode,
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const parsed = accessCodeCreateSchema.safeParse(body);
+  const parsed = accessCodeCreateSchemaFor(locale).safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: parsed.error.issues[0]?.message ?? tApi(locale, "invalidData") },

@@ -33,7 +33,7 @@ export async function getOrgStripeClient(userId: string): Promise<Stripe | null>
     select: { stripeSecretKey: true },
   });
   if (!config?.stripeSecretKey) return null;
-  const key = requireUnsealSecret(config.stripeSecretKey, "sk_ formation");
+  const key = requireUnsealSecret(config.stripeSecretKey, "sk_");
   return stripeFromSecretKey(key);
 }
 

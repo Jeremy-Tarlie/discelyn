@@ -38,20 +38,49 @@ export function planFromMetadata(
   return null;
 }
 
+export type MappedSubscriptionStatus =
+  | "ACTIVE"
+  | "PAST_DUE"
+  | "CANCELED"
+  | "INCOMPLETE"
+  | "TRIALING";
+
+/**
+ * Mappe un statut Stripe → enum Prisma.
+ * Statut inconnu → INCOMPLETE (jamais ACTIVE par défaut).
+ */
+export function mapStripeSubscriptionStatus(
+  status: string
+): MappedSubscriptionStatus {
+  const statusMap: Record<string, MappedSubscriptionStatus> = {
+    active: "ACTIVE",
+    past_due: "PAST_DUE",
+    canceled: "CANCELED",
+    incomplete: "INCOMPLETE",
+    incomplete_expired: "CANCELED",
+    trialing: "TRIALING",
+    unpaid: "PAST_DUE",
+    paused: "CANCELED",
+  };
+  return statusMap[status] ?? "INCOMPLETE";
+}
+
 /**
  * Résout le plan d’un abonnement Stripe.
- * Si price/metadata inconnus, conserve le plan existant s’il est valide
- * (y compris STARTER), sinon FREE.
+ * Priorité : price ID (source de vérité) → metadata → plan existant → FREE.
  */
 export function resolveSubscriptionPlan(input: {
   metadata: Stripe.Metadata | null | undefined;
   priceId: string | null | undefined;
   existingPlan: string | null | undefined;
 }): { plan: PlanId; conserved: boolean } {
-  const resolved =
-    planFromMetadata(input.metadata) ?? planFromPriceId(input.priceId);
-  if (resolved) {
-    return { plan: resolved, conserved: false };
+  const fromPrice = planFromPriceId(input.priceId);
+  if (fromPrice) {
+    return { plan: fromPrice, conserved: false };
+  }
+  const fromMeta = planFromMetadata(input.metadata);
+  if (fromMeta) {
+    return { plan: fromMeta, conserved: false };
   }
   if (isPlanId(input.existingPlan)) {
     return { plan: input.existingPlan, conserved: true };

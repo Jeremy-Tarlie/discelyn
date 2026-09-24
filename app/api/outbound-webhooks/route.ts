@@ -6,12 +6,14 @@ import {
   canUseProduct,
 } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
-import { outboundWebhookSchema } from "@/lib/access-validation";
+import { outboundWebhookSchemaFor } from "@/lib/access-validation";
 import { newOutboundWebhookSecret } from "@/lib/outbound-webhooks";
+import { listOutboundWebhooksForUser } from "@/lib/dashboard-data";
 import { validateOutboundWebhookUrl } from "@/lib/webhook-url-safety";
 import { rateLimit } from "@/lib/rate-limit";
 import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
+import { requireSealToken, unsealToken } from "@/lib/token-crypto";
 
 export const runtime = "nodejs";
 
@@ -25,25 +27,8 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const webhooks = await prisma.orgOutboundWebhook.findMany({
-    where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      url: true,
-      events: true,
-      active: true,
-      secret: true,
-      createdAt: true,
-    },
-  });
-
-  return NextResponse.json({
-    webhooks: webhooks.map((w) => ({
-      ...w,
-      createdAt: w.createdAt.toISOString(),
-    })),
-  });
+  const webhooks = await listOutboundWebhooksForUser(user.id);
+  return NextResponse.json({ webhooks });
 }
 
 export async function POST(request: NextRequest) {
@@ -82,7 +67,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const parsed = outboundWebhookSchema.safeParse(body);
+  const parsed = outboundWebhookSchemaFor(locale).safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: parsed.error.issues[0]?.message ?? tApi(locale, "invalidData") },
@@ -95,17 +80,38 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: urlCheck.error }, { status: 400 });
   }
 
+  let sealedSecret: string;
+  try {
+    sealedSecret = requireSealToken(
+      newOutboundWebhookSecret(),
+      "outbound webhook secret"
+    );
+  } catch {
+    return NextResponse.json(
+      { error: tApi(locale, "tokenEncryptionRequired") },
+      { status: 500 }
+    );
+  }
+
   const webhook = await prisma.orgOutboundWebhook.create({
     data: {
       userId: user.id,
       url: urlCheck.url,
       events: parsed.data.events,
       active: parsed.data.active,
-      secret: newOutboundWebhookSecret(),
+      secret: sealedSecret,
     },
   });
 
-  return NextResponse.json({ webhook }, { status: 201 });
+  return NextResponse.json(
+    {
+      webhook: {
+        ...webhook,
+        secret: unsealToken(webhook.secret) ?? webhook.secret,
+      },
+    },
+    { status: 201 }
+  );
 }
 
 export async function DELETE(request: NextRequest) {

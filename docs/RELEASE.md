@@ -10,7 +10,7 @@ npm run typecheck
 npm run typecheck:runtime
 npm run lint
 npm test
-npm run test:e2e          # money path DB (nécessite DATABASE_URL)
+npm run test:e2e          # money path DB (démarre Postgres test :5433 si besoin)
 npm run build
 npm --prefix bot-runtime run build
 npm run preflight:prod    # --env-file=.env
@@ -37,7 +37,7 @@ npm run backup:db         # snapshot avant cutover
 | `STRIPE_SECRET_KEY` (`sk_live_`) | SaaS Botly |
 | `STRIPE_WEBHOOK_SECRET` | webhook SaaS |
 | `DISCORD_BOT_TOKEN` | bot plateforme |
-| `REDIS_URL` | rate-limit multi-instance (fortement recommandé) |
+| `REDIS_URL` | rate-limit multi-instance (**obligatoire** en production) |
 | `SENTRY_DSN` | erreurs (recommandé) |
 
 Ne jamais committer `.env`. Référence : `.env.example`.

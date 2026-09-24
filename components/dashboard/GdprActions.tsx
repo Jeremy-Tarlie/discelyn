@@ -78,13 +78,13 @@ export function GdprActions() {
           type="button"
           disabled={busy}
           onClick={() => void deleteAccount()}
-          className="rounded-full border border-red-500/40 px-4 py-2 text-sm text-red-300 hover:border-red-400 disabled:opacity-50"
+          className="rounded-full border border-warn/40 px-4 py-2 text-sm text-warn hover:border-warn disabled:opacity-50"
         >
           {t("deleteAccount")}
         </button>
       </div>
       {message ? <p className="text-sm text-signal">{message}</p> : null}
-      {error ? <p className="text-sm text-red-400">{error}</p> : null}
+      {error ? <p className="text-sm text-warn">{error}</p> : null}
     </section>
   );
 }

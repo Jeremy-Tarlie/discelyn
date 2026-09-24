@@ -5,6 +5,8 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useId,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -38,13 +40,25 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [optional, setOptional] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+  const titleId = useId();
   const t = useTranslations("cookies");
 
   useEffect(() => {
-    const current = readConsentFromDocument();
-    setConsentState(current);
-    setOptional(current === "all");
-    setReady(true);
+    let cancelled = false;
+    void (async () => {
+      await Promise.resolve();
+      if (cancelled) return;
+      const current = readConsentFromDocument();
+      setConsentState(current);
+      setOptional(current === "all");
+      setReady(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const applyConsent = useCallback((value: ConsentValue) => {
@@ -58,6 +72,53 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
     setOptional(consent === "all");
     setPrefsOpen(true);
   }, [consent]);
+
+  const closePrefs = useCallback(() => {
+    setPrefsOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (!prefsOpen) return;
+
+    previouslyFocusedRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+
+    const focusTimer = window.setTimeout(() => {
+      closeButtonRef.current?.focus();
+    }, 0);
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setPrefsOpen(false);
+        return;
+      }
+      if (event.key !== "Tab" || !dialogRef.current) return;
+      const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!first || !last) return;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.clearTimeout(focusTimer);
+      window.removeEventListener("keydown", onKeyDown);
+      previouslyFocusedRef.current?.focus();
+    };
+  }, [prefsOpen]);
 
   return (
     <ConsentContext.Provider
@@ -106,11 +167,17 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
           className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 p-4 sm:items-center"
           role="dialog"
           aria-modal
-          aria-labelledby="cookie-prefs-title"
+          aria-labelledby={titleId}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closePrefs();
+          }}
         >
-          <div className="w-full max-w-md rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-6 shadow-2xl">
+          <div
+            ref={dialogRef}
+            className="w-full max-w-md rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-6 shadow-2xl"
+          >
             <h2
-              id="cookie-prefs-title"
+              id={titleId}
               className="font-display text-lg font-semibold text-[color:var(--page-fg)]"
             >
               {t("prefsTitle")}
@@ -148,8 +215,9 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
             </ul>
             <div className="mt-6 flex flex-wrap justify-end gap-2">
               <button
+                ref={closeButtonRef}
                 type="button"
-                onClick={() => setPrefsOpen(false)}
+                onClick={closePrefs}
                 className="rounded-full px-4 py-2.5 text-sm text-[color:var(--muted)] hover:text-[color:var(--page-fg)]"
               >
                 {t("close")}

@@ -50,6 +50,7 @@ model User {
   affiliates        Affiliate[]
   outboundWebhooks  OrgOutboundWebhook[]
   accessCodesCreated AccessCode[]
+  oversoldEvents    AccessOversoldEvent[]
 
   @@index([discordId])
 }
@@ -136,6 +137,7 @@ model Bot {
   accessProducts  AccessProduct[]
   learnerAccesses LearnerAccess[]
   guildGrants     AccessProductGuildGrant[]
+  oversoldEvents  AccessOversoldEvent[]
 
   @@index([userId])
   @@index([status])
@@ -269,6 +271,7 @@ model AccessProduct {
   accesses    LearnerAccess[]
   guildGrants AccessProductGuildGrant[]
   accessCodes AccessCode[]
+  oversoldEvents AccessOversoldEvent[]
 
   @@unique([userId, stripePriceId])
   @@index([botId])
@@ -440,4 +443,41 @@ model LearnerAccessEvent {
 
   @@index([learnerAccessId, createdAt])
   @@index([type, createdAt])
+}
+
+/// Paiement encaissé alors que le produit n’a plus de siège (oversell).
+model AccessOversoldEvent {
+  id                      String   @id @default(cuid())
+  userId                  String
+  accessProductId         String
+  botId                   String
+  stripeCheckoutSessionId String   @unique
+  stripePaymentIntentId   String?
+  customerEmail           String?
+  amountTotal             Int?
+  currency                String?
+  /// pending | refunded | refund_failed | skipped
+  refundStatus            String   @default("pending")
+  stripeRefundId          String?
+  refundError             String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product AccessProduct @relation(fields: [accessProductId], references: [id], onDelete: Cascade)
+  bot     Bot           @relation(fields: [botId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([accessProductId])
+  @@index([refundStatus])
+}
+
+/// Idempotency des webhooks Stripe (plateforme Botly + formation orga).
+model StripeProcessedEvent {
+  id          String   @id @default(cuid())
+  eventId     String   @unique
+  type        String
+  processedAt DateTime @default(now())
+
+  @@index([processedAt])
 }

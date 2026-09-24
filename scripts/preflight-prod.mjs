@@ -7,6 +7,8 @@
  *
  * Exit 0 si OK, 1 si bloquant.
  * Ne lit jamais les valeurs des secrets (présence / format seulement).
+ *
+ * Aligné avec instrumentation.ts (boot fail-fast).
  */
 
 const appEnv = (process.env.APP_ENV || "").toLowerCase() || "development";
@@ -21,19 +23,24 @@ const requiredAlways = [
   "DISCORD_BOT_TOKEN",
 ];
 
+/** Même liste que le boot staging/prod (instrumentation.ts). */
 const requiredStagingProd = [
   "TOKEN_ENCRYPTION_KEY",
   "CRON_SECRET",
   "BOT_RUNTIME_SECRET",
 ];
 
-const requiredProd = ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"];
+const requiredProd = [
+  "STRIPE_SECRET_KEY",
+  "STRIPE_WEBHOOK_SECRET",
+  "REDIS_URL",
+];
 
 const recommended = [
   "BOT_RUNTIME_URL",
   "WEB_INTERNAL_URL",
-  "REDIS_URL",
   "SENTRY_DSN",
+  "NEXT_PUBLIC_APP_ENV",
 ];
 
 function present(name) {
@@ -93,6 +100,10 @@ if (appEnv !== "production" && present("STRIPE_SECRET_KEY")) {
 
 if (present("BOT_RUNTIME_URL") && !present("BOT_RUNTIME_SECRET")) {
   errors.push("BOT_RUNTIME_SECRET requis si BOT_RUNTIME_URL est défini");
+}
+
+if (appEnv === "staging" && !present("REDIS_URL")) {
+  warnings.push("recommandé (staging): REDIS_URL — obligatoire en production");
 }
 
 for (const name of recommended) {

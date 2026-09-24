@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { accessCodeRedeemSchema } from "@/lib/access-validation";
+import { accessCodeRedeemSchemaFor } from "@/lib/access-validation";
 import {
   claimUrl,
   openLearnerAccessFromCode,
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const parsed = accessCodeRedeemSchema.safeParse(body);
+  const parsed = accessCodeRedeemSchemaFor(locale).safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: parsed.error.issues[0]?.message ?? tApi(locale, "invalidData") },

@@ -3,9 +3,11 @@ import { randomBytes } from "node:crypto";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { daysFromNow } from "@/lib/clock";
 import { SiteHeader } from "@/components/landing/SiteHeader";
 import { SiteFooter } from "@/components/landing/SiteFooter";
 import { LearnerPortalButton } from "@/components/claim/LearnerPortalButton";
+import { ClaimSessionPending } from "@/components/claim/ClaimSessionPending";
 
 type PageProps = {
   params: Promise<{ sessionId: string }>;
@@ -23,6 +25,13 @@ async function findAccess(sessionId: string) {
   });
 }
 
+async function findOversold(sessionId: string) {
+  return prisma.accessOversoldEvent.findUnique({
+    where: { stripeCheckoutSessionId: sessionId },
+    select: { refundStatus: true },
+  });
+}
+
 /**
  * Success URL Stripe : /claim/session/{CHECKOUT_SESSION_ID}
  */
@@ -32,20 +41,42 @@ export default async function ClaimBySessionPage({ params }: PageProps) {
 
   let access = await findAccess(sessionId);
   if (!access) {
-    await new Promise((r) => setTimeout(r, 2000));
+    await new Promise((r) => setTimeout(r, 1500));
     access = await findAccess(sessionId);
   }
 
   if (!access) {
+    const oversold = await findOversold(sessionId);
+    if (oversold) {
+      const refunded = oversold.refundStatus === "refunded";
+      return (
+        <div className="min-h-screen bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
+          <SiteHeader signedIn={false} />
+          <main className="mx-auto max-w-lg px-6 py-16">
+            <h1 className="font-display text-3xl font-bold">
+              {t("sessionSoldOutTitle")}
+            </h1>
+            <p className="mt-3 text-soft">
+              {refunded
+                ? t("sessionSoldOutRefunded")
+                : t("sessionSoldOutBody")}
+            </p>
+            <p className="mt-6 text-sm text-soft">
+              <Link href="/" className="underline">
+                {t("backHome")}
+              </Link>
+            </p>
+          </main>
+          <SiteFooter />
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
         <SiteHeader signedIn={false} />
         <main className="mx-auto max-w-lg px-6 py-16">
-          <h1 className="font-display text-3xl font-bold">
-            {t("sessionPendingTitle")}
-          </h1>
-          <p className="mt-3 text-soft">{t("sessionPendingBody")}</p>
-          <meta httpEquiv="refresh" content="3" />
+          <ClaimSessionPending />
           <p className="mt-6 text-sm text-soft">
             <Link href="/" className="underline">
               {t("backHome")}
@@ -102,7 +133,7 @@ export default async function ClaimBySessionPage({ params }: PageProps) {
       where: { id: access.id },
       data: {
         claimToken: token,
-        claimTokenExpiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+        claimTokenExpiresAt: daysFromNow(14),
         status: "PENDING_CLAIM",
       },
     });

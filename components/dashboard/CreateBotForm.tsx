@@ -79,7 +79,7 @@ export function CreateBotForm({ canCreate }: { canCreate: boolean }) {
           htmlFor="description"
           className="mb-1 block text-sm text-soft"
         >
-          Description
+          {t("botDescription")}
         </label>
         <textarea
           id="description"
@@ -90,7 +90,7 @@ export function CreateBotForm({ canCreate }: { canCreate: boolean }) {
           rows={3}
         />
       </div>
-      {error ? <p className="text-sm text-red-400">{error}</p> : null}
+      {error ? <p className="text-sm text-warn">{error}</p> : null}
       <button
         type="submit"
         disabled={loading}

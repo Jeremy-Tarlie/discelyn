@@ -314,7 +314,7 @@ export function BotGuildLinkForm({
               </form>
 
               {message ? <p className={messageClass}>{message}</p> : null}
-              {error ? <p className="text-sm text-red-400">{error}</p> : null}
+              {error ? <p className="text-sm text-warn">{error}</p> : null}
             </div>
           </div>
         </div>
@@ -385,7 +385,7 @@ export function BotGuildLinkForm({
               </div>
 
               {message ? <p className={messageClass}>{message}</p> : null}
-              {error ? <p className="text-sm text-red-400">{error}</p> : null}
+              {error ? <p className="text-sm text-warn">{error}</p> : null}
             </div>
           </div>
         </div>
@@ -416,7 +416,7 @@ export function BotGuildLinkForm({
         </button>
       </div>
       {message ? <p className={`mt-2 ${messageClass}`}>{message}</p> : null}
-      {error ? <p className="mt-2 text-sm text-red-400">{error}</p> : null}
+      {error ? <p className="mt-2 text-sm text-warn">{error}</p> : null}
     </section>
   );
 }

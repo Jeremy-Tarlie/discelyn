@@ -1,12 +1,14 @@
 import { createHmac, randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { assertSafeOutboundWebhookUrl } from "@/lib/webhook-url-safety";
+import { unsealToken } from "@/lib/token-crypto";
 
 export const OUTBOUND_EVENTS = [
   "payment_received",
   "role_granted",
   "revoked",
   "expired",
+  "sold_out",
 ] as const;
 
 export type OutboundEvent = (typeof OUTBOUND_EVENTS)[number];
@@ -68,7 +70,12 @@ export async function dispatchOutboundWebhooks(input: {
     for (let i = 0; i < 2; i += 1) {
       attempts += 1;
       try {
-        const signature = signPayload(hook.secret, body);
+        const plainSecret = unsealToken(hook.secret);
+        if (typeof plainSecret !== "string" || plainSecret.length === 0) {
+          lastError = "secret_unseal_failed";
+          break;
+        }
+        const signature = signPayload(plainSecret, body);
         const res = await fetch(safeUrl, {
           method: "POST",
           headers: {

@@ -76,33 +76,57 @@ export function LeadForm({
 
   return (
     <form onSubmit={(e) => void onSubmit(e)} className="space-y-3">
-      <input
-        required
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder={t("email")}
-        className={fieldClass}
-      />
-      <input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder={t("name")}
-        className={fieldClass}
-      />
-      <input
-        value={company}
-        onChange={(e) => setCompany(e.target.value)}
-        placeholder={t("company")}
-        className={fieldClass}
-      />
-      <textarea
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        placeholder={t("message")}
-        rows={3}
-        className={fieldClass}
-      />
+      <div>
+        <label htmlFor="lead-email" className="sr-only">
+          {t("email")}
+        </label>
+        <input
+          id="lead-email"
+          required
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder={t("email")}
+          className={fieldClass}
+        />
+      </div>
+      <div>
+        <label htmlFor="lead-name" className="sr-only">
+          {t("name")}
+        </label>
+        <input
+          id="lead-name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={t("name")}
+          className={fieldClass}
+        />
+      </div>
+      <div>
+        <label htmlFor="lead-company" className="sr-only">
+          {t("company")}
+        </label>
+        <input
+          id="lead-company"
+          value={company}
+          onChange={(e) => setCompany(e.target.value)}
+          placeholder={t("company")}
+          className={fieldClass}
+        />
+      </div>
+      <div>
+        <label htmlFor="lead-message" className="sr-only">
+          {t("message")}
+        </label>
+        <textarea
+          id="lead-message"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder={t("message")}
+          rows={3}
+          className={fieldClass}
+        />
+      </div>
       <label className="flex items-start gap-2.5 text-xs leading-relaxed text-[color:var(--muted)]">
         <input
           type="checkbox"
@@ -128,7 +152,7 @@ export function LeadForm({
       >
         {loading ? t("sending") : t("submit")}
       </button>
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? <p className="text-sm text-warn">{error}</p> : null}
       <p className="text-[11px] leading-normal text-[color:var(--muted)]">
         <Link
           href="/privacy"

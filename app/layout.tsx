@@ -42,6 +42,7 @@ export default async function RootLayout({
   const theme = await getRequestTheme();
   const showBanner = shouldShowEnvironmentBanner();
   const appEnv = getAppEnvironment();
+  const tCommon = await getTranslations("common");
 
   return (
     <html
@@ -56,7 +57,7 @@ export default async function RootLayout({
             role="status"
             className="border-b border-warn/40 bg-warn/15 px-4 py-2 text-center text-sm text-[#1a1c21] dark:text-mist-100"
           >
-            Environment {appEnv} — Stripe test mode only (no sk_live_).
+            {tCommon("envBanner", { env: appEnv })}
           </div>
         ) : null}
         <Providers locale={locale} messages={messages}>

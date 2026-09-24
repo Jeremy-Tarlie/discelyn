@@ -5,8 +5,16 @@ import {
   THEME_COOKIE,
   THEME_COOKIE_MAX_AGE,
 } from "@/i18n/config";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
+  const limited = await rateLimit(request, {
+    namespace: "theme",
+    limit: 30,
+    windowMs: 60_000,
+  });
+  if (!limited.ok) return limited.response;
+
   let body: unknown;
   try {
     body = await request.json();
@@ -31,6 +39,7 @@ export async function POST(request: NextRequest) {
     path: "/",
     maxAge: THEME_COOKIE_MAX_AGE,
     sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
   });
   return response;
 }

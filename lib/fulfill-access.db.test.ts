@@ -1,13 +1,15 @@
 /**
  * Test DB réel : fulfillDiscordAccess + grantPendingOnJoin multi-guild.
  * Discord est mocké ; Prisma écrit vraiment dans DATABASE_URL.
- *
- * Skip si DATABASE_URL absent (local sans Postgres).
- * En CI : service Postgres + migrate deploy + ce fichier.
+ * DATABASE_URL est obligatoire (sinon échec, jamais de skip).
  */
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
-const runDb = Boolean(process.env.DATABASE_URL);
+if (!process.env.DATABASE_URL) {
+  throw new Error(
+    "DATABASE_URL obligatoire pour fulfill-access.db.test.ts (Postgres requis)"
+  );
+}
 
 const mockGrantGuildRole = vi.fn();
 const mockCreateInvite = vi.fn();
@@ -27,7 +29,7 @@ vi.mock("@/lib/outbound-webhooks", () => ({
   dispatchOutboundWebhooks: (...args: unknown[]) => mockDispatch(...args),
 }));
 
-describe.runIf(runDb)("fulfill + join multi-guild (DB)", () => {
+describe("fulfill + join multi-guild (DB)", () => {
   const suffix = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const guildA = "111111111111111111";
   const guildB = "222222222222222222";
@@ -175,11 +177,5 @@ describe.runIf(runDb)("fulfill + join multi-guild (DB)", () => {
     expect(row.status).toBe("ACTIVE");
     expect(row.inviteUrl).toBeNull();
     expect(row.grantedAt).not.toBeNull();
-  });
-});
-
-describe.runIf(!runDb)("fulfill + join multi-guild (DB skipped)", () => {
-  it("skip — DATABASE_URL absent", () => {
-    expect(runDb).toBe(false);
   });
 });

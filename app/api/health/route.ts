@@ -6,8 +6,8 @@ import { fetchPlatformBotIdentity } from "@/lib/discord";
 export const dynamic = "force-dynamic";
 
 type PlatformBotHealth =
-  | { status: "ok"; username: string }
-  | { status: "error"; error: string }
+  | { status: "ok" }
+  | { status: "error" }
   | { status: "skipped" };
 
 let platformBotCache: {
@@ -23,8 +23,8 @@ async function pingPlatformBot(): Promise<PlatformBotHealth> {
   }
   const identity = await fetchPlatformBotIdentity();
   const value: PlatformBotHealth = identity.ok
-    ? { status: "ok", username: identity.bot.username }
-    : { status: "error", error: identity.error };
+    ? { status: "ok" }
+    : { status: "error" };
   platformBotCache = { at: now, value };
   return value;
 }
@@ -73,7 +73,10 @@ async function pingRedis(): Promise<"ok" | "error" | "skipped"> {
   }
 }
 
-/** Health read-only — pas de side-effects (purges → /api/cron/retention). */
+/**
+ * Health read-only — pas de side-effects.
+ * Ne divulgue pas la présence/absence de secrets (encryption, cron).
+ */
 export async function GET() {
   try {
     await prisma.$queryRaw`SELECT 1`;
@@ -88,29 +91,14 @@ export async function GET() {
     const status =
       runtimeDown || redisDown || botDown ? "degraded" : "ok";
 
-    const appEnv = (process.env.APP_ENV || "development").toLowerCase();
-    const ops = {
-      appEnv,
-      encryption: process.env.TOKEN_ENCRYPTION_KEY
-        ? "configured"
-        : "missing",
-      cron: process.env.CRON_SECRET ? "configured" : "missing",
-      webInternal: Boolean(
-        process.env.WEB_INTERNAL_URL ||
-          process.env.NEXTAUTH_URL ||
-          process.env.NEXT_PUBLIC_APP_URL
-      ),
-    };
-
     return NextResponse.json(
       {
         status,
         service: "botly-web",
         db: "ok",
         redis,
-        runtime,
-        platformBot,
-        ops,
+        runtime: { status: runtime.status, ready: runtime.ready },
+        platformBot: { status: platformBot.status },
         time: new Date().toISOString(),
       },
       { status: 200 }

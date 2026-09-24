@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { currentTimeMs } from "@/lib/clock";
 import { SiteHeader } from "@/components/landing/SiteHeader";
 import { SiteFooter } from "@/components/landing/SiteFooter";
 
@@ -14,6 +15,17 @@ function firstParam(
 ): string | undefined {
   if (Array.isArray(value)) return value[0];
   return value;
+}
+
+function isClaimTokenOpen(
+  status: string,
+  expiresAt: Date | null,
+  nowMs: number
+): boolean {
+  return (
+    status === "PENDING_CLAIM" &&
+    (expiresAt === null || expiresAt.getTime() >= nowMs)
+  );
 }
 
 export default async function ClaimPage({ params, searchParams }: PageProps) {
@@ -60,11 +72,14 @@ export default async function ClaimPage({ params, searchParams }: PageProps) {
     access?.product.brandColor ?? orgBrand?.primaryColor ?? "#5865F2";
   const supportUrl = orgBrand?.supportUrl ?? null;
 
+  // Horodatage après les awaits Prisma : la page est déjà dynamique.
   const canClaim =
     Boolean(access) &&
-    access!.status === "PENDING_CLAIM" &&
-    (access!.claimTokenExpiresAt === null ||
-      access!.claimTokenExpiresAt.getTime() >= Date.now());
+    isClaimTokenOpen(
+      access!.status,
+      access!.claimTokenExpiresAt,
+      currentTimeMs()
+    );
 
   const showSuccess = ok === "active" || ok === "join";
 

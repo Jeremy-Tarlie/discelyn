@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useTransition } from "react";
 import type { Theme } from "@/i18n/config";
 
@@ -11,6 +12,7 @@ export function ThemeSwitcher({
   theme: Theme;
   className?: string;
 }) {
+  const t = useTranslations("common");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -32,7 +34,7 @@ export function ThemeSwitcher({
     <div
       className={`inline-flex items-center gap-0.5 rounded-full border border-[color:var(--border)] bg-black/[0.04] p-0.5 text-xs font-semibold dark:bg-black/20 ${className}`}
       role="group"
-      aria-label="Theme"
+      aria-label={t("theme")}
     >
       <button
         type="button"
@@ -45,7 +47,7 @@ export function ThemeSwitcher({
         }`}
         aria-pressed={theme === "light"}
       >
-        Light
+        {t("light")}
       </button>
       <button
         type="button"
@@ -58,7 +60,7 @@ export function ThemeSwitcher({
         }`}
         aria-pressed={theme === "dark"}
       >
-        Dark
+        {t("dark")}
       </button>
     </div>
   );

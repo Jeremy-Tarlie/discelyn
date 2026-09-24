@@ -7,7 +7,7 @@ import {
 } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { getPlan, type PlanId } from "@/lib/plans";
-import { accessProductCreateSchema } from "@/lib/access-validation";
+import { accessProductCreateSchemaFor } from "@/lib/access-validation";
 import { claimUrl, ensurePrimaryGrant } from "@/lib/learner-access";
 import {
   createAccessPaymentLink,
@@ -169,7 +169,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     );
   }
 
-  const parsed = accessProductCreateSchema.safeParse(body);
+  const parsed = accessProductCreateSchemaFor(locale).safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: parsed.error.issues[0]?.message ?? tApi(locale, "invalidData") },

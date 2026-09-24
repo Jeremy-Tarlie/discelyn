@@ -1,11 +1,14 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
+import { getLocale, getTranslations } from "next-intl/server";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isLeadsAdmin } from "@/lib/leads-admin";
 
 export default async function LeadsPage() {
   const session = await getServerSession(authOptions);
+  const t = await getTranslations("dashboard");
+  const locale = await getLocale();
   const dbUser = session?.user?.id
     ? await prisma.user.findUnique({
         where: { id: session.user.id },
@@ -27,19 +30,19 @@ export default async function LeadsPage() {
     take: 100,
   });
 
+  const dateLocale = locale === "en" ? "en-GB" : "fr-FR";
+
   return (
     <div className="mx-auto max-w-4xl space-y-8">
       <div>
-        <h1 className="font-display text-3xl text-page-fg">Leads</h1>
+        <h1 className="font-display text-3xl text-page-fg">{t("leadsTitle")}</h1>
         <p className="mt-2 text-sm text-soft">
-          Derniers 100 contacts landing — accès restreint (
-          <code className="text-soft">LEADS_ADMIN_DISCORD_IDS</code> ou{" "}
-          <code className="text-soft">LEADS_ADMIN_EMAILS</code>).
+          {t("leadsBody", { envHint: t("leadsEnvHint") })}
         </p>
       </div>
 
       {leads.length === 0 ? (
-        <p className="text-soft">Aucun lead pour l&apos;instant.</p>
+        <p className="text-soft">{t("leadsEmpty")}</p>
       ) : (
         <ul className="space-y-3">
           {leads.map((lead) => (
@@ -50,7 +53,7 @@ export default async function LeadsPage() {
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <p className="font-medium text-page-fg">{lead.email}</p>
                 <p className="text-xs text-soft">
-                  {lead.createdAt.toLocaleString("fr-FR")}
+                  {lead.createdAt.toLocaleString(dateLocale)}
                 </p>
               </div>
               <p className="mt-1 text-sm text-soft">

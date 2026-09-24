@@ -7,7 +7,7 @@ import {
 } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { getPlan, type PlanId } from "@/lib/plans";
-import { orgStripeConfigSchema } from "@/lib/access-validation";
+import { orgStripeConfigSchemaFor } from "@/lib/access-validation";
 import {
   newWebhookPathToken,
   orgWebhookUrl,
@@ -124,7 +124,7 @@ export async function PUT(request: NextRequest) {
     );
   }
 
-  const parsed = orgStripeConfigSchema.safeParse(body);
+  const parsed = orgStripeConfigSchemaFor(locale).safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: parsed.error.issues[0]?.message ?? tApi(locale, "invalidData") },
