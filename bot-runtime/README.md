@@ -1,18 +1,14 @@
 # bot-runtime
 
-Processus Node qui charge les bots depuis Postgres, déchiffre les tokens, et
-maintient les clients discord.js.
-
-## Dev
+Bot **plateforme** unique (`DISCORD_BOT_TOKEN`) : charge les configs par
+`guildId` depuis Postgres. Aucun token utilisateur.
 
 ```bash
-cp ../.env.example ../.env   # si besoin
 npm install
-npm run dev
+npm run dev      # développement
+npm run build && npm start
 ```
 
-Endpoints :
-
 - `GET /health`
-- `POST /internal/reload` `{ "botId": "..." }` (Bearer `BOT_RUNTIME_SECRET`)
-- `POST /internal/stop` `{ "botId": "..." }`
+- `POST /internal/reload` — resync configs (Bearer `BOT_RUNTIME_SECRET`)
+- `POST /internal/stop` — idem (resync)

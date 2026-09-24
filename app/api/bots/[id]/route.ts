@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { z } from "zod";
 import { Prisma } from "@/generated/prisma/client";
 import {
   requireUser,
@@ -13,28 +12,18 @@ import { getPlan, type PlanId, type BotModuleId } from "@/lib/plans";
 import { deprovisionBot } from "@/lib/provisioning";
 import { rateLimit } from "@/lib/rate-limit";
 import { notifyRuntimeReload } from "@/lib/runtime-notify";
-
-const updateBotSchema = z.object({
-  name: z.string().trim().min(2).max(32).optional(),
-  description: z.string().trim().max(300).nullable().optional(),
-  enabledModules: z.array(z.string()).max(20).optional(),
-  config: z.record(z.string(), z.unknown()).optional(),
-  customCommands: z
-    .array(
-      z.object({
-        name: z.string().trim().min(1).max(32),
-        response: z.string().trim().min(1).max(500),
-      })
-    )
-    .optional(),
-});
+import { parseBotConfig } from "@/lib/bot-config";
+import { sanitizeBotConfig, updateBotSchemaFor } from "@/lib/validation";
+import { getRequestLocale } from "@/lib/locale";
+import { tApi } from "@/lib/i18n-api";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
 export async function GET(request: NextRequest, context: RouteContext) {
-  const limited = rateLimit(request, {
+  const locale = getRequestLocale(request);
+  const limited = await rateLimit(request, {
     namespace: "bots-get",
     limit: 60,
     windowMs: 60_000,
@@ -43,7 +32,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   const user = await requireUser();
   if (!user) {
-    return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+    return NextResponse.json({ error: tApi(locale, "unauthenticated") }, { status: 401 });
   }
 
   const { id } = await context.params;
@@ -54,9 +43,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
       name: true,
       description: true,
       status: true,
-      hasToken: true,
+      guildId: true,
       inviteUrl: true,
-      discordAppId: true,
       enabledModules: true,
       config: true,
       customCommands: true,
@@ -68,7 +56,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
   });
 
   if (!bot) {
-    return NextResponse.json({ error: "Bot introuvable" }, { status: 404 });
+    return NextResponse.json({ error: tApi(locale, "botNotFound") }, { status: 404 });
   }
 
   const subscription = await getUserSubscription(user.id);
@@ -79,7 +67,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
-  const limited = rateLimit(request, {
+  const locale = getRequestLocale(request);
+  const limited = await rateLimit(request, {
     namespace: "bots-patch",
     limit: 30,
     windowMs: 60_000,
@@ -88,7 +77,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
   const user = await requireUser();
   if (!user) {
-    return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+    return NextResponse.json({ error: tApi(locale, "unauthenticated") }, { status: 401 });
   }
 
   const { id } = await context.params;
@@ -97,26 +86,29 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   });
 
   if (!bot) {
-    return NextResponse.json({ error: "Bot introuvable" }, { status: 404 });
+    return NextResponse.json({ error: tApi(locale, "botNotFound") }, { status: 404 });
   }
 
   const subscription = await getUserSubscription(user.id);
   const usable = canUseProduct(subscription);
   if (!usable.ok) {
-    return NextResponse.json({ error: usable.reason }, { status: 403 });
+    return NextResponse.json(
+      { error: tApi(locale, usable.code, usable.params) },
+      { status: 403 }
+    );
   }
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "JSON invalide" }, { status: 400 });
+    return NextResponse.json({ error: tApi(locale, "invalidJson") }, { status: 400 });
   }
 
-  const parsed = updateBotSchema.safeParse(body);
+  const parsed = updateBotSchemaFor(locale).safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: parsed.error.issues[0]?.message ?? "Données invalides" },
+      { error: parsed.error.issues[0]?.message ?? tApi(locale, "invalidData") },
       { status: 400 }
     );
   }
@@ -124,10 +116,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   const planId = subscription.plan as PlanId;
   const plan = getPlan(planId);
 
-  let enabledModules = bot.enabledModules;
-  if (parsed.data.enabledModules) {
-    enabledModules = filterModulesForPlan(planId, parsed.data.enabledModules);
-  }
+  const enabledModules = filterModulesForPlan(
+    planId,
+    parsed.data.enabledModules ?? bot.enabledModules
+  );
 
   let customCommands: Prisma.InputJsonValue =
     bot.customCommands === null
@@ -138,7 +130,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     if (parsed.data.customCommands.length > plan.maxCustomCommands) {
       return NextResponse.json(
         {
-          error: `Max ${plan.maxCustomCommands} commandes custom sur le plan ${plan.name}.`,
+          error: tApi(locale, "customCommandsMax", {
+            n: plan.maxCustomCommands,
+            plan: plan.name,
+          }),
         },
         { status: 403 }
       );
@@ -148,7 +143,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       !plan.modules.includes("custom_commands" as BotModuleId)
     ) {
       return NextResponse.json(
-        { error: "Commandes custom non disponibles sur ton plan." },
+        { error: tApi(locale, "customCommandsUnavailable") },
         { status: 403 }
       );
     }
@@ -166,7 +161,12 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   };
 
   if (parsed.data.config) {
-    data.config = parsed.data.config as Prisma.InputJsonValue;
+    const existing = parseBotConfig(bot.config);
+    const merged = {
+      ...existing,
+      ...parsed.data.config,
+    };
+    data.config = sanitizeBotConfig(merged) as Prisma.InputJsonValue;
   }
 
   const updated = await prisma.bot.update({
@@ -177,9 +177,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       name: true,
       description: true,
       status: true,
-      hasToken: true,
+      guildId: true,
       inviteUrl: true,
-      discordAppId: true,
       enabledModules: true,
       config: true,
       customCommands: true,
@@ -188,13 +187,14 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     },
   });
 
-  await notifyRuntimeReload(bot.id);
+  await notifyRuntimeReload({ botId: bot.id });
 
   return NextResponse.json({ bot: updated, plan });
 }
 
 export async function DELETE(request: NextRequest, context: RouteContext) {
-  const limited = rateLimit(request, {
+  const locale = getRequestLocale(request);
+  const limited = await rateLimit(request, {
     namespace: "bots-delete",
     limit: 10,
     windowMs: 60_000,
@@ -203,7 +203,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
 
   const user = await requireUser();
   if (!user) {
-    return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+    return NextResponse.json({ error: tApi(locale, "unauthenticated") }, { status: 401 });
   }
 
   const { id } = await context.params;
@@ -212,10 +212,11 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
   });
 
   if (!bot) {
-    return NextResponse.json({ error: "Bot introuvable" }, { status: 404 });
+    return NextResponse.json({ error: tApi(locale, "botNotFound") }, { status: 404 });
   }
 
-  await deprovisionBot(bot.id);
+  const guildId = bot.guildId;
   await prisma.bot.delete({ where: { id: bot.id } });
+  await deprovisionBot(bot.id, guildId);
   return NextResponse.json({ ok: true });
 }

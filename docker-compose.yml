@@ -4,16 +4,26 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: botly
-      POSTGRES_PASSWORD: botly
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-botly}
       POSTGRES_DB: botly
-    ports:
-      - "5432:5432"
     volumes:
       - botly_pg:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U botly -d botly"]
       interval: 5s
       timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - botly_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
       retries: 10
 
   web:
@@ -24,11 +34,20 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+      runtime:
+        condition: service_healthy
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql://botly:botly@db:5432/botly?schema=public
+      # Next.js lit HOSTNAME (défini par Docker = ID conteneur) et bind
+      # uniquement sur cette IP → healthcheck 127.0.0.1 échoue.
+      HOSTNAME: "0.0.0.0"
+      DATABASE_URL: postgresql://botly:${POSTGRES_PASSWORD:-botly}@db:5432/botly?schema=public
       BOT_RUNTIME_URL: http://runtime:4001
+      REDIS_URL: redis://redis:6379
+      TRUST_PROXY: "0"
     ports:
       - "3000:3000"
     healthcheck:
@@ -43,6 +62,57 @@ services:
       timeout: 5s
       retries: 5
 
+  # Purge périodique analytics + leads (RGPD) — horaire.
+  # Nécessite CRON_SECRET dans .env (même valeur que web).
+  retention-cron:
+    image: curlimages/curl:8.12.1
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+    env_file:
+      - .env
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        if [ -z "$$CRON_SECRET" ]; then
+          echo "[retention-cron] CRON_SECRET manquant — arrêt"
+          exit 1
+        fi
+        echo "[retention-cron] démarré (intervalle 1h)"
+        while true; do
+          sleep 3600
+          code=$$(curl -sS -o /tmp/retention-body -w "%{http_code}" -X POST \
+            -H "Authorization: Bearer $$CRON_SECRET" \
+            http://web:3000/api/cron/retention || echo "000")
+          echo "[retention-cron] HTTP $$code $$(cat /tmp/retention-body 2>/dev/null || true)"
+        done
+
+  # Relances claim / expiry cohorte / onboarding — toutes les 15 min.
+  access-cron:
+    image: curlimages/curl:8.12.1
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+    env_file:
+      - .env
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        if [ -z "$$CRON_SECRET" ]; then
+          echo "[access-cron] CRON_SECRET manquant — arrêt"
+          exit 1
+        fi
+        echo "[access-cron] démarré (intervalle 15 min)"
+        while true; do
+          sleep 900
+          code=$$(curl -sS -o /tmp/access-body -w "%{http_code}" -X POST \
+            -H "Authorization: Bearer $$CRON_SECRET" \
+            http://web:3000/api/cron/access || echo "000")
+          echo "[access-cron] HTTP $$code $$(cat /tmp/access-body 2>/dev/null || true)"
+        done
+
   runtime:
     build:
       context: .
@@ -54,10 +124,14 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql://botly:botly@db:5432/botly?schema=public
+      DATABASE_URL: postgresql://botly:${POSTGRES_PASSWORD:-botly}@db:5432/botly?schema=public
       BOT_RUNTIME_PORT: "4001"
-    ports:
-      - "4001:4001"
+      # Grant-on-join délégué au web (source unique fulfillDiscordAccess)
+      WEB_INTERNAL_URL: http://web:3000
+      NEXTAUTH_URL: http://web:3000
+      NEXT_PUBLIC_APP_URL: http://web:3000
+    expose:
+      - "4001"
     healthcheck:
       test:
         [
@@ -72,3 +146,4 @@ services:
 
 volumes:
   botly_pg:
+  botly_redis:

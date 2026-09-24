@@ -30,7 +30,7 @@ export function PortalButton() {
         type="button"
         onClick={openPortal}
         disabled={loading}
-        className="rounded-full border border-ink-600 px-5 py-2.5 text-sm text-mist-100 hover:border-signal hover:text-signal disabled:opacity-60"
+        className="rounded-full border border-line px-5 py-2.5 text-sm text-page-fg hover:border-signal hover:text-signal disabled:opacity-60"
       >
         {loading ? "Ouverture…" : "Gérer l'abonnement Stripe"}
       </button>

@@ -2,8 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { useTranslations } from "next-intl";
 
 export function CreateBotForm({ canCreate }: { canCreate: boolean }) {
+  const t = useTranslations("dashboard");
+  const tc = useTranslations("common");
   const router = useRouter();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -29,7 +32,7 @@ export function CreateBotForm({ canCreate }: { canCreate: boolean }) {
       };
 
       if (!response.ok || !data.bot) {
-        setError(data.error ?? "Création impossible");
+        setError(data.error ?? t("createFailed"));
         setLoading(false);
         return;
       }
@@ -37,17 +40,17 @@ export function CreateBotForm({ canCreate }: { canCreate: boolean }) {
       router.push(`/dashboard/bots/${data.bot.id}`);
       router.refresh();
     } catch {
-      setError("Erreur réseau");
+      setError(tc("networkError"));
       setLoading(false);
     }
   }
 
   if (!canCreate) {
     return (
-      <div className="rounded-2xl border border-warn/30 bg-warn/5 p-5 text-sm text-mist-200">
-        Limite de bots atteinte pour ton plan.{" "}
+      <div className="rounded-2xl border border-warn/30 bg-warn/5 p-5 text-sm text-page-fg">
+        {t("createFailed")}{" "}
         <a href="/pricing" className="text-signal underline">
-          Passer à un plan supérieur
+          {tc("seePricing")}
         </a>
       </div>
     );
@@ -56,11 +59,11 @@ export function CreateBotForm({ canCreate }: { canCreate: boolean }) {
   return (
     <form
       onSubmit={onSubmit}
-      className="space-y-4 rounded-2xl border border-ink-600 bg-ink-900/70 p-5"
+      className="space-y-4 rounded-2xl border border-line bg-surface p-5"
     >
       <div>
-        <label htmlFor="name" className="mb-1 block text-sm text-mist-300">
-          Nom du bot
+        <label htmlFor="name" className="mb-1 block text-sm text-soft">
+          {t("botName")}
         </label>
         <input
           id="name"
@@ -68,23 +71,22 @@ export function CreateBotForm({ canCreate }: { canCreate: boolean }) {
           maxLength={32}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full rounded-xl border border-ink-600 bg-ink-950 px-3 py-2 text-mist-100 outline-none ring-signal focus:ring-1"
-          placeholder="Ex: Gardien Nova"
+          className="w-full rounded-xl border border-line bg-surface-muted px-3 py-2 text-page-fg outline-none ring-signal focus:ring-1"
         />
       </div>
       <div>
         <label
           htmlFor="description"
-          className="mb-1 block text-sm text-mist-300"
+          className="mb-1 block text-sm text-soft"
         >
-          Description (optionnel)
+          Description
         </label>
         <textarea
           id="description"
           maxLength={300}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="w-full rounded-xl border border-ink-600 bg-ink-950 px-3 py-2 text-mist-100 outline-none ring-signal focus:ring-1"
+          className="w-full rounded-xl border border-line bg-surface-muted px-3 py-2 text-page-fg outline-none ring-signal focus:ring-1"
           rows={3}
         />
       </div>
@@ -92,9 +94,9 @@ export function CreateBotForm({ canCreate }: { canCreate: boolean }) {
       <button
         type="submit"
         disabled={loading}
-        className="rounded-full bg-signal px-5 py-2.5 text-sm font-semibold text-ink-950 hover:bg-signal-glow disabled:opacity-60"
+        className="rounded-full bg-signal px-5 py-2.5 text-sm font-semibold text-ink-950 disabled:opacity-60"
       >
-        {loading ? "Création…" : "Créer le bot"}
+        {loading ? tc("loading") : t("createBot")}
       </button>
     </form>
   );

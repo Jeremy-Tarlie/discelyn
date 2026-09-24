@@ -1,42 +1,66 @@
 import { notifyRuntimeReload, notifyRuntimeStop } from "@/lib/runtime-notify";
-
-/**
- * Local/prod model:
- * - Tokens are stored encrypted in Postgres
- * - `bot-runtime` process loads bots from DB and runs discord.js
- * - Optional BOT_RUNTIME_URL notifies the runtime immediately
- */
+import { getPlatformInviteUrl } from "@/lib/invite";
 
 export type ProvisionResult = {
   status: "ONLINE" | "PROVISIONING" | "PENDING" | "ERROR";
-  containerId: string | null;
   inviteUrl: string | null;
   error: string | null;
 };
 
 export async function provisionBot(input: {
   botId: string;
-  hasToken: boolean;
+  guildId?: string | null;
+  guildLinked: boolean;
+  botPresentInGuild: boolean;
 }): Promise<ProvisionResult> {
-  if (!input.hasToken) {
+  const inviteUrl = getPlatformInviteUrl(input.guildId ?? undefined);
+
+  if (!input.guildLinked) {
     return {
       status: "PENDING",
-      containerId: null,
-      inviteUrl: null,
+      inviteUrl,
       error: null,
     };
   }
 
-  await notifyRuntimeReload(input.botId);
+  if (!input.botPresentInGuild) {
+    return {
+      status: "PENDING",
+      inviteUrl,
+      error: null,
+    };
+  }
+
+  const notify = await notifyRuntimeReload({ botId: input.botId });
+
+  if (notify.skipped) {
+    return {
+      status: "PROVISIONING",
+      inviteUrl,
+      error: null,
+    };
+  }
+
+  if (!notify.ok) {
+    return {
+      status: "PROVISIONING",
+      inviteUrl,
+      error: `Runtime injoignable (${notify.error}). Nouvelle tentative au prochain poll.`,
+    };
+  }
 
   return {
-    status: "PROVISIONING",
-    containerId: `runtime-${input.botId.slice(0, 8)}`,
-    inviteUrl: null,
+    status: "ONLINE",
+    inviteUrl,
     error: null,
   };
 }
 
-export async function deprovisionBot(botId: string): Promise<void> {
-  await notifyRuntimeStop(botId);
+/** Notifie le runtime après suppression DB (leave Discord immédiat). */
+export async function deprovisionBot(
+  botId: string,
+  guildId: string | null = null
+): Promise<void> {
+  await notifyRuntimeStop(botId, guildId);
 }
+

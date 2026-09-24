@@ -10,8 +10,8 @@ datasource db {
 enum PlanId {
   FREE
   STARTER
-  PRO
-  BUSINESS
+  OPS
+  SCALE
 }
 
 enum SubscriptionStatus {
@@ -41,10 +41,15 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts     Account[]
-  sessions     Session[]
-  subscription Subscription?
-  bots         Bot[]
+  accounts          Account[]
+  sessions          Session[]
+  subscription      Subscription?
+  bots              Bot[]
+  orgStripeConfig   OrgStripeConfig?
+  accessProducts    AccessProduct[]
+  affiliates        Affiliate[]
+  outboundWebhooks  OrgOutboundWebhook[]
+  accessCodesCreated AccessCode[]
 
   @@index([discordId])
 }
@@ -106,31 +111,333 @@ model Subscription {
   @@index([stripeSubscriptionId])
 }
 
+/// Configuration d'un serveur Discord géré via le bot plateforme Botly.
+/// Aucun token Discord utilisateur n'est stocké (conformité Developer Policy §4).
 model Bot {
-  id              String    @id @default(cuid())
-  userId          String
-  name            String
-  description     String?   @db.Text
-  avatarUrl       String?
-  status          BotStatus @default(PENDING)
-  discordAppId    String?
-  inviteUrl       String?
-  containerId     String?
-  /// AES-256-GCM encrypted Discord bot token (never store plaintext)
-  tokenCiphertext String?   @db.Text
-  tokenNonce      String?
-  tokenAuthTag    String?
-  hasToken        Boolean   @default(false)
-  enabledModules  String[]  @default([])
-  config          Json      @default("{}")
-  customCommands  Json      @default("[]")
-  lastError       String?   @db.Text
-  lastSeenAt      DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id             String    @id @default(cuid())
+  userId         String
+  name           String
+  description    String?   @db.Text
+  avatarUrl      String?
+  status         BotStatus @default(PENDING)
+  /// ID du serveur Discord lié
+  guildId        String?   @unique
+  inviteUrl      String?
+  enabledModules String[]  @default([])
+  config         Json      @default("{}")
+  customCommands Json      @default("[]")
+  lastError      String?   @db.Text
+  lastSeenAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  warnings        ModerationWarning[]
+  accessProducts  AccessProduct[]
+  learnerAccesses LearnerAccess[]
+  guildGrants     AccessProductGuildGrant[]
 
   @@index([userId])
   @@index([status])
+}
+
+model ModerationWarning {
+  id           String   @id @default(cuid())
+  botId        String
+  guildId      String
+  targetUserId String
+  reason       String
+  moderatorTag String
+  createdAt    DateTime @default(now())
+
+  bot Bot @relation(fields: [botId], references: [id], onDelete: Cascade)
+
+  @@index([botId, guildId, targetUserId])
+  @@index([guildId, targetUserId])
+}
+
+/// Lead commercial (landing / contact) — pas de Discord OAuth requis.
+model Lead {
+  id                 String    @id @default(cuid())
+  email              String
+  name               String?
+  company            String?
+  role               String?
+  message            String?   @db.Text
+  offer              String?
+  source             String    @default("landing")
+  marketingConsentAt DateTime?
+  createdAt          DateTime  @default(now())
+
+  @@index([email])
+  @@index([createdAt])
+}
+
+/// Événements produit pour mesurer si quelqu'un veut acheter.
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String?
+  sessionId String?
+  path      String?
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@index([name, createdAt])
+  @@index([userId])
+}
+
+enum LearnerAccessStatus {
+  PENDING_CLAIM
+  AWAITING_JOIN
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+enum AccessBillingMode {
+  ONE_TIME
+  RECURRING
+}
+
+enum LearnerAccessSource {
+  STRIPE
+  ACCESS_CODE
+  MANUAL
+}
+
+/// Webhook Stripe du client (ses ventes formation) — distinct de Stripe Botly.
+model OrgStripeConfig {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  /// Token opaque dans l’URL webhook Botly
+  webhookPathToken String   @unique
+  /// Secret whsec_… toujours chiffré (TOKEN_ENCRYPTION_KEY requis au setup)
+  webhookSecret    String   @db.Text
+  /// Clé sk_… chiffrée (TOKEN_ENCRYPTION_KEY requis) pour Payment Links / line_items
+  stripeSecretKey  String?  @db.Text
+  label            String?
+  /// Branding pages claim (#9)
+  displayName      String?
+  logoUrl          String?
+  primaryColor     String?
+  supportUrl       String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// Produit formation : price Stripe client → rôle Discord.
+model AccessProduct {
+  id                 String            @id @default(cuid())
+  userId             String
+  botId              String
+  name               String
+  /// Accroche courte affichée sur /boutique
+  pitch              String?
+  stripePriceId      String
+  /// Rôle du bot primaire (backfill / compat)
+  discordRoleId      String
+  active             Boolean           @default(true)
+  revokeOnRefund     Boolean           @default(true)
+  billingMode        AccessBillingMode @default(ONE_TIME)
+  /// Places max (null = illimité)
+  maxSeats           Int?
+  seatsUsed          Int               @default(0)
+  /// Fin d’accès cohorte (optionnel)
+  accessEndsAt       DateTime?
+  reminderDaysBefore Int?              @default(7)
+  /// Lien de paiement Stripe généré par Botly (Payment Link)
+  paymentLinkUrl     String?
+  paymentLinkId      String?
+  /// Message DM après attribution du rôle (optionnel)
+  welcomeDm          String?           @db.Text
+  /// Étapes DM onboarding post-achat (string[])
+  onboardingSteps    Json?
+  /// Ordre d’affichage boutique
+  sortOrder          Int               @default(0)
+  /// Branding override produit (sinon org)
+  brandName          String?
+  brandLogoUrl       String?
+  brandColor         String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  user        User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bot         Bot                       @relation(fields: [botId], references: [id], onDelete: Cascade)
+  accesses    LearnerAccess[]
+  guildGrants AccessProductGuildGrant[]
+  accessCodes AccessCode[]
+
+  @@unique([userId, stripePriceId])
+  @@index([botId])
+  @@index([stripePriceId])
+  @@index([userId])
+}
+
+/// Grant rôle sur un bot/guild (multi-serveur #13).
+model AccessProductGuildGrant {
+  id            String   @id @default(cuid())
+  accessProductId String
+  botId         String
+  guildId       String
+  discordRoleId String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  product AccessProduct @relation(fields: [accessProductId], references: [id], onDelete: Cascade)
+  bot     Bot           @relation(fields: [botId], references: [id], onDelete: Cascade)
+
+  @@unique([accessProductId, botId])
+  @@index([guildId])
+  @@index([botId])
+}
+
+/// Code d’accès manuel (#7) — clair affiché une fois à la création, hash en base.
+model AccessCode {
+  id              String    @id @default(cuid())
+  accessProductId String
+  createdByUserId String
+  /// SHA-256 hex du code normalisé (upper)
+  codeHash        String    @unique
+  /// Préfixe affichable (ex. 4 premiers caractères)
+  codePrefix      String
+  maxRedemptions  Int       @default(1)
+  redemptions     Int       @default(0)
+  expiresAt       DateTime?
+  active          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  product   AccessProduct @relation(fields: [accessProductId], references: [id], onDelete: Cascade)
+  createdBy User          @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+
+  @@index([accessProductId])
+  @@index([createdByUserId])
+}
+
+/// Affilié tracking (#14) — attribution / stats uniquement, aucun payout Botly.
+model Affiliate {
+  id            String   @id @default(cuid())
+  userId        String
+  code          String   @unique
+  label         String
+  active        Boolean  @default(true)
+  /// Basis points informatifs pour reporting orga — Botly ne calcule ni ne verse de commission
+  commissionBps Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clicks   AffiliateClick[]
+  accesses LearnerAccess[]
+
+  @@index([userId])
+}
+
+model AffiliateClick {
+  id              String   @id @default(cuid())
+  affiliateId     String
+  accessProductId String?
+  meta            Json?
+  createdAt       DateTime @default(now())
+
+  affiliate Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+
+  @@index([affiliateId, createdAt])
+}
+
+/// Webhook sortant orga (#11).
+model OrgOutboundWebhook {
+  id        String   @id @default(cuid())
+  userId    String
+  url       String
+  secret    String
+  events    String[]
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user       User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries OutboundWebhookDelivery[]
+
+  @@index([userId])
+}
+
+model OutboundWebhookDelivery {
+  id         String   @id @default(cuid())
+  webhookId  String
+  event      String
+  payload    Json
+  statusCode Int?
+  ok         Boolean  @default(false)
+  attempts   Int      @default(0)
+  lastError  String?  @db.Text
+  createdAt  DateTime @default(now())
+
+  webhook OrgOutboundWebhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId, createdAt])
+}
+
+/// Accès Discord d’un apprenant lié à un paiement.
+model LearnerAccess {
+  id                      String              @id @default(cuid())
+  accessProductId         String
+  botId                   String
+  guildId                 String
+  status                  LearnerAccessStatus @default(PENDING_CLAIM)
+  source                  LearnerAccessSource @default(STRIPE)
+  customerEmail           String?
+  discordUserId           String?
+  claimToken              String?             @unique
+  claimTokenExpiresAt     DateTime?
+  stripeCheckoutSessionId String?             @unique
+  stripePaymentIntentId   String?
+  stripeSubscriptionId    String?
+  stripeCustomerId        String?
+  amountTotal             Int?
+  currency                String?
+  amountSubtotal          Int?
+  inviteUrl               String?
+  grantedAt               DateTime?
+  revokedAt               DateTime?
+  revokeReason            String?
+  claimReminderSentAt     DateTime?
+  claimReminderCount      Int                 @default(0)
+  expiryReminderSentAt    DateTime?
+  onboardingStep          Int                 @default(0)
+  onboardingLastSentAt    DateTime?
+  affiliateId             String?
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+
+  product   AccessProduct         @relation(fields: [accessProductId], references: [id], onDelete: Cascade)
+  bot       Bot                   @relation(fields: [botId], references: [id], onDelete: Cascade)
+  affiliate Affiliate?            @relation(fields: [affiliateId], references: [id], onDelete: SetNull)
+  events    LearnerAccessEvent[]
+
+  @@index([botId, status])
+  @@index([guildId, discordUserId])
+  @@index([discordUserId, status])
+  @@index([stripeSubscriptionId])
+  @@index([customerEmail])
+  @@index([accessProductId])
+  @@index([affiliateId])
+  @@index([status, createdAt])
+  @@index([status, claimReminderSentAt])
+}
+
+model LearnerAccessEvent {
+  id              String   @id @default(cuid())
+  learnerAccessId String
+  type            String
+  meta            Json?
+  createdAt       DateTime @default(now())
+
+  access LearnerAccess @relation(fields: [learnerAccessId], references: [id], onDelete: Cascade)
+
+  @@index([learnerAccessId, createdAt])
+  @@index([type, createdAt])
 }

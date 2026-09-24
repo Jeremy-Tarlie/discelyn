@@ -1,5 +1,6 @@
 import type { Subscription, SubscriptionStatus } from "@/generated/prisma/client";
 import { getPlan, type PlanId } from "@/lib/plans";
+import type { ApiMessageKey } from "@/lib/i18n-api";
 
 const ACTIVE_STATUSES: SubscriptionStatus[] = ["ACTIVE", "TRIALING"];
 
@@ -9,15 +10,17 @@ export function isSubscriptionActive(
   return ACTIVE_STATUSES.includes(subscription.status);
 }
 
+export type GuardFailure = {
+  ok: false;
+  code: ApiMessageKey;
+  params?: Record<string, string | number>;
+};
+
 export function canUseProduct(
   subscription: Pick<Subscription, "plan" | "status">
-): { ok: true } | { ok: false; reason: string } {
+): { ok: true } | GuardFailure {
   if (!isSubscriptionActive(subscription)) {
-    return {
-      ok: false,
-      reason:
-        "Abonnement inactif ou en retard. Mets à jour ton paiement dans Billing.",
-    };
+    return { ok: false, code: "inactiveSubscription" };
   }
   return { ok: true };
 }
@@ -25,7 +28,7 @@ export function canUseProduct(
 export function canCreateBot(
   subscription: Pick<Subscription, "plan" | "status">,
   currentBotCount: number
-): { ok: true } | { ok: false; reason: string } {
+): { ok: true } | GuardFailure {
   const product = canUseProduct(subscription);
   if (!product.ok) return product;
 
@@ -33,7 +36,8 @@ export function canCreateBot(
   if (currentBotCount >= plan.maxBots) {
     return {
       ok: false,
-      reason: `Limite atteinte (${plan.maxBots} bot${plan.maxBots > 1 ? "s" : ""} sur le plan ${plan.name}).`,
+      code: "botLimit",
+      params: { n: plan.maxBots, plan: plan.name },
     };
   }
   return { ok: true };

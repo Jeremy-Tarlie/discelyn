@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { Outfit, Syne } from "next/font/google";
+import { getLocale, getMessages, getTranslations } from "next-intl/server";
+import { shouldShowEnvironmentBanner, getAppEnvironment } from "@/lib/demo";
+import { getRequestTheme } from "@/lib/theme";
 import { Providers } from "@/components/Providers";
 import "./globals.css";
 
@@ -15,27 +18,50 @@ const syne = Syne({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "Botly — Bots Discord simples, hébergés pour toi",
-    template: "%s · Botly",
-  },
-  description:
-    "Crée, personnalise et héberge ton bot Discord. Plans Free, Starter, Pro et Business avec Stripe.",
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
-  ),
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("meta");
+  return {
+    title: {
+      default: t("defaultTitle"),
+      template: "%s · Botly",
+    },
+    description: t("defaultDescription"),
+    metadataBase: new URL(
+      process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+    ),
+  };
+}
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+  const theme = await getRequestTheme();
+  const showBanner = shouldShowEnvironmentBanner();
+  const appEnv = getAppEnvironment();
+
   return (
-    <html lang="fr" className={`${outfit.variable} ${syne.variable}`}>
+    <html
+      lang={locale}
+      className={`${outfit.variable} ${syne.variable}${theme === "dark" ? " dark" : ""}`}
+      style={{ colorScheme: theme }}
+      suppressHydrationWarning
+    >
       <body>
-        <Providers>{children}</Providers>
+        {showBanner ? (
+          <div
+            role="status"
+            className="border-b border-warn/40 bg-warn/15 px-4 py-2 text-center text-sm text-[#1a1c21] dark:text-mist-100"
+          >
+            Environment {appEnv} — Stripe test mode only (no sk_live_).
+          </div>
+        ) : null}
+        <Providers locale={locale} messages={messages}>
+          {children}
+        </Providers>
       </body>
     </html>
   );

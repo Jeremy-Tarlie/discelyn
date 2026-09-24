@@ -1,47 +1,74 @@
 /**
- * Notify the bot-runtime process to reload a bot.
- * In local/dev without RUNTIME_URL, this is a no-op (runtime polls DB).
+ * Notify the bot-runtime process to reload / stop a bot.
+ * Without BOT_RUNTIME_URL, no-op (runtime polls DB every 30s).
+ *
+ * `/internal/reload` resynchronise toujours toutes les configs en mémoire ;
+ * le body (`botId` ou `userId`) sert au tracing côté runtime.
  */
-export async function notifyRuntimeReload(botId: string): Promise<void> {
+
+export type NotifyResult = {
+  ok: boolean;
+  skipped: boolean;
+  error: string | null;
+};
+
+export type RuntimeReloadTarget =
+  | { botId: string }
+  | { userId: string };
+
+async function notify(
+  path: "/internal/reload" | "/internal/stop",
+  body: Record<string, string | null>
+): Promise<NotifyResult> {
   const baseUrl = process.env.BOT_RUNTIME_URL;
   const secret = process.env.BOT_RUNTIME_SECRET;
 
   if (!baseUrl || !secret) {
-    return;
+    return { ok: true, skipped: true, error: null };
   }
 
   try {
-    await fetch(`${baseUrl.replace(/\/$/, "")}/internal/reload`, {
+    const response = await fetch(`${baseUrl.replace(/\/$/, "")}${path}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${secret}`,
       },
-      body: JSON.stringify({ botId }),
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(5_000),
     });
-  } catch {
-    // Runtime may be restarting; it will pick up from DB on next poll.
+    if (!response.ok) {
+      return {
+        ok: false,
+        skipped: false,
+        error: `runtime HTTP ${response.status}`,
+      };
+    }
+    return { ok: true, skipped: false, error: null };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "runtime unreachable";
+    return { ok: false, skipped: false, error: message };
   }
 }
 
-export async function notifyRuntimeStop(botId: string): Promise<void> {
-  const baseUrl = process.env.BOT_RUNTIME_URL;
-  const secret = process.env.BOT_RUNTIME_SECRET;
-
-  if (!baseUrl || !secret) {
-    return;
-  }
-
-  try {
-    await fetch(`${baseUrl.replace(/\/$/, "")}/internal/stop`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${secret}`,
-      },
-      body: JSON.stringify({ botId }),
+export async function notifyRuntimeReload(
+  target: RuntimeReloadTarget
+): Promise<NotifyResult> {
+  if ("userId" in target) {
+    return notify("/internal/reload", {
+      userId: target.userId,
+      botId: null,
     });
-  } catch {
-    // ignore
   }
+  return notify("/internal/reload", {
+    botId: target.botId,
+    userId: null,
+  });
+}
+
+export async function notifyRuntimeStop(
+  botId: string,
+  guildId: string | null = null
+): Promise<NotifyResult> {
+  return notify("/internal/stop", { botId, guildId });
 }

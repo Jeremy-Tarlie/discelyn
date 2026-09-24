@@ -1,0 +1,14 @@
+# Dev local : expose Postgres + Redis + runtime sur l'hôte.
+# Usage : docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+services:
+  db:
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"
+
+  runtime:
+    ports:
+      - "4001:4001"

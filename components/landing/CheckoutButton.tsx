@@ -3,12 +3,14 @@
 import { useState } from "react";
 import type { PlanId } from "@/lib/plans";
 
+type CheckoutOfferId = PlanId | "SETUP" | "DIAGNOSTIC";
+
 export function CheckoutButton({
   planId,
   label,
   variant = "primary",
 }: {
-  planId: PlanId;
+  planId: CheckoutOfferId;
   label: string;
   variant?: "primary" | "ghost";
 }) {
@@ -17,7 +19,7 @@ export function CheckoutButton({
 
   async function handleClick() {
     if (planId === "FREE") {
-      window.location.href = "/login";
+      window.location.assign("/login");
       return;
     }
 
@@ -34,7 +36,7 @@ export function CheckoutButton({
 
       if (!response.ok || !data.url) {
         if (response.status === 401) {
-          window.location.href = "/login";
+          window.location.assign("/login");
           return;
         }
         setError(data.error ?? "Erreur Stripe");
@@ -42,7 +44,7 @@ export function CheckoutButton({
         return;
       }
 
-      window.location.href = data.url;
+      window.location.assign(data.url);
     } catch {
       setError("Réseau indisponible");
       setLoading(false);
@@ -51,16 +53,16 @@ export function CheckoutButton({
 
   const classes =
     variant === "primary"
-      ? "bg-signal text-ink-950 hover:bg-signal-glow"
-      : "border border-ink-600 text-mist-100 hover:border-signal hover:text-signal";
+      ? "bg-[#5865F2] text-white hover:bg-[#4752c4] shadow-[0_0_24px_rgba(88,101,242,0.3)]"
+      : "border border-[color:var(--border)] text-[color:var(--page-fg)] hover:bg-[color:var(--surface-muted)]";
 
   return (
     <div className="space-y-2">
       <button
         type="button"
-        onClick={handleClick}
+        onClick={() => void handleClick()}
         disabled={loading}
-        className={`w-full rounded-full px-5 py-3 text-sm font-semibold transition disabled:opacity-60 ${classes}`}
+        className={`w-full rounded-lg px-5 py-3 text-sm font-semibold transition duration-300 disabled:opacity-60 ${classes}`}
       >
         {loading ? "Redirection…" : label}
       </button>

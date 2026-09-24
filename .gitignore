@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/bot-runtime/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -12,6 +13,8 @@
 
 # testing
 /coverage
+/backups
+*.sql.gz
 
 # next.js
 /.next/
@@ -19,6 +22,7 @@
 
 # production
 /build
+/bot-runtime/dist
 
 # misc
 .DS_Store
@@ -37,6 +41,9 @@ yarn-error.log*
 .env.production.local
 .env.prod
 !.env.example
+
+# local AI / draft prompts (never publish)
+Claude outputs/
 
 # vercel
 .vercel

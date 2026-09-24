@@ -1,4 +1,8 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
+import createNextIntlPlugin from "next-intl/plugin";
+
+const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -28,12 +32,15 @@ const nextConfig: NextConfig = {
         key: "Content-Security-Policy",
         value: [
           "default-src 'self'",
-          "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
+          isProd
+            ? "script-src 'self' 'unsafe-inline' https://js.stripe.com https://browser.sentry-cdn.com"
+            : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://browser.sentry-cdn.com",
           "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
           "font-src 'self' https://fonts.gstatic.com",
           "img-src 'self' data: blob: https://cdn.discordapp.com https://*.stripe.com",
-          "connect-src 'self' https://api.stripe.com https://discord.com",
+          "connect-src 'self' https://api.stripe.com https://discord.com https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://*.ingest.us.sentry.io",
           "frame-src https://js.stripe.com https://hooks.stripe.com",
+          "worker-src 'self' blob:",
           "base-uri 'self'",
           "form-action 'self'",
         ].join("; "),
@@ -51,4 +58,9 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(withNextIntl(nextConfig), {
+  silent: true,
+  disableLogger: true,
+  widenClientFileUpload: true,
+  tunnelRoute: undefined,
+});

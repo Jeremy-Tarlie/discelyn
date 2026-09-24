@@ -1,28 +1,50 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
+import { LocaleSwitcher } from "@/components/i18n/LocaleSwitcher";
+import { ThemeSwitcher } from "@/components/theme/ThemeSwitcher";
+import { getRequestTheme } from "@/lib/theme";
 
-const nav = [
-  { href: "/dashboard", label: "Vue d'ensemble" },
-  { href: "/dashboard/bots", label: "Mes bots" },
-  { href: "/dashboard/billing", label: "Abonnement" },
-];
+export async function DashboardNav({
+  planName,
+  showLeads = false,
+}: {
+  planName: string;
+  showLeads?: boolean;
+}) {
+  const t = await getTranslations("dashboard");
+  const theme = await getRequestTheme();
 
-export function DashboardNav({ planName }: { planName: string }) {
+  const items = [
+    { href: "/dashboard", label: t("overview") },
+    { href: "/dashboard/bots", label: t("myBots") },
+    { href: "/dashboard/learners", label: t("learnersNav") },
+    { href: "/dashboard/access-stats", label: t("accessStatsNav") },
+    { href: "/dashboard/affiliates", label: t("affiliatesNav") },
+    { href: "/dashboard/webhooks", label: t("webhooksNav") },
+    { href: "/dashboard/billing", label: t("billing") },
+    ...(showLeads ? [{ href: "/dashboard/leads", label: t("leads") }] : []),
+  ];
+
   return (
-    <aside className="flex w-full flex-col gap-8 border-b border-ink-600/70 bg-ink-900/60 p-6 md:min-h-screen md:w-64 md:border-b-0 md:border-r">
+    <aside className="flex w-full flex-col gap-8 border-b border-line bg-surface p-6 md:min-h-screen md:w-64 md:border-b-0 md:border-r">
       <div>
-        <Link href="/" className="font-display text-lg font-bold text-mist-100">
+        <Link href="/" className="font-display text-lg font-bold text-page-fg">
           Botly
         </Link>
         <p className="mt-1 text-xs uppercase tracking-wider text-signal">
           Plan {planName}
         </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <ThemeSwitcher theme={theme} />
+          <LocaleSwitcher />
+        </div>
       </div>
       <nav className="flex flex-row gap-3 md:flex-col">
-        {nav.map((item) => (
+        {items.map((item) => (
           <Link
             key={item.href}
             href={item.href}
-            className="rounded-lg px-3 py-2 text-sm text-mist-300 transition hover:bg-ink-700 hover:text-mist-100"
+            className="rounded-lg px-3 py-2 text-sm text-soft transition hover:bg-surface-muted hover:text-page-fg"
           >
             {item.label}
           </Link>
@@ -30,9 +52,9 @@ export function DashboardNav({ planName }: { planName: string }) {
       </nav>
       <Link
         href="/api/auth/signout"
-        className="mt-auto text-sm text-mist-400 hover:text-warn"
+        className="mt-auto text-sm text-soft hover:text-warn"
       >
-        Déconnexion
+        {t("logout")}
       </Link>
     </aside>
   );
