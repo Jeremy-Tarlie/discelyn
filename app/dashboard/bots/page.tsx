@@ -13,7 +13,7 @@ export default async function BotsPage() {
   const userId = session!.user.id;
   const subscription = await getUserSubscription(userId);
   const bots = await prisma.bot.findMany({
-    where: { userId },
+    where: { userId, deletedAt: null },
     orderBy: { createdAt: "desc" },
   });
   const limit = canCreateBot(subscription, bots.length);

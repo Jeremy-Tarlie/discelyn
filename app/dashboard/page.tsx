@@ -18,7 +18,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const subscription = await getUserSubscription(userId);
   const plan = getPlan(subscription.plan as PlanId);
   const bots = await prisma.bot.findMany({
-    where: { userId },
+    where: { userId, deletedAt: null },
     orderBy: { createdAt: "desc" },
     select: { id: true, name: true, status: true, enabledModules: true },
   });
@@ -28,14 +28,14 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     await Promise.all([
       prisma.accessProduct.count({ where: { userId, active: true } }),
       prisma.learnerAccess.count({
-        where: { bot: { userId }, status: "ACTIVE" },
+        where: { bot: { userId, deletedAt: null }, status: "ACTIVE" },
       }),
       prisma.orgStripeConfig.findUnique({
         where: { userId },
         select: { id: true },
       }),
       prisma.bot.findFirst({
-        where: { userId },
+        where: { userId, deletedAt: null },
         orderBy: { createdAt: "asc" },
         select: { id: true },
       }),

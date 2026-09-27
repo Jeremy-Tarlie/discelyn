@@ -22,10 +22,11 @@ Autour de ça : socle ops formation (welcome, tickets support, rôles, logs, mod
 - Places limitées, codes manuels (`/claim/code`), multi-serveurs (grants)
 - Boutique Discord (`/boutique` + poster depuis le dashboard)
 - DM bienvenue / onboarding / relances claim / rappel J-N avant fin cohorte
+  (email Resend si `RESEND_API_KEY` + `EMAIL_FROM`, sinon DM Discord / webhook orga)
 - Dashboard apprenants, stats GMV, affiliés tracking (`/r/{code}`), webhooks sortants HMAC
 - Branding claim (logo / couleur / nom orga)
 
-Cron (Bearer `CRON_SECRET`) : `POST /api/cron/access` (~15 min — claim / expiry / onboarding) et `POST /api/cron/retention` (horaire — RGPD analytics/leads). Compose : services `access-cron` + `retention-cron`.
+Cron (Bearer `CRON_SECRET`) : `POST /api/cron/access` (~15 min — claim / expiry / onboarding / retry grants / refunds oversold / seats) et `POST /api/cron/retention` (horaire — RGPD analytics/leads). Compose : services `access-cron` + `retention-cron`.
 
 Stack : Next.js, Prisma / PostgreSQL, Stripe, runtime discord.js (bot plateforme unique).
 
@@ -62,6 +63,8 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db redis
 npm install && npm run db:migrate:deploy && npm run dev
 ```
 
+`DATABASE_URL` local = Postgres Docker sur le port **5434** (pas 5432 — souvent pris par un Postgres Windows).
+
 Second terminal :
 
 ```bash
@@ -92,7 +95,8 @@ Aide diagnostic (rapport 49 €) : `node scripts/diagnostic-collect.mjs --help`
 (voir `docs/DIAGNOSTIC-TRAME.md`).
 
 Release / ops : `docs/RELEASE.md`, `docs/OPS-RUNBOOK.md`.
-Avant prod : `npm run preflight:prod` · `npm run test:e2e` · `npm run backup:db`.
+Avant prod : `npm run release:gate` · `npm run deploy:prod` · `npm run backup:db`.
+Voir `docs/RELEASE.md`.
 
 ## Sécurité dépôt
 

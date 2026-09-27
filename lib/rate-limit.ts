@@ -122,7 +122,14 @@ export async function rateLimit(
     try {
       result = await redisLimit(redis, key, options.limit, options.windowMs);
     } catch {
-      result = memoryLimit(key, options.limit, options.windowMs);
+      const appEnv = (process.env.APP_ENV || "").toLowerCase();
+      // Prod/staging : fail-closed (évite limite × N instances si Redis down).
+      if (appEnv === "production" || appEnv === "staging") {
+        console.error("[rate-limit] redis down — fail-closed");
+        result = { ok: false, retryAfter: 5 };
+      } else {
+        result = memoryLimit(key, options.limit, options.windowMs);
+      }
     }
   } else {
     result = memoryLimit(key, options.limit, options.windowMs);

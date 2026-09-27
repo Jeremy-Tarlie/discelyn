@@ -18,6 +18,8 @@ import { rateLimit } from "@/lib/rate-limit";
 import {
   claimStripeEvent,
   releaseStripeEventClaim,
+  StripeWebhookPermanentIgnore,
+  StripeWebhookRetryableError,
 } from "@/lib/stripe-idempotency";
 
 export const runtime = "nodejs";
@@ -74,12 +76,20 @@ async function handleCheckoutCompleted(
     return;
   }
 
+  const org = await prisma.user.findUnique({
+    where: { id: orgUserId },
+    select: { deletedAt: true },
+  });
+  if (!org || org.deletedAt) {
+    throw new StripeWebhookPermanentIgnore("org_deleted");
+  }
+
   const priceId = await resolvePriceId({ session, apiKey });
   if (!priceId) {
-    console.warn(
-      `[access-webhook] price introuvable session=${session.id}`
+    // Soft-return avalait le claim → paiement sans accès. Throw pour release + retry Stripe.
+    throw new StripeWebhookRetryableError(
+      `price introuvable session=${session.id}`
     );
-    return;
   }
 
   const product = await prisma.accessProduct.findFirst({
@@ -89,15 +99,32 @@ async function handleCheckoutCompleted(
       active: true,
     },
     include: {
-      bot: { select: { id: true, guildId: true, status: true } },
+      bot: {
+        select: { id: true, guildId: true, status: true, deletedAt: true },
+      },
     },
   });
 
-  if (!product?.bot.guildId) {
-    console.warn(
-      `[access-webhook] produit inconnu ou guild manquante price=${priceId}`
+  if (!product) {
+    const dead = await prisma.accessProduct.findFirst({
+      where: { userId: orgUserId, stripePriceId: priceId },
+      include: {
+        bot: { select: { deletedAt: true, guildId: true } },
+      },
+    });
+    if (
+      dead &&
+      (!dead.active || dead.bot.deletedAt != null || !dead.bot.guildId)
+    ) {
+      throw new StripeWebhookPermanentIgnore("product_or_bot_inactive");
+    }
+    throw new StripeWebhookRetryableError(
+      `produit inconnu ou guild manquante price=${priceId}`
     );
-    return;
+  }
+
+  if (product.bot.deletedAt != null || !product.bot.guildId) {
+    throw new StripeWebhookPermanentIgnore("bot_unavailable");
   }
 
   const subscriptionId =
@@ -200,9 +227,19 @@ export async function POST(request: NextRequest, context: RouteContext) {
   const { token } = await context.params;
   const config = await prisma.orgStripeConfig.findUnique({
     where: { webhookPathToken: token },
+    include: {
+      user: { select: { deletedAt: true } },
+    },
   });
   if (!config) {
     return NextResponse.json({ error: "unknown webhook" }, { status: 404 });
+  }
+  if (config.user.deletedAt) {
+    // Orga soft-deleted mais config orpheline (race) — ne pas retenter.
+    return NextResponse.json({
+      received: true,
+      ignored: "org_deleted",
+    });
   }
 
   const signature = request.headers.get("stripe-signature");
@@ -283,8 +320,17 @@ export async function POST(request: NextRequest, context: RouteContext) {
         break;
     }
   } catch (error) {
+    if (error instanceof StripeWebhookPermanentIgnore) {
+      console.warn(
+        `[access-webhook] permanent ignore event=${event.id} reason=${error.reason}`
+      );
+      return NextResponse.json({
+        received: true,
+        ignored: error.reason,
+      });
+    }
     await releaseStripeEventClaim(event.id);
-    console.error("[access-webhook] handler error", error);
+    console.error("[access-webhook] handler error (claim released)", error);
     return NextResponse.json({ error: "handler failed" }, { status: 500 });
   }
 

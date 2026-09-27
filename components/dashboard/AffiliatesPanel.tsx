@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { DashboardAffiliate } from "@/lib/dashboard-data";
@@ -14,16 +14,16 @@ export function AffiliatesPanel({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [rows, setRows] = useState(initialRows);
+  const [rowsSource, setRowsSource] = useState(initialRows);
+  if (initialRows !== rowsSource) {
+    setRowsSource(initialRows);
+    setRows(initialRows);
+  }
   const [code, setCode] = useState("");
   const [label, setLabel] = useState("");
   const [bps, setBps] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    setRows(initialRows);
-  }, [initialRows]);
-
   async function create() {
     setError(null);
     const res = await fetch("/api/affiliates", {

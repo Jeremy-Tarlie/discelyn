@@ -113,6 +113,7 @@ const vitestArgs = e2eOnly
       "run",
       "lib/money-path.e2e.test.ts",
       "lib/fulfill-access.db.test.ts",
+      "lib/soft-delete.db.test.ts",
       ...passthrough,
     ]
   : watch

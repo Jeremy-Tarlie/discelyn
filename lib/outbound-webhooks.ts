@@ -9,6 +9,7 @@ export const OUTBOUND_EVENTS = [
   "revoked",
   "expired",
   "sold_out",
+  "claim_reminder",
 ] as const;
 
 export type OutboundEvent = (typeof OUTBOUND_EVENTS)[number];

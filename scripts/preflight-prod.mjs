@@ -106,6 +106,25 @@ if (appEnv === "staging" && !present("REDIS_URL")) {
   warnings.push("recommandé (staging): REDIS_URL — obligatoire en production");
 }
 
+if (appEnv === "production") {
+  if (process.env.TRUST_PROXY !== "1") {
+    errors.push(
+      "TRUST_PROXY=1 requis en production derrière reverse-proxy (sinon IP rate-limit spoofable / fausse)"
+    );
+  }
+} else if (present("TRUST_PROXY") && process.env.TRUST_PROXY === "1") {
+  warnings.push(
+    "TRUST_PROXY=1 hors prod — OK seulement derrière un proxy de confiance"
+  );
+}
+
+if (present("RESEND_API_KEY") && !present("EMAIL_FROM")) {
+  errors.push("EMAIL_FROM requis si RESEND_API_KEY est défini");
+}
+if (present("EMAIL_FROM") && !present("RESEND_API_KEY")) {
+  warnings.push("EMAIL_FROM sans RESEND_API_KEY — emails claim non envoyés");
+}
+
 for (const name of recommended) {
   if (!present(name)) warnings.push(`recommandé: ${name}`);
 }

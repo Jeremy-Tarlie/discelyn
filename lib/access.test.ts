@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   canCreateBot,
   canUseProduct,
+  effectivePlan,
   filterModulesForPlan,
 } from "@/lib/billing-guards";
 
@@ -38,6 +39,21 @@ describe("canUseProduct", () => {
 
   it("refuse CANCELED", () => {
     expect(canUseProduct({ plan: "OPS", status: "CANCELED" }).ok).toBe(false);
+  });
+});
+
+describe("effectivePlan", () => {
+  it("conserve le plan si ACTIVE/TRIALING", () => {
+    expect(effectivePlan({ plan: "OPS", status: "ACTIVE" })).toBe("OPS");
+    expect(effectivePlan({ plan: "STARTER", status: "TRIALING" })).toBe(
+      "STARTER"
+    );
+  });
+
+  it("renvoie FREE si PAST_DUE / CANCELED / absent", () => {
+    expect(effectivePlan({ plan: "OPS", status: "PAST_DUE" })).toBe("FREE");
+    expect(effectivePlan({ plan: "SCALE", status: "CANCELED" })).toBe("FREE");
+    expect(effectivePlan(null)).toBe("FREE");
   });
 });
 

@@ -26,6 +26,7 @@ describe("outbound webhook signing", () => {
     expect(OUTBOUND_EVENTS).toContain("payment_received");
     expect(OUTBOUND_EVENTS).toContain("role_granted");
     expect(OUTBOUND_EVENTS).toContain("sold_out");
+    expect(OUTBOUND_EVENTS).toContain("claim_reminder");
   });
 
   it("hmac is stable", () => {

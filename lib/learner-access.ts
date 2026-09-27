@@ -27,6 +27,7 @@ import {
   type OutboundEvent,
 } from "@/lib/outbound-webhooks";
 import { getOrgStripeClient } from "@/lib/org-stripe";
+import { isEmailConfigured, sendEmail } from "@/lib/email";
 
 export {
   extractDiscordUserIdFromSession,
@@ -259,6 +260,24 @@ export async function openLearnerAccessFromCheckout(input: {
   }
 
   if (txResult.kind === "existing") {
+    const existing = await prisma.learnerAccess.findUnique({
+      where: { id: txResult.accessId },
+      select: { status: true, discordUserId: true },
+    });
+    const discordUserId =
+      input.discordUserIdFromMetadata ?? existing?.discordUserId ?? null;
+    if (
+      existing &&
+      discordUserId &&
+      (existing.status === "PENDING_CLAIM" ||
+        existing.status === "AWAITING_JOIN")
+    ) {
+      try {
+        await fulfillDiscordAccess(txResult.accessId, discordUserId);
+      } catch (err) {
+        console.error("[access] re-fulfill existing checkout failed", err);
+      }
+    }
     return { accessId: txResult.accessId, claimToken: txResult.claimToken };
   }
 
@@ -276,7 +295,13 @@ export async function openLearnerAccessFromCheckout(input: {
   await syncPaymentLinkAvailability(input.productId);
 
   if (input.discordUserIdFromMetadata) {
-    await fulfillDiscordAccess(txResult.accessId);
+    try {
+      await fulfillDiscordAccess(txResult.accessId);
+    } catch (err) {
+      // Accès créé + siège réservé : ne pas faire échouer le webhook.
+      // retryStuckGrants (cron) reprendra.
+      console.error("[access] fulfill after checkout failed", err);
+    }
   }
 
   return { accessId: txResult.accessId, claimToken: txResult.claimToken };
@@ -336,6 +361,44 @@ async function attemptOversoldRefund(input: {
       refundError: message,
     };
   }
+}
+
+/**
+ * Relance les remboursements oversold en échec / pending (cron).
+ * Skip `skipped` et `refunded`.
+ */
+export async function retryOversoldRefunds(): Promise<number> {
+  const rows = await prisma.accessOversoldEvent.findMany({
+    where: { refundStatus: { in: ["pending", "refund_failed"] } },
+    select: {
+      id: true,
+      userId: true,
+      stripePaymentIntentId: true,
+      stripeCheckoutSessionId: true,
+    },
+    take: 30,
+    orderBy: { createdAt: "asc" },
+  });
+
+  let fixed = 0;
+  for (const row of rows) {
+    // Subscription id non stocké sur l’event — cancel déjà tenté à la création.
+    const refund = await attemptOversoldRefund({
+      userId: row.userId,
+      stripePaymentIntentId: row.stripePaymentIntentId,
+      stripeSubscriptionId: null,
+    });
+    await prisma.accessOversoldEvent.update({
+      where: { id: row.id },
+      data: {
+        refundStatus: refund.refundStatus,
+        stripeRefundId: refund.stripeRefundId,
+        refundError: refund.refundError,
+      },
+    });
+    if (refund.refundStatus === "refunded") fixed += 1;
+  }
+  return fixed;
 }
 
 async function recordOversoldCheckout(input: {
@@ -790,6 +853,27 @@ export async function revokeBySubscriptionId(
   return rows.length;
 }
 
+/**
+ * Révoque tous les accès ouverts liés à un bot (primaire ou produit)
+ * avant suppression cascade — retire les rôles Discord tant que les rows existent.
+ */
+export async function revokeAllAccessesForBot(
+  botId: string,
+  reason: string
+): Promise<number> {
+  const rows = await prisma.learnerAccess.findMany({
+    where: {
+      status: { in: ["PENDING_CLAIM", "AWAITING_JOIN", "ACTIVE"] },
+      OR: [{ botId }, { product: { botId } }],
+    },
+    select: { id: true },
+  });
+  for (const row of rows) {
+    await revokeLearnerAccess(row.id, reason);
+  }
+  return rows.length;
+}
+
 export async function revokeByPaymentIntentId(
   paymentIntentId: string,
   reason: string
@@ -836,24 +920,89 @@ export async function sendClaimReminders(): Promise<number> {
       createdAt: { lte: day1 },
       claimReminderCount: { lt: 2 },
     },
-    include: { product: { select: { name: true } } },
+    include: {
+      product: { select: { name: true } },
+      bot: {
+        select: {
+          userId: true,
+          deletedAt: true,
+          user: { select: { deletedAt: true } },
+        },
+      },
+    },
     take: 100,
   });
 
+  const emailReady = isEmailConfigured();
+  if (
+    !emailReady &&
+    pending.some((a) => a.customerEmail && !a.discordUserId)
+  ) {
+    console.warn(
+      "[access] claim reminders: RESEND_API_KEY/EMAIL_FROM absents — relances email-only via webhook orga uniquement"
+    );
+  }
+
   let sent = 0;
   for (const access of pending) {
+    if (access.bot.deletedAt || access.bot.user.deletedAt) continue;
     const needsSecond =
       access.claimReminderCount >= 1 && access.createdAt <= day2;
     const needsFirst = access.claimReminderCount === 0;
     if (!needsFirst && !needsSecond) continue;
+    if (!access.claimToken) continue;
 
-    if (access.discordUserId && access.claimToken) {
-      const url = claimUrl(access.claimToken);
+    const url = claimUrl(access.claimToken);
+    let delivered = false;
+    let channel = "none";
+
+    if (access.discordUserId) {
       await sendUserDm({
         discordUserId: access.discordUserId,
         content: `Rappel — finalise ton accès « ${access.product.name} » : ${url}`,
       });
+      delivered = true;
+      channel = "dm";
     }
+
+    if (access.customerEmail) {
+      if (emailReady) {
+        const mail = await sendEmail({
+          to: access.customerEmail,
+          subject: `Finalise ton accès « ${access.product.name} »`,
+          text: `Bonjour,\n\nFinalise ton accès Discord « ${access.product.name} » en ouvrant ce lien :\n${url}\n\n— Botly`,
+          html: `<p>Bonjour,</p><p>Finalise ton accès Discord <strong>${access.product.name}</strong> :</p><p><a href="${url}">${url}</a></p><p>— Botly</p>`,
+        });
+        if (mail.ok) {
+          delivered = true;
+          channel = channel === "dm" ? "dm+email" : "email";
+        } else {
+          console.warn("[access] claim reminder email failed", mail.error);
+        }
+      } else if (!access.discordUserId) {
+        console.warn(
+          `[access] claim reminder sans canal direct access=${access.id} (configure RESEND_API_KEY + EMAIL_FROM)`
+        );
+      }
+
+      // Toujours notifier l’orga (automation) si email connu.
+      await notifyOutbound(access.bot.userId, "claim_reminder", {
+        accessId: access.id,
+        productId: access.accessProductId,
+        email: access.customerEmail,
+        claimUrl: url,
+        productName: access.product.name,
+        reminderCount: access.claimReminderCount + 1,
+      });
+      if (!delivered) {
+        delivered = true;
+        channel = "outbound";
+      }
+    }
+
+    // Ne brûle pas le compteur si aucun canal (DM, email Resend, ou outbound).
+    if (!delivered) continue;
+
     await prisma.learnerAccess.update({
       where: { id: access.id },
       data: {
@@ -863,10 +1012,60 @@ export async function sendClaimReminders(): Promise<number> {
     });
     await recordEvent(access.id, "claim_reminder_sent", {
       count: access.claimReminderCount + 1,
+      channel,
     });
     sent += 1;
   }
   return sent;
+}
+
+/**
+ * Reprend les grants bloqués / joins manqués (web down, perms Discord, etc.).
+ */
+export async function retryStuckGrants(): Promise<number> {
+  const rows = await prisma.learnerAccess.findMany({
+    where: {
+      status: { in: ["PENDING_CLAIM", "AWAITING_JOIN"] },
+      discordUserId: { not: null },
+    },
+    select: { id: true },
+    take: 50,
+    orderBy: { updatedAt: "asc" },
+  });
+
+  let fixed = 0;
+  for (const row of rows) {
+    try {
+      const result = await fulfillDiscordAccess(row.id);
+      if (result.status === "ACTIVE") fixed += 1;
+    } catch (err) {
+      console.error("[access] retryStuckGrants failed", row.id, err);
+    }
+  }
+  return fixed;
+}
+
+/** Aligne seatsUsed sur le count réel des accès ouverts. */
+export async function reconcileSeatsUsed(): Promise<number> {
+  const products = await prisma.accessProduct.findMany({
+    select: { id: true, seatsUsed: true },
+  });
+  let fixed = 0;
+  for (const product of products) {
+    const count = await prisma.learnerAccess.count({
+      where: {
+        accessProductId: product.id,
+        status: { in: ["PENDING_CLAIM", "AWAITING_JOIN", "ACTIVE"] },
+      },
+    });
+    if (count === product.seatsUsed) continue;
+    await prisma.accessProduct.update({
+      where: { id: product.id },
+      data: { seatsUsed: count },
+    });
+    fixed += 1;
+  }
+  return fixed;
 }
 
 /** Rappels J-N avant accessEndsAt (#12). */

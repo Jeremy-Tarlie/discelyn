@@ -9,6 +9,7 @@ import {
 } from "@/lib/discord-permissions";
 import type { ApiMessageKey } from "@/lib/i18n-api";
 import {
+  isSealedToken,
   isTokenEncryptionEnabled,
   requireSealToken,
   unsealToken,
@@ -109,6 +110,27 @@ export async function getDiscordUserAccessToken(
   } catch (error) {
     console.error("[discord] oauth token decrypt failed", error);
     return null;
+  }
+
+  // Seal opportuniste des jetons legacy encore en clair.
+  if (
+    isTokenEncryptionEnabled() &&
+    account.access_token &&
+    !isSealedToken(account.access_token)
+  ) {
+    try {
+      await prisma.account.update({
+        where: { id: account.id },
+        data: {
+          access_token: requireSealToken(accessToken, "oauth_access"),
+          refresh_token: refreshToken
+            ? requireSealToken(refreshToken, "oauth_refresh")
+            : account.refresh_token,
+        },
+      });
+    } catch (error) {
+      console.error("[discord] oauth opportunistic seal failed", error);
+    }
   }
 
   const now = Math.floor(Date.now() / 1000);

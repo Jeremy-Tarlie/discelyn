@@ -604,6 +604,10 @@ export function attachPlatformHandlers(
 }
 
 export function createPlatformClient(): Client {
+  const shardEnv = Number(process.env.DISCORD_SHARD_COUNT ?? "1");
+  const shardCount =
+    Number.isFinite(shardEnv) && shardEnv > 1 ? Math.floor(shardEnv) : 1;
+
   return new Client({
     intents: [
       GatewayIntentBits.Guilds,
@@ -619,5 +623,9 @@ export function createPlatformClient(): Client {
       Partials.Reaction,
       Partials.User,
     ],
+    // Multi-shard in-process : réduit la charge gateway ; le token reste un SPOF.
+    ...(shardCount > 1
+      ? { shards: "auto" as const, shardCount }
+      : {}),
   });
 }

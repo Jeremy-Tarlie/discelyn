@@ -51,12 +51,11 @@ services:
     ports:
       - "3000:3000"
     healthcheck:
+      # BusyBox wget ne fail pas toujours sur 5xx — on exige status ok dans le body.
       test:
         [
-          "CMD",
-          "wget",
-          "-qO-",
-          "http://127.0.0.1:3000/api/health",
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1:3000/api/health | grep -q '\"status\":\"ok\"'",
         ]
       interval: 15s
       timeout: 5s

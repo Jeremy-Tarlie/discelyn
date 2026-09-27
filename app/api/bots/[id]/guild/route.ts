@@ -58,7 +58,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
   const { id } = await context.params;
   const bot = await prisma.bot.findFirst({
-    where: { id, userId: user.id },
+    where: { id, userId: user.id, deletedAt: null },
   });
 
   if (!bot) {
@@ -92,6 +92,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   const conflict = await prisma.bot.findFirst({
     where: {
       guildId: parsed.data.guildId,
+      deletedAt: null,
       NOT: { id: bot.id },
     },
     select: { id: true },
@@ -169,7 +170,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
 
   const { id } = await context.params;
   const bot = await prisma.bot.findFirst({
-    where: { id, userId: user.id },
+    where: { id, userId: user.id, deletedAt: null },
   });
 
   if (!bot) {

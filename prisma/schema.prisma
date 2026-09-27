@@ -38,6 +38,8 @@ model User {
   emailVerified DateTime?
   image         String?
   discordId     String?   @unique
+  /// Soft-delete RGPD / résiliation — les rows liées restent pour audit.
+  deletedAt     DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -53,6 +55,7 @@ model User {
   oversoldEvents    AccessOversoldEvent[]
 
   @@index([discordId])
+  @@index([deletedAt])
 }
 
 model Account {
@@ -129,6 +132,8 @@ model Bot {
   customCommands Json      @default("[]")
   lastError      String?   @db.Text
   lastSeenAt     DateTime?
+  /// Soft-delete — guildId est vidé à la suppression pour libérer l’unicité.
+  deletedAt      DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -141,6 +146,7 @@ model Bot {
 
   @@index([userId])
   @@index([status])
+  @@index([deletedAt])
 }
 
 model ModerationWarning {

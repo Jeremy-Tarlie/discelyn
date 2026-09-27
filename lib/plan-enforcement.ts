@@ -25,7 +25,7 @@ export async function enforcePlanLimits(
 ): Promise<void> {
   const plan = getPlan(planId);
   const bots = await prisma.bot.findMany({
-    where: { userId },
+    where: { userId, deletedAt: null },
     orderBy: { createdAt: "asc" },
   });
 

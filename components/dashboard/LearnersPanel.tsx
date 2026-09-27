@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { DashboardLearner } from "@/lib/dashboard-data";
@@ -18,17 +18,19 @@ export function LearnersPanel({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [learners, setLearners] = useState(initialLearners);
+  const [learnersSource, setLearnersSource] = useState(initialLearners);
+  if (initialLearners !== learnersSource) {
+    setLearnersSource(initialLearners);
+    setLearners(initialLearners);
+  }
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [searchDraft, setSearchDraft] = useState(q);
-
-  useEffect(() => {
-    setLearners(initialLearners);
-  }, [initialLearners]);
-
-  useEffect(() => {
+  const [qSource, setQSource] = useState(q);
+  if (q !== qSource) {
+    setQSource(q);
     setSearchDraft(q);
-  }, [q]);
+  }
 
   function pushFilters(nextStatus: string, nextQ: string) {
     const params = new URLSearchParams();

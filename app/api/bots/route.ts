@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
   }
 
   const bots = await prisma.bot.findMany({
-    where: { userId: user.id },
+    where: { userId: user.id, deletedAt: null },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -80,7 +80,9 @@ export async function POST(request: NextRequest) {
   }
 
   const subscription = await getUserSubscription(user.id);
-  const botCount = await prisma.bot.count({ where: { userId: user.id } });
+  const botCount = await prisma.bot.count({
+    where: { userId: user.id, deletedAt: null },
+  });
   const limit = canCreateBot(subscription, botCount);
   if (!limit.ok) {
     return NextResponse.json(

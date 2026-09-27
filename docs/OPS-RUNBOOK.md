@@ -13,10 +13,11 @@
 
 ## Alertes minimales
 
-1. `/api/health` → `status=error` ou `db=error` (page / uptime).
-2. `platformBot.status=error` ou `runtime.status=error` → bot / join cassés.
+1. `/api/health` → HTTP **503** (`status=degraded|error`) ou `db=error` (page / uptime). Compose exige `"status":"ok"` dans le body.
+2. `platformBot.status=error` ou `runtime.status=error` → bot / join cassés (déjà inclus dans le 503).
 3. `access-cron` HTTP ≠ 200 → plus d’expiry ni relances claim.
 4. Sentry : spikes `learner-join`, `access-webhook`, unseal secrets.
+5. Logs `[access-webhook] handler error (claim released)` en boucle → config price/produit/guild à corriger (Stripe retente).
 
 ## Incidents fréquents
 
@@ -38,6 +39,19 @@
 1. `CRON_SECRET` défini.
 2. Conteneur `access-cron` up.
 3. `curl -X POST -H "Authorization: Bearer $CRON_SECRET" …/api/cron/access`.
+4. Sans `discordUserId` : email Resend si `RESEND_API_KEY` + `EMAIL_FROM`, sinon webhook orga `claim_reminder`.
+
+## Soft-delete
+
+Suppression compte / bot = soft-delete (`deletedAt`) + revoke Discord + anonymisation user (RGPD).
+
+À la suppression **compte** (`softDeleteUserAccount`) :
+- produits accès désactivés, codes / affiliés / webhooks sortants coupés (`secret=revoked`)
+- `OrgStripeConfig` **supprimée** (plus de sk_/whsec_ en base ; URL webhook → 404)
+- subscription locale → `CANCELED` / `FREE`
+- `LearnerAccess` conservés pour audit (pas de cascade hard)
+
+Webhook formation après purge : `200 ignored` (orga/produit/bot morts) ou `404` — pas de retry 500 infini.
 
 ## Backup
 
@@ -58,6 +72,13 @@ Rétention recommandée : 7 j quotidiens + 4 hebdo.
 | `DISCORD_BOT_TOKEN` | Portal Discord → reset → update env → restart runtime |
 | Stripe `sk_` orga | Dashboard accès → re-setup |
 
-## SPOF assumé
+## SPOF Discord (mitigé, pas éliminé)
 
-Un seul `DISCORD_BOT_TOKEN`. Outage Discord / ban / rate-limit = tous les clients. Surveiller `platformBot` dans health.
+Un seul `DISCORD_BOT_TOKEN`. Ban / revocation token = tous les clients.
+Mitigations en place :
+- `restart: unless-stopped` + healthchecks
+- reconnect shards (`ShardReconnecting` / `ShardResume`)
+- `DISCORD_SHARD_COUNT` optionnel (multi-shard **in-process**, même token)
+- cron `retryStuckGrants` si le runtime a manqué un join
+
+Multi-bot / bot-par-orga = rewrite produit.

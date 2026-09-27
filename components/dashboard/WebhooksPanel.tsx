@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { DashboardWebhook } from "@/lib/dashboard-data";
@@ -11,6 +11,7 @@ const ALL_EVENTS = [
   "revoked",
   "expired",
   "sold_out",
+  "claim_reminder",
 ] as const;
 
 export function WebhooksPanel({
@@ -22,6 +23,11 @@ export function WebhooksPanel({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [hooks, setHooks] = useState(initialHooks);
+  const [hooksSource, setHooksSource] = useState(initialHooks);
+  if (initialHooks !== hooksSource) {
+    setHooksSource(initialHooks);
+    setHooks(initialHooks);
+  }
   const [url, setUrl] = useState("");
   const [events, setEvents] = useState<string[]>([
     "payment_received",
@@ -29,11 +35,6 @@ export function WebhooksPanel({
   ]);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    setHooks(initialHooks);
-  }, [initialHooks]);
-
   async function create() {
     setError(null);
     const res = await fetch("/api/outbound-webhooks", {

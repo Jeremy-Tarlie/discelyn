@@ -25,7 +25,7 @@ type RouteContext = {
 
 async function loadOwnedBot(botId: string, userId: string) {
   return prisma.bot.findFirst({
-    where: { id: botId, userId },
+    where: { id: botId, userId, deletedAt: null },
     select: { id: true, guildId: true, name: true },
   });
 }

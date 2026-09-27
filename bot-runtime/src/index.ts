@@ -130,7 +130,11 @@ async function syncConfigs(): Promise<void> {
   }
 
   const rows = await prisma.bot.findMany({
-    where: { guildId: { not: null } },
+    where: {
+      guildId: { not: null },
+      deletedAt: null,
+      user: { deletedAt: null },
+    },
     include: {
       user: { include: { subscription: true } },
       accessProducts: {
@@ -289,7 +293,7 @@ async function leaveUnlinkedGuilds(): Promise<void> {
   const linked = new Set(guildConfigs.keys());
   // Aussi considérer les guildIds en DB même PENDING (lien avant invite).
   const pendingRows = await prisma.bot.findMany({
-    where: { guildId: { not: null } },
+    where: { guildId: { not: null }, deletedAt: null },
     select: { guildId: true },
   });
   for (const row of pendingRows) {
@@ -440,8 +444,32 @@ process.on("SIGINT", () => {
   void shutdown("SIGINT");
 });
 
+// Évite un crash silencieux : log + Sentry ; Docker restart:unless-stopped relance.
+process.on("uncaughtException", (error) => {
+  console.error("[platform] uncaughtException", error);
+  Sentry.captureException(error);
+});
+process.on("unhandledRejection", (reason) => {
+  console.error("[platform] unhandledRejection", reason);
+  Sentry.captureException(reason);
+});
+
 await syncConfigs();
 client = createPlatformClient();
+
+client.on(Events.ShardError, (error, shardId) => {
+  console.error(`[platform] shard ${shardId} error`, error);
+  Sentry.captureException(error);
+});
+client.on(Events.ShardDisconnect, (event, shardId) => {
+  console.warn(`[platform] shard ${shardId} disconnected`, event.code);
+});
+client.on(Events.ShardReconnecting, (shardId) => {
+  console.log(`[platform] shard ${shardId} reconnecting`);
+});
+client.on(Events.ShardResume, (shardId) => {
+  console.log(`[platform] shard ${shardId} resumed`);
+});
 
 const learnerAccessJoiner = {
   async grantOnJoin(guildId: string, discordUserId: string): Promise<number> {

@@ -13,6 +13,8 @@
     "test:e2e": "node scripts/run-tests.mjs --e2e",
     "preflight:prod": "node --env-file=.env scripts/preflight-prod.mjs",
     "backup:db": "node --env-file=.env scripts/backup-postgres.mjs",
+    "release:gate": "node --env-file=.env scripts/release-gate.mjs",
+    "deploy:prod": "node --env-file=.env scripts/deploy-prod.mjs",
     "typecheck": "tsc --noEmit",
     "typecheck:runtime": "npm --prefix bot-runtime run typecheck",
     "db:generate": "prisma generate",

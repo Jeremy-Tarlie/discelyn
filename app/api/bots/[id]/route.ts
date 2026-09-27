@@ -9,7 +9,7 @@ import {
 } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { getPlan, type PlanId, type BotModuleId } from "@/lib/plans";
-import { deprovisionBot } from "@/lib/provisioning";
+import { softDeleteBot } from "@/lib/soft-delete-ops";
 import { rateLimit } from "@/lib/rate-limit";
 import { notifyRuntimeReload } from "@/lib/runtime-notify";
 import { parseBotConfig } from "@/lib/bot-config";
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   const { id } = await context.params;
   const bot = await prisma.bot.findFirst({
-    where: { id, userId: user.id },
+    where: { id, userId: user.id, deletedAt: null },
     select: {
       id: true,
       name: true,
@@ -82,7 +82,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
   const { id } = await context.params;
   const bot = await prisma.bot.findFirst({
-    where: { id, userId: user.id },
+    where: { id, userId: user.id, deletedAt: null },
   });
 
   if (!bot) {
@@ -208,15 +208,17 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
 
   const { id } = await context.params;
   const bot = await prisma.bot.findFirst({
-    where: { id, userId: user.id },
+    where: { id, userId: user.id, deletedAt: null },
   });
 
   if (!bot) {
     return NextResponse.json({ error: tApi(locale, "botNotFound") }, { status: 404 });
   }
 
-  const guildId = bot.guildId;
-  await prisma.bot.delete({ where: { id: bot.id } });
-  await deprovisionBot(bot.id, guildId);
+  await softDeleteBot({
+    botId: bot.id,
+    guildId: bot.guildId,
+    revokeReason: "bot_deleted",
+  });
   return NextResponse.json({ ok: true });
 }

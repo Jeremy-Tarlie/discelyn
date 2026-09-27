@@ -17,12 +17,16 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  const subscription = await getUserSubscription(session.user.id);
-  const plan = getPlan(subscription.plan as PlanId);
-  const dbUser = await prisma.user.findUnique({
-    where: { id: session.user.id },
+  const dbUser = await prisma.user.findFirst({
+    where: { id: session.user.id, deletedAt: null },
     select: { discordId: true },
   });
+  if (!dbUser) {
+    redirect("/login");
+  }
+
+  const subscription = await getUserSubscription(session.user.id);
+  const plan = getPlan(subscription.plan as PlanId);
 
   return (
     <div className="min-h-screen md:flex">

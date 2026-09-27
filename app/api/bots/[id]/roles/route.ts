@@ -32,7 +32,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   const { id: botId } = await context.params;
   const bot = await prisma.bot.findFirst({
-    where: { id: botId, userId: user.id },
+    where: { id: botId, userId: user.id, deletedAt: null },
     select: { guildId: true },
   });
   if (!bot) {

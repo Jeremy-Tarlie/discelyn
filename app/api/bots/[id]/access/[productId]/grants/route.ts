@@ -103,7 +103,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   const targetBot = await prisma.bot.findFirst({
-    where: { id: parsed.data.botId, userId: user.id },
+    where: { id: parsed.data.botId, userId: user.id, deletedAt: null },
     select: { id: true, guildId: true },
   });
   if (!targetBot?.guildId) {

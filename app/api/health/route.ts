@@ -88,9 +88,10 @@ export async function GET() {
     const runtimeDown = runtime.status === "error";
     const redisDown = redis === "error";
     const botDown = platformBot.status === "error";
-    const status =
-      runtimeDown || redisDown || botDown ? "degraded" : "ok";
+    const degraded = runtimeDown || redisDown || botDown;
+    const status = degraded ? "degraded" : "ok";
 
+    // 503 si dépendances produit down — Docker/LB ne doivent pas garder un web « healthy ».
     return NextResponse.json(
       {
         status,
@@ -101,7 +102,7 @@ export async function GET() {
         platformBot: { status: platformBot.status },
         time: new Date().toISOString(),
       },
-      { status: 200 }
+      { status: degraded ? 503 : 200 }
     );
   } catch {
     return NextResponse.json(

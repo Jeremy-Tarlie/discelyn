@@ -16,6 +16,11 @@ export async function requireUser() {
   if (!session?.user?.id) {
     return null;
   }
+  const active = await prisma.user.findFirst({
+    where: { id: session.user.id, deletedAt: null },
+    select: { id: true },
+  });
+  if (!active) return null;
   return session.user;
 }
 

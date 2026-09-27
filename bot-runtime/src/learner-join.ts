@@ -1,10 +1,14 @@
 /**
  * Délègue le grant-on-join au web (source unique : fulfillDiscordAccess).
- * Pas de fallback local — si le web est down, le join est retenté au prochain
- * event ou via cron / re-claim.
+ * Retry court si le web est momentanément down ; le cron `retryStuckGrants`
+ * reprend les cas plus longs.
  */
 
-export async function requestGrantOnJoinViaWeb(input: {
+async function sleep(ms: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function requestOnce(input: {
   guildId: string;
   discordUserId: string;
   secret: string;
@@ -42,4 +46,24 @@ export async function requestGrantOnJoinViaWeb(input: {
     throw new Error("learner-join réponse invalide");
   }
   return data.granted;
+}
+
+export async function requestGrantOnJoinViaWeb(input: {
+  guildId: string;
+  discordUserId: string;
+  secret: string;
+}): Promise<number> {
+  const maxAttempts = 3;
+  let lastError: Error | undefined;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      return await requestOnce(input);
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      if (attempt < maxAttempts - 1) {
+        await sleep(400 * (attempt + 1));
+      }
+    }
+  }
+  throw lastError ?? new Error("learner-join failed");
 }

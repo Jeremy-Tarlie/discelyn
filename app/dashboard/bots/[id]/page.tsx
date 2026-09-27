@@ -35,7 +35,7 @@ export default async function BotDetailPage({ params }: PageProps) {
   const t = await getTranslations("dashboard");
   const { id } = await params;
   let bot = await prisma.bot.findFirst({
-    where: { id, userId: session!.user.id },
+    where: { id, userId: session!.user.id, deletedAt: null },
   });
 
   if (!bot) notFound();

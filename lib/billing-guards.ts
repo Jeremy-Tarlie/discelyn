@@ -10,6 +10,19 @@ export function isSubscriptionActive(
   return ACTIVE_STATUSES.includes(subscription.status);
 }
 
+/**
+ * Plan exposé à l’UI/session : FREE si l’abonnement n’est plus utilisable
+ * (PAST_DUE, CANCELED, …) pour éviter d’afficher Starter/Ops alors que les mutations sont 403.
+ */
+export function effectivePlan(
+  subscription: Pick<Subscription, "plan" | "status"> | null | undefined
+): PlanId {
+  if (!subscription || !isSubscriptionActive(subscription)) {
+    return "FREE";
+  }
+  return subscription.plan as PlanId;
+}
+
 export type GuardFailure = {
   ok: false;
   code: ApiMessageKey;

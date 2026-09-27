@@ -4,6 +4,9 @@ import { authorizeCron } from "@/lib/cron-auth";
 import {
   advanceOnboardingSteps,
   expireCohortAccesses,
+  reconcileSeatsUsed,
+  retryOversoldRefunds,
+  retryStuckGrants,
   sendClaimReminders,
   sendExpiryReminders,
 } from "@/lib/learner-access";
@@ -11,7 +14,7 @@ import {
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-/** Cron accès : expirations, relances claim, J-N, onboarding (toutes les ~15 min). */
+/** Cron accès : expirations, relances, retries grants/refunds, seats (toutes les ~15 min). */
 export async function POST(request: NextRequest) {
   if (!process.env.CRON_SECRET) {
     return NextResponse.json(
@@ -23,19 +26,32 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const [expired, claimReminders, expiryReminders, onboarding] =
-    await Promise.all([
-      expireCohortAccesses(),
-      sendClaimReminders(),
-      sendExpiryReminders(),
-      advanceOnboardingSteps(),
-    ]);
+  const [
+    expired,
+    claimReminders,
+    expiryReminders,
+    onboarding,
+    stuckGrants,
+    oversoldRefunds,
+    seatsReconciled,
+  ] = await Promise.all([
+    expireCohortAccesses(),
+    sendClaimReminders(),
+    sendExpiryReminders(),
+    advanceOnboardingSteps(),
+    retryStuckGrants(),
+    retryOversoldRefunds(),
+    reconcileSeatsUsed(),
+  ]);
 
   return NextResponse.json({
     expired,
     claimReminders,
     expiryReminders,
     onboarding,
+    stuckGrants,
+    oversoldRefunds,
+    seatsReconciled,
     time: new Date().toISOString(),
   });
 }

@@ -2,6 +2,11 @@ import type Stripe from "stripe";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 
+export {
+  StripeWebhookPermanentIgnore,
+  StripeWebhookRetryableError,
+} from "@/lib/stripe-webhook-errors";
+
 /**
  * Claim atomique d’un event Stripe (unique sur eventId).
  * Retourne false si déjà traité (retry / duplicate delivery).

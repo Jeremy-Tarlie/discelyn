@@ -5,6 +5,8 @@ import type { Adapter } from "next-auth/adapters";
 import { prisma } from "@/lib/prisma";
 import { trackEvent } from "@/lib/analytics";
 import type { PlanId } from "@/lib/plans";
+import type { SubscriptionStatus } from "@/generated/prisma/client";
+import { effectivePlan } from "@/lib/billing-guards";
 import { isTokenEncryptionEnabled, requireSealToken } from "@/lib/token-crypto";
 
 declare module "next-auth" {
@@ -14,7 +16,9 @@ declare module "next-auth" {
       name?: string | null;
       email?: string | null;
       image?: string | null;
+      /** Plan utilisable (FREE si abonnement inactif / PAST_DUE). */
       plan: PlanId;
+      subscriptionStatus: SubscriptionStatus;
     };
   }
 }
@@ -63,12 +67,26 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async session({ session, user }) {
+      const active = await prisma.user.findFirst({
+        where: { id: user.id, deletedAt: null },
+        select: { id: true },
+      });
+      if (!active) {
+        await prisma.session.deleteMany({ where: { userId: user.id } });
+        // Force unauthenticated côté clients qui lisent session.user.id.
+        session.user.id = "";
+        session.user.plan = "FREE";
+        session.user.subscriptionStatus = "CANCELED";
+        return session;
+      }
+
       const subscription = await prisma.subscription.findUnique({
         where: { userId: user.id },
       });
 
       session.user.id = user.id;
-      session.user.plan = (subscription?.plan ?? "FREE") as PlanId;
+      session.user.plan = effectivePlan(subscription);
+      session.user.subscriptionStatus = subscription?.status ?? "ACTIVE";
       return session;
     },
   },

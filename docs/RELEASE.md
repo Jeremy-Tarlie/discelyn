@@ -2,7 +2,18 @@
 
 Checklist avant `APP_ENV=production`. À suivre dans l’ordre.
 
-## 1. Preflight code
+## Gate unique (points 2→7)
+
+```bash
+# Docker Desktop doit tourner (migrate / e2e / backup via compose)
+npm run release:gate
+```
+
+Enchaîne : migrate → preflight → typecheck → lint → test → **test:e2e money path** → builds → vérif TLS → **backup DB**.
+
+Flags : `--skip-build` · `--skip-e2e` · `--skip-backup`
+
+## 1. Preflight code (si tu ne passes pas par release:gate)
 
 ```bash
 npm ci
@@ -10,7 +21,7 @@ npm run typecheck
 npm run typecheck:runtime
 npm run lint
 npm test
-npm run test:e2e          # money path DB (démarre Postgres test :5433 si besoin)
+npm run test:e2e          # money path DB (Postgres test :5433)
 npm run build
 npm --prefix bot-runtime run build
 npm run preflight:prod    # --env-file=.env
@@ -19,10 +30,10 @@ npm run preflight:prod    # --env-file=.env
 ## 2. Base de données
 
 ```bash
-npm run db:migrate:deploy
-npm run seal-oauth        # si jetons OAuth legacy en clair
-npm run seal-org-stripe   # si sk_/whsec_ formation en clair
-npm run backup:db         # snapshot avant cutover
+npm run db:migrate:deploy   # inclut soft-delete User/Bot
+npm run seal-oauth          # si jetons OAuth legacy en clair
+npm run seal-org-stripe     # si sk_/whsec_ formation en clair
+npm run backup:db           # snapshot avant cutover (pg_dump local ou docker exec)
 ```
 
 ## 3. Secrets prod (présence)
@@ -30,6 +41,7 @@ npm run backup:db         # snapshot avant cutover
 | Variable | Rôle |
 |----------|------|
 | `APP_ENV=production` | Active live Stripe + fail-fast |
+| `TRUST_PROXY=1` | **Obligatoire** en prod (preflight refuse sinon) |
 | `TOKEN_ENCRYPTION_KEY` | OAuth + Stripe formation |
 | `CRON_SECRET` | access-cron + retention-cron |
 | `BOT_RUNTIME_SECRET` | reload + learner-join |
@@ -39,29 +51,46 @@ npm run backup:db         # snapshot avant cutover
 | `DISCORD_BOT_TOKEN` | bot plateforme |
 | `REDIS_URL` | rate-limit multi-instance (**obligatoire** en production) |
 | `SENTRY_DSN` | erreurs (recommandé) |
+| `RESEND_API_KEY` + `EMAIL_FROM` | emails claim (optionnel) |
+| `DOMAIN` + `EMAIL` | Let's Encrypt (deploy:prod) |
 
 Ne jamais committer `.env`. Référence : `.env.example`.
 
-## 4. Déploiement compose
+## 4. Déploiement compose (TLS uniquement)
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d --build
-# Vérifier :
+# DOMAIN + EMAIL dans .env (ou exportés)
+npm run deploy:prod
+# équivalent :
+# docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d --build
+
 curl -fsS https://TON_DOMAINE/api/health
-docker compose logs -f access-cron retention-cron runtime web
+docker compose -f docker-compose.yml -f docker-compose.tls.yml logs -f access-cron retention-cron runtime web
 ```
 
-Health attendu : `status` `ok` ou `degraded` explicable ; `db: ok` ; `ops.encryption` / `ops.cron` = `configured`.
+**Ne pas** lancer le compose nu en production (port 3000 sans TLS, `TRUST_PROXY=0`).
 
-## 5. Preuve manuelle money path (1×)
+Health attendu : HTTP **200** + `status: "ok"` + `db: "ok"`.  
+Si runtime / Redis / bot plateforme en échec → HTTP **503** + `status: "degraded"`.
 
-1. Brancher Stripe **test** orga (ou live si déjà en prod) via dashboard accès.
+## 5. Preuve money path
+
+### Automatisée (obligatoire avant tag)
+
+```bash
+npm run test:e2e
+```
+
+Couvre : checkout → siège → multi-guild AWAITING_JOIN → grant-on-join → ACTIVE → revoke.
+
+### Manuelle post-deploy (1× smoke Discord réel)
+
+1. Brancher Stripe **test** orga via dashboard accès.
 2. Créer un produit price → rôle.
 3. Payer le Payment Link (carte test).
 4. Claim OAuth → rôle Discord.
-5. Multi-guild : join 2ᵉ serveur → ACTIVE seulement quand tous les grants OK.
-6. Refund / cancel → rôle retiré.
-7. Vérifier cron : `POST /api/cron/access` avec Bearer → 200.
+5. Refund / cancel → rôle retiré.
+6. `POST /api/cron/access` avec Bearer → 200.
 
 ## 6. Tag release
 

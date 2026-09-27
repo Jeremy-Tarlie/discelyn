@@ -50,13 +50,13 @@ On ne passe **pas** `ACTIVE` dès qu’un seul serveur a réussi.
 ### Join Discord
 
 1. Runtime `GuildMemberAdd` → **uniquement** `POST /api/internal/learner-join` (Bearer `BOT_RUNTIME_SECRET`, rate-limit) → `grantPendingOnJoin` → `fulfillDiscordAccess`.
-2. **Pas de fallback** Discord.js local : si le web est down, le grant échoue (log + Sentry) ; retry au prochain join / re-claim / cron.
+2. Retry court (3×) côté runtime ; si le web reste down → cron `retryStuckGrants` / prochain join / re-claim. Pas de fallback Discord.js local.
 3. Variable runtime : `WEB_INTERNAL_URL` (compose : `http://web:3000`).
 
 ### Revoke
 
 - Remboursement / unpaid / canceled / fin de cohorte → `revokeLearnerAccess` (tous les grants).
-- Cron `POST /api/cron/access` (~15 min) : expiry, relances claim, J-N, onboarding.
+- Cron `POST /api/cron/access` (~15 min) : expiry, relances claim (DM ou webhook `claim_reminder`), J-N, onboarding, retry grants, retry refunds oversold, reconcile `seatsUsed`.
 - Cron `POST /api/cron/retention` (1 h) : purge analytics / leads RGPD uniquement.
 
 ### Codes manuels
@@ -89,7 +89,17 @@ Hors `APP_ENV=production`, `sk_live_` refusée.
 
 **Export** `GET /api/account` : user, accounts sans jetons, subscription, bots, compte de warnings.
 
-**Suppression** `DELETE /api/account` : cancel Stripe → delete user (cascade) → deprovision bots → best-effort delete customer.
+**Suppression** `DELETE /api/account` (soft-delete) :
+1. Cancel abonnement Stripe SaaS Botly
+2. Revoke tous les accès Discord des bots
+3. Soft-delete bots (`deletedAt`, `guildId` null) + désactivation produits
+4. Purge infra accès : `OrgStripeConfig` (sk_/whsec_) **supprimée**, codes / affiliés / webhooks sortants désactivés
+5. Anonymisation user (`email`/`discordId` null) + invalidation sessions
+6. Best-effort delete customer Stripe Botly
+
+Les `LearnerAccess` / events restent pour audit (plus de cascade hard). Un webhook Stripe formation qui arrive après purge reçoit `404` (config absente) ou `200 ignored` (orga/produit/bot morts) — **pas** de retry infini 500.
+
+Voir `lib/soft-delete.ts` + `lib/soft-delete-ops.ts` (`softDeleteUserAccount`, `purgeOrgAccessInfrastructure`).
 
 ---
 
