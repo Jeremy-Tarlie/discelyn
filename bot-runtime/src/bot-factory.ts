@@ -371,10 +371,7 @@ export function attachPlatformHandlers(
           name: typeof ch.name === "string" ? ch.name : "",
         })),
       });
-      const welcomeText =
-        bot.forceBranding && !/—\s*Botly\s*$/i.test(body.trim())
-          ? `${body.trim()} — Botly`
-          : body;
+      const welcomeText = body;
 
       if (channelId) {
         const channel = member.guild.channels.cache.get(channelId);
@@ -596,7 +593,7 @@ export function attachPlatformHandlers(
     if (bot.enabledModules.includes("custom_commands")) {
       const matched = matchPrefixCommand(message.content, bot.customCommands);
       if (matched) {
-        const response = matched + (bot.forceBranding ? "\n— Botly" : "");
+        const response = matched;
         await message.reply(response);
       }
     }

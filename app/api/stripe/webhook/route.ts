@@ -19,11 +19,16 @@ import {
 
 export const runtime = "nodejs";
 
-async function resolveUserIdFromSubscription(
+/**
+ * Résout l’organisation pour un abonnement Stripe SaaS.
+ * Priorité : metadata.organizationId → subscription.organizationId →
+ * legacy metadata.userId via membership OWNER.
+ */
+async function resolveOrganizationIdFromSubscription(
   stripeSubscription: Stripe.Subscription
 ): Promise<string | null> {
-  if (stripeSubscription.metadata.userId) {
-    return stripeSubscription.metadata.userId;
+  if (stripeSubscription.metadata.organizationId) {
+    return stripeSubscription.metadata.organizationId;
   }
 
   const customerId =
@@ -38,18 +43,36 @@ async function resolveUserIdFromSubscription(
         { stripeCustomerId: customerId },
       ],
     },
-    select: { userId: true },
+    select: { organizationId: true },
   });
-  return existing?.userId ?? null;
+  if (existing?.organizationId) return existing.organizationId;
+
+  // Legacy checkouts : metadata.userId → org OWNER active.
+  const legacyUserId = stripeSubscription.metadata.userId;
+  if (legacyUserId) {
+    const membership = await prisma.organizationMembership.findFirst({
+      where: {
+        userId: legacyUserId,
+        role: "OWNER",
+        organization: { deletedAt: null },
+      },
+      orderBy: { createdAt: "asc" },
+      select: { organizationId: true },
+    });
+    return membership?.organizationId ?? null;
+  }
+
+  return null;
 }
 
 async function syncSubscription(stripeSubscription: Stripe.Subscription) {
-  const userId = await resolveUserIdFromSubscription(stripeSubscription);
-  if (!userId) return;
+  const organizationId =
+    await resolveOrganizationIdFromSubscription(stripeSubscription);
+  if (!organizationId) return;
 
   const priceId = stripeSubscription.items.data[0]?.price.id ?? null;
   const existing = await prisma.subscription.findUnique({
-    where: { userId },
+    where: { organizationId },
     select: { plan: true },
   });
 
@@ -61,7 +84,7 @@ async function syncSubscription(stripeSubscription: Stripe.Subscription) {
 
   if (conserved) {
     console.warn(
-      `[stripe] plan inconnu pour user=${userId} price=${priceId ?? "null"} — conservation ${plan}`
+      `[stripe] plan inconnu pour org=${organizationId} price=${priceId ?? "null"} — conservation ${plan}`
     );
   }
 
@@ -74,9 +97,9 @@ async function syncSubscription(stripeSubscription: Stripe.Subscription) {
   ).current_period_end;
 
   await prisma.subscription.upsert({
-    where: { userId },
+    where: { organizationId },
     create: {
-      userId,
+      organizationId,
       plan,
       status: mappedStatus,
       stripeCustomerId:
@@ -106,8 +129,8 @@ async function syncSubscription(stripeSubscription: Stripe.Subscription) {
     },
   });
 
-  await enforcePlanLimits(userId, plan);
-  await notifyRuntimeReload({ userId });
+  await enforcePlanLimits(organizationId, plan);
+  await notifyRuntimeReload({ organizationId });
 }
 
 export async function POST(request: NextRequest) {
@@ -151,6 +174,7 @@ export async function POST(request: NextRequest) {
           meta: {
             mode: session.mode,
             planId: session.metadata?.planId ?? null,
+            organizationId: session.metadata?.organizationId ?? null,
           },
         });
         if (session.mode === "subscription" && session.subscription) {
@@ -159,7 +183,17 @@ export async function POST(request: NextRequest) {
               ? session.subscription
               : session.subscription.id;
           const subscription = await stripe.subscriptions.retrieve(subId);
-          if (session.metadata?.userId) {
+          const orgMeta =
+            session.metadata?.organizationId ??
+            subscription.metadata.organizationId;
+          if (orgMeta) {
+            subscription.metadata = {
+              ...subscription.metadata,
+              organizationId: orgMeta,
+              planId: session.metadata?.planId ?? subscription.metadata.planId,
+            };
+          } else if (session.metadata?.userId) {
+            // Legacy checkout : propage userId pour résolution OWNER.
             subscription.metadata = {
               ...subscription.metadata,
               userId: session.metadata.userId,
@@ -177,10 +211,11 @@ export async function POST(request: NextRequest) {
       }
       case "customer.subscription.deleted": {
         const deleted = event.data.object as Stripe.Subscription;
-        const userId = await resolveUserIdFromSubscription(deleted);
-        if (userId) {
+        const organizationId =
+          await resolveOrganizationIdFromSubscription(deleted);
+        if (organizationId) {
           await prisma.subscription.update({
-            where: { userId },
+            where: { organizationId },
             data: {
               plan: "FREE",
               status: "CANCELED",
@@ -189,8 +224,8 @@ export async function POST(request: NextRequest) {
               cancelAtPeriodEnd: false,
             },
           });
-          await enforcePlanLimits(userId, "FREE");
-          await notifyRuntimeReload({ userId });
+          await enforcePlanLimits(organizationId, "FREE");
+          await notifyRuntimeReload({ organizationId });
         }
         break;
       }

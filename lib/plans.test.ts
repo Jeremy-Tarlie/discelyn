@@ -33,13 +33,6 @@ describe("PLANS", () => {
     expect(DIAGNOSTIC_OFFER.setupCreditEur).toBe(49);
   });
 
-  it("n’force le branding sur aucun plan", () => {
-    expect(PLANS.FREE.forceBranding).toBe(false);
-    expect(PLANS.STARTER.forceBranding).toBe(false);
-    expect(PLANS.OPS.forceBranding).toBe(false);
-    expect(PLANS.SCALE.forceBranding).toBe(false);
-  });
-
   it("pousse le freemium avec le socle ops + 1 produit accès", () => {
     expect(PLANS.FREE.modules).toEqual([...OPS_CORE_MODULES]);
     expect(PLANS.FREE.maxCustomCommands).toBe(5);

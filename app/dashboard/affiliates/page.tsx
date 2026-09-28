@@ -1,13 +1,15 @@
 ﻿import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
-import { listAffiliatesForUser } from "@/lib/dashboard-data";
+import { listAffiliatesForOrg } from "@/lib/dashboard-data";
 import { AffiliatesPanel } from "@/components/dashboard/AffiliatesPanel";
 
 export default async function AffiliatesPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/login");
+  const organizationId = session.user.organizationId;
+  if (!organizationId) redirect("/login");
 
-  const rows = await listAffiliatesForUser(session.user.id);
+  const rows = await listAffiliatesForOrg(organizationId);
   return <AffiliatesPanel initialRows={rows} />;
 }

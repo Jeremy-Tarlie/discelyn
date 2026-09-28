@@ -16,13 +16,11 @@ import {
 const PLAN_IDS = Object.keys(PLANS) as PlanId[];
 
 describe("parité plans web ↔ runtime", () => {
-  it("aligne maxGuilds, forceBranding, modules, maxCustomCommands", () => {
+  it("aligne maxGuilds, modules, maxCustomCommands", () => {
     for (const planId of PLAN_IDS) {
       const web = PLANS[planId];
       const runtime = RUNTIME_PLAN_LIMITS[planId as RuntimePlanId];
       expect(web.maxGuilds).toBe(runtime.maxGuilds);
-      expect(web.maxBots).toBe(runtime.maxGuilds);
-      expect(web.forceBranding).toBe(runtime.forceBranding);
       expect(web.maxCustomCommands).toBe(runtime.maxCustomCommands);
       expect([...web.modules].sort()).toEqual([...runtime.modules].sort());
     }

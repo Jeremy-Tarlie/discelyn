@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getUserSubscription } from "@/lib/access";
+import { getOrgSubscription } from "@/lib/access";
 import { getPlan, type PlanId } from "@/lib/plans";
 import { DashboardNav } from "@/components/dashboard/DashboardNav";
 import { isLeadsAdmin } from "@/lib/leads-admin";
@@ -25,7 +25,12 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  const subscription = await getUserSubscription(session.user.id);
+  const organizationId = session.user.organizationId;
+  if (!organizationId) {
+    redirect("/login");
+  }
+
+  const subscription = await getOrgSubscription(organizationId);
   const plan = getPlan(subscription.plan as PlanId);
 
   return (

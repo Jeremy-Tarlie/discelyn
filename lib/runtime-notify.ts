@@ -3,7 +3,7 @@
  * Without BOT_RUNTIME_URL, no-op (runtime polls DB every 30s).
  *
  * `/internal/reload` resynchronise toujours toutes les configs en mémoire ;
- * le body (`botId` ou `userId`) sert au tracing côté runtime.
+ * le body (`botId` ou `organizationId`) sert au tracing côté runtime.
  */
 
 export type NotifyResult = {
@@ -14,7 +14,7 @@ export type NotifyResult = {
 
 export type RuntimeReloadTarget =
   | { botId: string }
-  | { userId: string };
+  | { organizationId: string };
 
 async function notify(
   path: "/internal/reload" | "/internal/stop",
@@ -54,15 +54,15 @@ async function notify(
 export async function notifyRuntimeReload(
   target: RuntimeReloadTarget
 ): Promise<NotifyResult> {
-  if ("userId" in target) {
+  if ("organizationId" in target) {
     return notify("/internal/reload", {
-      userId: target.userId,
+      organizationId: target.organizationId,
       botId: null,
     });
   }
   return notify("/internal/reload", {
     botId: target.botId,
-    userId: null,
+    organizationId: null,
   });
 }
 

@@ -12,7 +12,9 @@ import { deprovisionBot } from "@/lib/provisioning";
  * webhooks sortants, config Stripe formation (sk_/whsec_).
  * Ne soft-delete pas les bots — appelant séparé.
  */
-export async function purgeOrgAccessInfrastructure(userId: string): Promise<{
+export async function purgeOrgAccessInfrastructure(
+  organizationId: string
+): Promise<{
   productsDeactivated: number;
   codesDeactivated: number;
   affiliatesDeactivated: number;
@@ -21,29 +23,29 @@ export async function purgeOrgAccessInfrastructure(userId: string): Promise<{
 }> {
   const [products, codes, affiliates, outbound] = await Promise.all([
     prisma.accessProduct.updateMany({
-      where: { userId, active: true },
+      where: { organizationId, active: true },
       data: { active: false, paymentLinkUrl: null, paymentLinkId: null },
     }),
     prisma.accessCode.updateMany({
-      where: { createdByUserId: userId, active: true },
+      where: { product: { organizationId }, active: true },
       data: { active: false },
     }),
     prisma.affiliate.updateMany({
-      where: { userId, active: true },
+      where: { organizationId, active: true },
       data: { active: false },
     }),
     prisma.orgOutboundWebhook.updateMany({
-      where: { userId, active: true },
+      where: { organizationId, active: true },
       data: { active: false, secret: "revoked" },
     }),
   ]);
 
   const existingStripe = await prisma.orgStripeConfig.findUnique({
-    where: { userId },
+    where: { organizationId },
     select: { id: true },
   });
   if (existingStripe) {
-    await prisma.orgStripeConfig.delete({ where: { userId } });
+    await prisma.orgStripeConfig.delete({ where: { organizationId } });
   }
 
   return {
@@ -79,16 +81,14 @@ export async function softDeleteBot(input: {
 }
 
 /**
- * Soft-delete compte orga : revoke accès → soft-delete bots → purge secrets
- * → anonymisation user + invalidation sessions.
- * Stripe SaaS Botly doit déjà être annulé par l’appelant.
+ * Soft-delete organisation : bots → purge infra → abonnement FREE/CANCELED
+ * → anonymisation LearnerAccess (PII) → org.deletedAt.
  */
-export async function softDeleteUserAccount(input: {
-  userId: string;
-  email: string | null;
-}): Promise<void> {
+export async function softDeleteOrganization(
+  organizationId: string
+): Promise<void> {
   const bots = await prisma.bot.findMany({
-    where: { userId: input.userId, deletedAt: null },
+    where: { organizationId, deletedAt: null },
     select: { id: true, guildId: true },
   });
 
@@ -100,15 +100,10 @@ export async function softDeleteUserAccount(input: {
     });
   }
 
-  await purgeOrgAccessInfrastructure(input.userId);
-
-  await prisma.analyticsEvent.deleteMany({ where: { userId: input.userId } });
-  if (input.email) {
-    await prisma.lead.deleteMany({ where: { email: input.email } });
-  }
+  await purgeOrgAccessInfrastructure(organizationId);
 
   await prisma.subscription.updateMany({
-    where: { userId: input.userId },
+    where: { organizationId },
     data: {
       status: "CANCELED",
       plan: "FREE",
@@ -117,16 +112,77 @@ export async function softDeleteUserAccount(input: {
     },
   });
 
-  const deletedAt = new Date();
-  await prisma.bot.updateMany({
-    where: { userId: input.userId, deletedAt: null },
-    data: {
-      deletedAt,
-      guildId: null,
-      inviteUrl: null,
-      status: "OFFLINE",
+  const botIds = (
+    await prisma.bot.findMany({
+      where: { organizationId },
+      select: { id: true },
+    })
+  ).map((b) => b.id);
+
+  if (botIds.length > 0) {
+    await prisma.learnerAccess.updateMany({
+      where: { botId: { in: botIds } },
+      data: {
+        customerEmail: null,
+        discordUserId: null,
+        claimToken: null,
+        claimTokenExpiresAt: null,
+        stripeCustomerId: null,
+        inviteUrl: null,
+      },
+    });
+  }
+
+  await prisma.organization.update({
+    where: { id: organizationId },
+    data: { deletedAt: new Date() },
+  });
+}
+
+/**
+ * Soft-delete compte utilisateur : pour chaque membership OWNER, soft-delete
+ * l’orga si seul OWNER restant, sinon retire la membership ; puis anonymise
+ * le user + invalide sessions.
+ * Stripe SaaS Botly doit déjà être annulé par l’appelant pour les orgs concernées.
+ */
+export async function softDeleteUserAccount(input: {
+  userId: string;
+  email: string | null;
+}): Promise<void> {
+  const memberships = await prisma.organizationMembership.findMany({
+    where: { userId: input.userId },
+    select: {
+      id: true,
+      role: true,
+      organizationId: true,
     },
   });
+
+  for (const membership of memberships) {
+    if (membership.role === "OWNER") {
+      const otherOwners = await prisma.organizationMembership.count({
+        where: {
+          organizationId: membership.organizationId,
+          role: "OWNER",
+          userId: { not: input.userId },
+        },
+      });
+      if (otherOwners === 0) {
+        await softDeleteOrganization(membership.organizationId);
+        continue;
+      }
+    }
+    await prisma.organizationMembership.delete({
+      where: { id: membership.id },
+    });
+  }
+
+  await prisma.analyticsEvent.deleteMany({ where: { userId: input.userId } });
+  if (input.email) {
+    await prisma.lead.deleteMany({ where: { email: input.email } });
+  }
+
+  const deletedAt = new Date();
 
   await prisma.session.deleteMany({ where: { userId: input.userId } });
   await prisma.account.deleteMany({ where: { userId: input.userId } });

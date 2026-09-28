@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { requireUser, getUserSubscription } from "@/lib/access";
+import { requireOrg, getOrgSubscription } from "@/lib/access";
 import { getStripe } from "@/lib/stripe";
 import {
   getOneShotStripePriceId,
@@ -28,8 +28,8 @@ export async function POST(request: NextRequest) {
   });
   if (!limited.ok) return limited.response;
 
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "OWNER" });
+  if (!org) {
     return NextResponse.json({ error: tApi(locale, "unauthenticated") }, { status: 401 });
   }
 
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  const subscription = await getUserSubscription(user.id);
+  const subscription = await getOrgSubscription(org.organizationId);
 
   if (!oneShot) {
     const blockingStatuses = new Set(["ACTIVE", "TRIALING", "PAST_DUE"]);
@@ -79,22 +79,25 @@ export async function POST(request: NextRequest) {
   let customerId = subscription.stripeCustomerId;
   if (!customerId) {
     const customer = await stripe.customers.create({
-      email: user.email ?? undefined,
-      name: user.name ?? undefined,
-      metadata: { userId: user.id },
+      email: org.email ?? undefined,
+      name: org.name ?? undefined,
+      metadata: {
+        organizationId: org.organizationId,
+        userId: org.userId,
+      },
     });
     customerId = customer.id;
     await prisma.subscription.update({
-      where: { userId: user.id },
+      where: { organizationId: org.organizationId },
       data: { stripeCustomerId: customerId },
     });
   }
 
   await trackEvent({
     name: "checkout_started",
-    userId: user.id,
+    userId: org.userId,
     path: "/api/stripe/checkout",
-    meta: { offerId },
+    meta: { offerId, organizationId: org.organizationId },
   });
 
   const successPath =
@@ -113,7 +116,8 @@ export async function POST(request: NextRequest) {
         cancel_url: `${appUrl}/#offres?canceled=1`,
         allow_promotion_codes: true,
         metadata: {
-          userId: user.id,
+          organizationId: org.organizationId,
+          userId: org.userId,
           planId: offerId,
         },
       })
@@ -125,12 +129,14 @@ export async function POST(request: NextRequest) {
         cancel_url: `${appUrl}/#offres?canceled=1`,
         allow_promotion_codes: true,
         metadata: {
-          userId: user.id,
+          organizationId: org.organizationId,
+          userId: org.userId,
           planId: offerId,
         },
         subscription_data: {
           metadata: {
-            userId: user.id,
+            organizationId: org.organizationId,
+            userId: org.userId,
             planId: offerId,
           },
         },

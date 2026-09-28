@@ -24,11 +24,10 @@ export type PlanDefinition = {
   name: string;
   priceMonthlyEur: number;
   description: string;
-  maxBots: number;
+  /** Nombre max de bindings guild (modèle Prisma `Bot`). */
   maxGuilds: number;
   maxCustomCommands: number;
   modules: BotModuleId[];
-  forceBranding: boolean;
   prioritySupport: boolean;
   /** Inclut export audit modération (JSON warns). */
   auditExport: boolean;
@@ -46,7 +45,7 @@ export type PlanDefinition = {
  * Offres self-serve + packs installation optionnels.
  * Setup / Diagnostic (one-shot) ne sont pas des PlanId — voir STRIPE_PRICE_*.
  *
- * Freemium poussé : l’essai livre le socle ops + 1 mapping paiement→rôle.
+ * Freemium : l’essai livre le socle ops + 1 mapping paiement→rôle.
  * Paywall : export audit (Starter+), volume produits accès / commandes, multi-serveurs.
  */
 export const PLANS: Record<PlanId, PlanDefinition> = {
@@ -56,11 +55,9 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     priceMonthlyEur: 0,
     description:
       "Socle ops + contrôle d’accès : 1 produit Stripe→rôle Discord. Preview warns — export = Starter.",
-    maxBots: 1,
     maxGuilds: 1,
     maxCustomCommands: 5,
     modules: [...OPS_CORE_MODULES],
-    forceBranding: false,
     prioritySupport: false,
     auditExport: false,
     maxAccessProducts: 1,
@@ -75,11 +72,9 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     priceMonthlyEur: 19.99,
     description:
       "Jusqu’à 5 produits accès, export audit, 15 commandes FAQ.",
-    maxBots: 1,
     maxGuilds: 1,
     maxCustomCommands: 15,
     modules: [...OPS_CORE_MODULES],
-    forceBranding: false,
     prioritySupport: false,
     auditExport: true,
     maxAccessProducts: 5,
@@ -94,11 +89,9 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     priceMonthlyEur: 49,
     description:
       "Jusqu’à 20 produits accès, export audit, 40 commandes — pack ops formation.",
-    maxBots: 1,
     maxGuilds: 1,
     maxCustomCommands: 40,
     modules: [...OPS_CORE_MODULES],
-    forceBranding: false,
     prioritySupport: false,
     auditExport: true,
     maxAccessProducts: 20,
@@ -114,11 +107,9 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     priceMonthlyEur: 99,
     description:
       "Jusqu’à 5 serveurs, 100 produits accès, automod, DPA sur demande, support prioritaire.",
-    maxBots: 5,
     maxGuilds: 5,
     maxCustomCommands: 100,
     modules: [...OPS_CORE_MODULES, "automod"],
-    forceBranding: false,
     prioritySupport: true,
     auditExport: true,
     maxAccessProducts: 100,

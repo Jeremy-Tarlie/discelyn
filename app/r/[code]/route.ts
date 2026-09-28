@@ -34,7 +34,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const product = await prisma.accessProduct.findFirst({
       where: {
         id: productId,
-        userId: affiliate.userId,
+        organizationId: affiliate.organizationId,
         active: true,
         paymentLinkUrl: { not: null },
       },
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
   } else {
     const first = await prisma.accessProduct.findFirst({
       where: {
-        userId: affiliate.userId,
+        organizationId: affiliate.organizationId,
         active: true,
         paymentLinkUrl: { not: null },
       },

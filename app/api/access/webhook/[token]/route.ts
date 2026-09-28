@@ -65,7 +65,7 @@ async function resolvePriceId(input: {
 
 async function handleCheckoutCompleted(
   session: Stripe.Checkout.Session,
-  orgUserId: string,
+  organizationId: string,
   apiKey: string | null
 ): Promise<void> {
   if (
@@ -76,8 +76,8 @@ async function handleCheckoutCompleted(
     return;
   }
 
-  const org = await prisma.user.findUnique({
-    where: { id: orgUserId },
+  const org = await prisma.organization.findUnique({
+    where: { id: organizationId },
     select: { deletedAt: true },
   });
   if (!org || org.deletedAt) {
@@ -94,7 +94,7 @@ async function handleCheckoutCompleted(
 
   const product = await prisma.accessProduct.findFirst({
     where: {
-      userId: orgUserId,
+      organizationId,
       stripePriceId: priceId,
       active: true,
     },
@@ -107,7 +107,7 @@ async function handleCheckoutCompleted(
 
   if (!product) {
     const dead = await prisma.accessProduct.findFirst({
-      where: { userId: orgUserId, stripePriceId: priceId },
+      where: { organizationId, stripePriceId: priceId },
       include: {
         bot: { select: { deletedAt: true, guildId: true } },
       },
@@ -144,7 +144,7 @@ async function handleCheckoutCompleted(
   if (affiliateCode) {
     const aff = await prisma.affiliate.findFirst({
       where: {
-        userId: orgUserId,
+        organizationId,
         code: affiliateCode,
         active: true,
       },
@@ -168,7 +168,7 @@ async function handleCheckoutCompleted(
     amountSubtotal: session.amount_subtotal ?? null,
     currency: session.currency ?? null,
     affiliateId,
-    userId: orgUserId,
+    organizationId,
   });
 
   if (result.soldOut) {
@@ -228,13 +228,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
   const config = await prisma.orgStripeConfig.findUnique({
     where: { webhookPathToken: token },
     include: {
-      user: { select: { deletedAt: true } },
+      organization: { select: { deletedAt: true } },
     },
   });
   if (!config) {
     return NextResponse.json({ error: "unknown webhook" }, { status: 404 });
   }
-  if (config.user.deletedAt) {
+  if (config.organization.deletedAt) {
     // Orga soft-deleted mais config orpheline (race) — ne pas retenter.
     return NextResponse.json({
       received: true,
@@ -281,7 +281,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       case "checkout.session.completed": {
         await handleCheckoutCompleted(
           event.data.object as Stripe.Checkout.Session,
-          config.userId,
+          config.organizationId,
           apiKey
         );
         break;

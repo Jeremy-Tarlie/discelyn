@@ -9,12 +9,12 @@ function shouldResumePausedBot(input: {
   status: string;
   guildId: string | null;
   index: number;
-  maxBots: number;
+  maxGuilds: number;
 }): boolean {
   return (
     input.status === "PAUSED" &&
     input.guildId !== null &&
-    input.index < input.maxBots
+    input.index < input.maxGuilds
   );
 }
 
@@ -25,18 +25,18 @@ describe("plan enforcement resume rule", () => {
         status: "PAUSED",
         guildId: "guild-1",
         index: 0,
-        maxBots: 1,
+        maxGuilds: 1,
       })
     ).toBe(true);
   });
 
-  it("ne reprend pas un bot délié (limite maxBots)", () => {
+  it("ne reprend pas un bot délié (limite maxGuilds)", () => {
     expect(
       shouldResumePausedBot({
         status: "PAUSED",
         guildId: null,
         index: 0,
-        maxBots: 1,
+        maxGuilds: 1,
       })
     ).toBe(false);
   });
@@ -47,7 +47,7 @@ describe("plan enforcement resume rule", () => {
         status: "PAUSED",
         guildId: "guild-1",
         index: 1,
-        maxBots: 1,
+        maxGuilds: 1,
       })
     ).toBe(false);
   });

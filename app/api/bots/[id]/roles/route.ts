@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { requireUser } from "@/lib/access";
+import { requireOrg } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { listGuildRoles } from "@/lib/discord-roles";
 import { getRequestLocale } from "@/lib/locale";
@@ -22,8 +22,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
   });
   if (!limited.ok) return limited.response;
 
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "MEMBER" });
+  if (!org) {
     return NextResponse.json(
       { error: tApi(locale, "unauthenticated") },
       { status: 401 }
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   const { id: botId } = await context.params;
   const bot = await prisma.bot.findFirst({
-    where: { id: botId, userId: user.id, deletedAt: null },
+    where: { id: botId, organizationId: org.organizationId, deletedAt: null },
     select: { guildId: true },
   });
   if (!bot) {

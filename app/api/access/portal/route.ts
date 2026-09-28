@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 import {
-  requireUser,
-  getUserSubscription,
+  requireOrg,
+  getOrgSubscription,
   canUseProduct,
 } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
@@ -60,21 +60,21 @@ export async function POST(request: NextRequest) {
     id: string;
     stripeCustomerId: string | null;
     claimToken: string | null;
-    product: { userId: string };
+    product: { organizationId: string };
   };
 
   let access: AccessRow | null = null;
   let returnUrl = `${appBaseUrl()}/dashboard/learners`;
 
   if (parsed.data.accessId) {
-    const user = await requireUser();
-    if (!user) {
+    const org = await requireOrg({ minRole: "ADMIN" });
+    if (!org) {
       return NextResponse.json(
         { error: tApi(locale, "unauthenticated") },
         { status: 401 }
       );
     }
-    const subscription = await getUserSubscription(user.id);
+    const subscription = await getOrgSubscription(org.organizationId);
     const usable = canUseProduct(subscription);
     if (!usable.ok) {
       return NextResponse.json(
@@ -84,12 +84,15 @@ export async function POST(request: NextRequest) {
     }
 
     access = await prisma.learnerAccess.findFirst({
-      where: { id: parsed.data.accessId, bot: { userId: user.id } },
+      where: {
+        id: parsed.data.accessId,
+        bot: { organizationId: org.organizationId },
+      },
       select: {
         id: true,
         stripeCustomerId: true,
         claimToken: true,
-        product: { select: { userId: true } },
+        product: { select: { organizationId: true } },
       },
     });
   } else if (parsed.data.claimToken) {
@@ -99,7 +102,7 @@ export async function POST(request: NextRequest) {
         id: true,
         stripeCustomerId: true,
         claimToken: true,
-        product: { select: { userId: true } },
+        product: { select: { organizationId: true } },
       },
     });
     if (access?.claimToken) {
@@ -112,7 +115,7 @@ export async function POST(request: NextRequest) {
         id: true,
         stripeCustomerId: true,
         claimToken: true,
-        product: { select: { userId: true } },
+        product: { select: { organizationId: true } },
       },
     });
     returnUrl = access?.claimToken
@@ -134,7 +137,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const stripe = await getOrgStripeClient(access.product.userId);
+  const stripe = await getOrgStripeClient(access.product.organizationId);
   if (!stripe) {
     return NextResponse.json(
       { error: tApi(locale, "orgStripeMissing") },

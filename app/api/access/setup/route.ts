@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 import {
-  requireUser,
-  getUserSubscription,
+  requireOrg,
+  getOrgSubscription,
   canUseProduct,
 } from "@/lib/access";
 import { getPlan, type PlanId } from "@/lib/plans";
@@ -34,15 +34,15 @@ export async function POST(request: NextRequest) {
   });
   if (!limited.ok) return limited.response;
 
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "ADMIN" });
+  if (!org) {
     return NextResponse.json(
       { error: tApi(locale, "unauthenticated") },
       { status: 401 }
     );
   }
 
-  const subscription = await getUserSubscription(user.id);
+  const subscription = await getOrgSubscription(org.organizationId);
   const usable = canUseProduct(subscription);
   if (!usable.ok) {
     return NextResponse.json(
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const result = await bootstrapOrgStripe({
-      userId: user.id,
+      organizationId: org.organizationId,
       stripeSecretKey: parsed.data.stripeSecretKey,
       label: parsed.data.label,
     });

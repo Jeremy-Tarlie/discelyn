@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
-  requireUser,
-  getUserSubscription,
+  requireOrg,
+  getOrgSubscription,
   canUseProduct,
 } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
@@ -28,15 +28,15 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   });
   if (!limited.ok) return limited.response;
 
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "ADMIN" });
+  if (!org) {
     return NextResponse.json(
       { error: tApi(locale, "unauthenticated") },
       { status: 401 }
     );
   }
 
-  const subscription = await getUserSubscription(user.id);
+  const subscription = await getOrgSubscription(org.organizationId);
   const usable = canUseProduct(subscription);
   if (!usable.ok) {
     return NextResponse.json(
@@ -47,7 +47,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
   const { id: botId, productId } = await context.params;
   const existing = await prisma.accessProduct.findFirst({
-    where: { id: productId, botId, userId: user.id },
+    where: { id: productId, botId, organizationId: org.organizationId },
     include: { bot: { select: { guildId: true } } },
   });
   if (!existing) {
@@ -142,8 +142,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
 export async function DELETE(request: NextRequest, context: RouteContext) {
   const locale = getRequestLocale(request);
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "ADMIN" });
+  if (!org) {
     return NextResponse.json(
       { error: tApi(locale, "unauthenticated") },
       { status: 401 }
@@ -152,7 +152,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
 
   const { id: botId, productId } = await context.params;
   const existing = await prisma.accessProduct.findFirst({
-    where: { id: productId, botId, userId: user.id },
+    where: { id: productId, botId, organizationId: org.organizationId },
     select: { id: true },
   });
   if (!existing) {

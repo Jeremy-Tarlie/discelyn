@@ -26,9 +26,10 @@ Autour de ça : socle ops formation (welcome, tickets support, rôles, logs, mod
 - Dashboard apprenants, stats GMV, affiliés tracking (`/r/{code}`), webhooks sortants HMAC
 - Branding claim (logo / couleur / nom orga)
 
-Cron (Bearer `CRON_SECRET`) : `POST /api/cron/access` (~15 min — claim / expiry / onboarding / retry grants / refunds oversold / seats) et `POST /api/cron/retention` (horaire — RGPD analytics/leads). Compose : services `access-cron` + `retention-cron`.
+Cron (Bearer `CRON_SECRET`) : `POST /api/cron/access` (~15 min — claim / expiry / onboarding / retry grants / refunds oversold / seats) et `POST /api/cron/retention` (horaire — RGPD analytics/leads + anonymisation PII apprenants révoqués après 365 j). Compose : services `access-cron` + `retention-cron`.
 
-Stack : Next.js, Prisma / PostgreSQL, Stripe, runtime discord.js (bot plateforme unique).
+Stack : Next.js, Prisma / PostgreSQL, Stripe, runtime discord.js (bot plateforme unique).  
+Modèle : **Organization** (plan, bots, Stripe formation) + **Memberships** (OWNER / ADMIN / MEMBER) — un User n’est plus l’orga.
 
 ## Offre
 
@@ -46,7 +47,7 @@ Stack : Next.js, Prisma / PostgreSQL, Stripe, runtime discord.js (bot plateforme
 | | Whop / LaunchPass / PayBot | MEE6 / Carl | **Botly** |
 |---|---------------------------|-------------|-----------|
 | Job | Communauté payante US | Animer le serveur | **Accès formation FR** |
-| Setup | Store / bot Discord | Modules hobby | **3 min : sk_ → rôle → lien** |
+| Setup | Store / bot Discord | Modules hobby | **sk_ + webhook + guild + rôle → lien** |
 | Commission | Souvent un cut | Freemium features | **0 % Botly** (ton Stripe) |
 | Webhook | Variable | N/A | **Créé automatiquement** |
 
@@ -78,9 +79,10 @@ Variables minimales : `NEXTAUTH_SECRET`, `DISCORD_CLIENT_ID`,
 
 ### Tests
 
-`npm test` / `npm run test:e2e` démarrent (si besoin) un Postgres dédié via
+`npm test` / `npm run test:db` démarrent (si besoin) un Postgres dédié via
 `docker-compose.test.yml` sur le port **5433** (`BOTLY_TEST_DATABASE_URL`).
-Docker doit tourner. En CI, `DATABASE_URL` du service Postgres est réutilisé.
+`test:db` = money path + soft-delete sur Postgres (Discord mocké) — **pas** un E2E
+Stripe/Discord live. Docker doit tourner. En CI, `DATABASE_URL` du service Postgres est réutilisé.
 
 En **production** et **staging** : `TOKEN_ENCRYPTION_KEY` + `CRON_SECRET` +
 `BOT_RUNTIME_SECRET` (fail-fast au boot). En **production** : `REDIS_URL`

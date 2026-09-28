@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { requireUser } from "@/lib/access";
-import { getAccessStatsForUser } from "@/lib/dashboard-data";
+import { requireOrg } from "@/lib/access";
+import { getAccessStatsForOrg } from "@/lib/dashboard-data";
 import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
 import { rateLimit } from "@/lib/rate-limit";
@@ -17,8 +17,8 @@ export async function GET(request: NextRequest) {
   });
   if (!limited.ok) return limited.response;
 
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "MEMBER" });
+  if (!org) {
     return NextResponse.json(
       { error: tApi(locale, "unauthenticated") },
       { status: 401 }
@@ -26,6 +26,6 @@ export async function GET(request: NextRequest) {
   }
 
   const days = Number(request.nextUrl.searchParams.get("days") ?? "30");
-  const stats = await getAccessStatsForUser(user.id, days);
+  const stats = await getAccessStatsForOrg(org.organizationId, days);
   return NextResponse.json(stats);
 }

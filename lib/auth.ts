@@ -5,9 +5,10 @@ import type { Adapter } from "next-auth/adapters";
 import { prisma } from "@/lib/prisma";
 import { trackEvent } from "@/lib/analytics";
 import type { PlanId } from "@/lib/plans";
-import type { SubscriptionStatus } from "@/generated/prisma/client";
+import type { OrgRole, SubscriptionStatus } from "@/generated/prisma/client";
 import { effectivePlan } from "@/lib/billing-guards";
 import { isTokenEncryptionEnabled, requireSealToken } from "@/lib/token-crypto";
+import { bootstrapOrganizationForUser } from "@/lib/org-access";
 
 declare module "next-auth" {
   interface Session {
@@ -19,6 +20,8 @@ declare module "next-auth" {
       /** Plan utilisable (FREE si abonnement inactif / PAST_DUE). */
       plan: PlanId;
       subscriptionStatus: SubscriptionStatus;
+      organizationId: string | null;
+      orgRole: OrgRole | null;
     };
   }
 }
@@ -77,14 +80,35 @@ export const authOptions: NextAuthOptions = {
         session.user.id = "";
         session.user.plan = "FREE";
         session.user.subscriptionStatus = "CANCELED";
+        session.user.organizationId = null;
+        session.user.orgRole = null;
         return session;
       }
 
-      const subscription = await prisma.subscription.findUnique({
-        where: { userId: user.id },
+      const memberships = await prisma.organizationMembership.findMany({
+        where: {
+          userId: user.id,
+          organization: { deletedAt: null },
+        },
+        orderBy: { createdAt: "asc" },
+        select: {
+          organizationId: true,
+          role: true,
+        },
       });
 
+      const preferred =
+        memberships.find((m) => m.role === "OWNER") ?? memberships[0] ?? null;
+
+      const subscription = preferred
+        ? await prisma.subscription.findUnique({
+            where: { organizationId: preferred.organizationId },
+          })
+        : null;
+
       session.user.id = user.id;
+      session.user.organizationId = preferred?.organizationId ?? null;
+      session.user.orgRole = preferred?.role ?? null;
       session.user.plan = effectivePlan(subscription);
       session.user.subscriptionStatus = subscription?.status ?? "ACTIVE";
       return session;
@@ -92,12 +116,9 @@ export const authOptions: NextAuthOptions = {
   },
   events: {
     async createUser({ user }) {
-      await prisma.subscription.create({
-        data: {
-          userId: user.id,
-          plan: "FREE",
-          status: "ACTIVE",
-        },
+      await bootstrapOrganizationForUser({
+        userId: user.id,
+        name: user.name,
       });
       await trackEvent({ name: "signup", userId: user.id });
     },

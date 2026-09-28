@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
-  requireUser,
-  getUserSubscription,
+  requireOrg,
+  getOrgSubscription,
   canUseProduct,
 } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
@@ -21,8 +21,8 @@ export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   const locale = getRequestLocale(request);
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "MEMBER" });
+  if (!org) {
     return NextResponse.json(
       { error: tApi(locale, "unauthenticated") },
       { status: 401 }
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
   const productId = request.nextUrl.searchParams.get("productId");
   const codes = await prisma.accessCode.findMany({
     where: {
-      createdByUserId: user.id,
+      product: { organizationId: org.organizationId },
       ...(productId ? { accessProductId: productId } : {}),
     },
     orderBy: { createdAt: "desc" },
@@ -66,15 +66,15 @@ export async function POST(request: NextRequest) {
   });
   if (!limited.ok) return limited.response;
 
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "ADMIN" });
+  if (!org) {
     return NextResponse.json(
       { error: tApi(locale, "unauthenticated") },
       { status: 401 }
     );
   }
 
-  const subscription = await getUserSubscription(user.id);
+  const subscription = await getOrgSubscription(org.organizationId);
   const usable = canUseProduct(subscription);
   if (!usable.ok) {
     return NextResponse.json(
@@ -102,7 +102,10 @@ export async function POST(request: NextRequest) {
   }
 
   const product = await prisma.accessProduct.findFirst({
-    where: { id: parsed.data.accessProductId, userId: user.id },
+    where: {
+      id: parsed.data.accessProductId,
+      organizationId: org.organizationId,
+    },
     select: { id: true },
   });
   if (!product) {
@@ -119,7 +122,7 @@ export async function POST(request: NextRequest) {
     const created = await prisma.accessCode.create({
       data: {
         accessProductId: product.id,
-        createdByUserId: user.id,
+        createdByUserId: org.userId,
         codeHash: hashAccessCode(plain),
         codePrefix: accessCodePrefix(plain),
         maxRedemptions: parsed.data.maxRedemptions,
@@ -152,8 +155,8 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   const locale = getRequestLocale(request);
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "ADMIN" });
+  if (!org) {
     return NextResponse.json(
       { error: tApi(locale, "unauthenticated") },
       { status: 401 }
@@ -169,7 +172,10 @@ export async function DELETE(request: NextRequest) {
   }
 
   await prisma.accessCode.deleteMany({
-    where: { id, createdByUserId: user.id },
+    where: {
+      id,
+      product: { organizationId: org.organizationId },
+    },
   });
   return NextResponse.json({ ok: true });
 }

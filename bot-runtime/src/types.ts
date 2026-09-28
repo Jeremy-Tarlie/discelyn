@@ -8,7 +8,6 @@ export type GuildBotConfig = {
   enabledModules: string[];
   config: Record<string, unknown>;
   customCommands: Array<{ name: string; response: string }>;
-  forceBranding: boolean;
   /** Boutique accès (Payment Links) — slash /boutique */
   shop: Array<{ name: string; pitch: string | null; url: string }>;
 };

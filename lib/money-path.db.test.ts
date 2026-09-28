@@ -1,5 +1,5 @@
 /**
- * E2E money path (preuve automatisée) :
+ * Money path (DB) :
  * checkout → AWAITING_JOIN (multi-guild) → grantPendingOnJoin → ACTIVE → revoke.
  *
  * Discord mocké ; Postgres réel (DATABASE_URL).
@@ -9,7 +9,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
-    "DATABASE_URL obligatoire pour money-path.e2e.test.ts (Postgres requis)"
+    "DATABASE_URL obligatoire pour money-path.db.test.ts (Postgres requis)"
   );
 }
 
@@ -32,7 +32,7 @@ vi.mock("@/lib/outbound-webhooks", () => ({
   dispatchOutboundWebhooks: (...args: unknown[]) => mockDispatch(...args),
 }));
 
-describe("E2E money path (DB)", () => {
+describe("money path (DB)", () => {
   const suffix = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const guildA = "411111111111111111";
   const guildB = "422222222222222222";
@@ -42,6 +42,7 @@ describe("E2E money path (DB)", () => {
   const sessionId = `cs_e2e_${suffix}`;
 
   let userId = "";
+  let organizationId = "";
   let botId = "";
   let botBId = "";
   let productId = "";
@@ -60,20 +61,31 @@ describe("E2E money path (DB)", () => {
     grantPendingOnJoin = access.grantPendingOnJoin;
     revokeLearnerAccess = access.revokeLearnerAccess;
     ({ prisma } = await import("@/lib/prisma"));
+    const { bootstrapOrganizationForUser } = await import("@/lib/org-access");
 
     const user = await prisma.user.create({
       data: {
         email: `e2e_${suffix}@example.com`,
         name: "E2E",
         discordId: `8${Date.now().toString().padStart(17, "0").slice(-17)}`,
-        subscription: { create: { plan: "OPS", status: "ACTIVE" } },
       },
     });
     userId = user.id;
 
+    const bootstrapped = await bootstrapOrganizationForUser({
+      userId: user.id,
+      name: user.name,
+    });
+    organizationId = bootstrapped.organizationId;
+
+    await prisma.subscription.update({
+      where: { organizationId },
+      data: { plan: "OPS" },
+    });
+
     const bot = await prisma.bot.create({
       data: {
-        userId,
+        organizationId,
         name: `E2E-A ${suffix}`,
         guildId: guildA,
         status: "ONLINE",
@@ -85,7 +97,7 @@ describe("E2E money path (DB)", () => {
 
     const botB = await prisma.bot.create({
       data: {
-        userId,
+        organizationId,
         name: `E2E-B ${suffix}`,
         guildId: guildB,
         status: "ONLINE",
@@ -97,7 +109,7 @@ describe("E2E money path (DB)", () => {
 
     const product = await prisma.accessProduct.create({
       data: {
-        userId,
+        organizationId,
         botId,
         name: `E2E Prod ${suffix}`,
         stripePriceId: `price_e2e_${suffix}`,
@@ -134,8 +146,15 @@ describe("E2E money path (DB)", () => {
   });
 
   afterAll(async () => {
-    if (!prisma || !userId) return;
-    await prisma.user.delete({ where: { id: userId } }).catch(() => undefined);
+    if (!prisma) return;
+    if (organizationId) {
+      await prisma.organization
+        .delete({ where: { id: organizationId } })
+        .catch(() => undefined);
+    }
+    if (userId) {
+      await prisma.user.delete({ where: { id: userId } }).catch(() => undefined);
+    }
   });
 
   it("paiement → claim partiel → join complet → revoke", async () => {
@@ -151,7 +170,7 @@ describe("E2E money path (DB)", () => {
       stripeCustomerId: null,
       amountTotal: 4900,
       currency: "eur",
-      userId,
+      organizationId,
     });
     expect(opened.soldOut).toBeFalsy();
     expect(opened.accessId).toBeTruthy();

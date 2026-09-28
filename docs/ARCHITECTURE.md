@@ -10,7 +10,7 @@ Trois processus applicatifs + deux stores :
 |-----------|------|
 | **web** (Next.js) | OAuth, dashboard, API, **double Stripe** (SaaS Botly + formation orga), claim, crons |
 | **bot-runtime** | Un client discord.js (`DISCORD_BOT_TOKEN`), configs par `guildId` en mémoire, join → grant |
-| **PostgreSQL** | Source de vérité (users, bots, accès apprenants, org Stripe, leads…) |
+| **PostgreSQL** | Source de vérité (users, **organizations**, memberships, bots, accès apprenants, org Stripe, leads…) |
 | **Redis** | Rate-limit distribué uniquement (fallback mémoire si absent) |
 
 Cœur produit : **paiement formation (Stripe client) → claim Discord → rôle(s) → revoke**.  
@@ -68,17 +68,19 @@ Création : clair renvoyé **une fois** ; stocké en `codeHash` (SHA-256) + `cod
 ## 2. Connexion orga → serveur lié → runtime
 
 1. `/api/auth/signin` (NextAuth Discord, sessions DB).
-2. Création user → abonnement `FREE`. `User.discordId` au link Account.
-3. `POST /api/bots` → `Bot` `PENDING` ; liaison guild via `POST /api/bots/[id]/guild`.
-4. `provisionBot` → invite si besoin, sinon `notifyRuntimeReload` → `POST {BOT_RUNTIME_URL}/internal/reload`.
-5. Runtime : sync Prisma → Map mémoire ; poll ~30s si reload manqué.
+2. Création user → **Organization** + membership `OWNER` + abonnement `FREE` (`bootstrapOrganizationForUser`). `User.discordId` au link Account.
+3. Session : `organizationId` + `orgRole` ; plan lu sur la Subscription de l’org.
+4. `POST /api/bots` → modèle `Bot` = **binding guild** plateforme (`PENDING`) ; liaison via `POST /api/bots/[id]/guild`.
+5. `provisionBot` → invite si besoin, sinon `notifyRuntimeReload` → `POST {BOT_RUNTIME_URL}/internal/reload`.
+6. Runtime : sync Prisma → Map mémoire ; poll ~30s si reload manqué.
+7. Équipe : `GET/POST/DELETE /api/org/members` (ajout par Discord ID d’un compte Botly existant).
 
 ---
 
 ## 3. Checkout Stripe SaaS Botly (plans)
 
-1. `POST /api/stripe/checkout` / portal / `POST /api/stripe/webhook`.
-2. `syncSubscription` → `enforcePlanLimits` → reload runtime.
+1. `POST /api/stripe/checkout` / portal / `POST /api/stripe/webhook` (metadata `organizationId`).
+2. `syncSubscription` → `enforcePlanLimits(organizationId)` → reload runtime.
 3. Plans : `lib/plans.ts` (web) + `bot-runtime/src/plan-limits.ts` (parity testée).
 
 Hors `APP_ENV=production`, `sk_live_` refusée.
@@ -87,19 +89,19 @@ Hors `APP_ENV=production`, `sk_live_` refusée.
 
 ## 4. RGPD — export et suppression
 
-**Export** `GET /api/account` : user, accounts sans jetons, subscription, bots, compte de warnings.
+**Export** `GET /api/account` : user, accounts sans jetons, orgs / memberships, subscription orga, bots, compte de warnings.
 
-**Suppression** `DELETE /api/account` (soft-delete) :
-1. Cancel abonnement Stripe SaaS Botly
-2. Revoke tous les accès Discord des bots
-3. Soft-delete bots (`deletedAt`, `guildId` null) + désactivation produits
-4. Purge infra accès : `OrgStripeConfig` (sk_/whsec_) **supprimée**, codes / affiliés / webhooks sortants désactivés
-5. Anonymisation user (`email`/`discordId` null) + invalidation sessions
-6. Best-effort delete customer Stripe Botly
+**Suppression** `DELETE /api/account` (soft-delete user) :
+1. Pour chaque membership `OWNER` sans autre OWNER → `softDeleteOrganization` (revoke Discord, soft-delete bots, purge `OrgStripeConfig`, **anonymisation immédiate PII** `LearnerAccess`, `organization.deletedAt`)
+2. Sinon retrait de la membership seulement
+3. Anonymisation user (`email`/`discordId` null) + invalidation sessions
+4. Best-effort cancel / delete customer Stripe Botly (appelant)
 
-Les `LearnerAccess` / events restent pour audit (plus de cascade hard). Un webhook Stripe formation qui arrive après purge reçoit `404` (config absente) ou `200 ignored` (orga/produit/bot morts) — **pas** de retry infini 500.
+**Rétention PII apprenants** (orgs actives) : cron `POST /api/cron/retention` anonymise `LearnerAccess` en `REVOKED`/`EXPIRED` après **365 jours** (`LEARNER_PII_RETENTION_DAYS`) — nullifie email, discordUserId, claimToken, stripeCustomerId, inviteUrl. Les montants / ids Stripe paiement peuvent rester pour audit comptable.
 
-Voir `lib/soft-delete.ts` + `lib/soft-delete-ops.ts` (`softDeleteUserAccount`, `purgeOrgAccessInfrastructure`).
+Un webhook Stripe formation qui arrive après purge reçoit `404` (config absente) ou `200 ignored` (orga/produit/bot morts) — **pas** de retry infini 500.
+
+Voir `lib/soft-delete-ops.ts`, `lib/data-retention.ts`.
 
 ---
 
@@ -107,7 +109,7 @@ Voir `lib/soft-delete.ts` + `lib/soft-delete-ops.ts` (`softDeleteUserAccount`, `
 
 | Emplacement | Contenu |
 |-------------|---------|
-| PostgreSQL | Users, OAuth (chiffrés si clé), sessions, subscriptions, bots, **OrgStripeConfig**, **AccessProduct** / grants / codes hashés, **LearnerAccess**, affiliés tracking, webhooks sortants |
+| PostgreSQL | Users, memberships, **Organizations**, OAuth (chiffrés si clé), sessions, subscriptions **par org**, bots (bindings guild), **OrgStripeConfig**, **AccessProduct** / grants / codes hashés, **LearnerAccess**, affiliés tracking, webhooks sortants |
 | Redis | Rate-limit |
 | Mémoire runtime | Map guild → config, client discord.js |
 | Secrets env | `DISCORD_BOT_TOKEN`, Stripe Botly, `TOKEN_ENCRYPTION_KEY`, `BOT_RUNTIME_SECRET`, `CRON_SECRET` |
@@ -116,7 +118,8 @@ Voir `lib/soft-delete.ts` + `lib/soft-delete-ops.ts` (`softDeleteUserAccount`, `
 
 ## Ancien modèle (supprimé)
 
-Tokens bot clients (`tokenCiphertext`) retirés par `20260908120000_platform_bot_gdpr`.
+Tokens bot clients (`tokenCiphertext`) retirés par `20260908120000_platform_bot_gdpr`.  
+User-as-org remplacé par `Organization` + `OrganizationMembership` (`20260928100000_organization_memberships`).
 
 ---
 
@@ -125,7 +128,8 @@ Tokens bot clients (`tokenCiphertext`) retirés par `20260908120000_platform_bot
 - Un seul bot plateforme (SPOF).
 - Message Content Intent encore requis pour préfixes / automod texte.
 - Affiliés = tracking / attribution, **pas de payout**.
-- Preuve money path : `npm run test:e2e` (Postgres + Discord mock) — pas d’E2E Stripe live.
+- Pas de switcher multi-org UI ni invites email (v1 memberships = Discord ID d’un compte existant).
+- Preuve money path : `npm run test:db` (Postgres + Discord mock) — **pas** d’E2E Stripe/Discord live.
 - Secrets Stripe formation : toujours `enc:v1:` ; migration legacy : `npm run seal-org-stripe`.
 - Release / ops : `docs/RELEASE.md`, `docs/OPS-RUNBOOK.md`, `npm run preflight:prod`.
 

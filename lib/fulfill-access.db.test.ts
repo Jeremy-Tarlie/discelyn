@@ -38,6 +38,7 @@ describe("fulfill + join multi-guild (DB)", () => {
   const roleB = "bbbbbbbbbbbbbbbbbb";
 
   let userId = "";
+  let organizationId = "";
   let botId = "";
   let botBId = "";
   let productId = "";
@@ -51,25 +52,31 @@ describe("fulfill + join multi-guild (DB)", () => {
       "@/lib/learner-access"
     ));
     ({ prisma } = await import("@/lib/prisma"));
+    const { bootstrapOrganizationForUser } = await import("@/lib/org-access");
 
     const user = await prisma.user.create({
       data: {
         email: `dbtest_${suffix}@example.com`,
         name: "DB Test",
         discordId: `9${Date.now().toString().padStart(17, "0").slice(-17)}`,
-        subscription: {
-          create: {
-            plan: "OPS",
-            status: "ACTIVE",
-          },
-        },
       },
     });
     userId = user.id;
 
+    const bootstrapped = await bootstrapOrganizationForUser({
+      userId: user.id,
+      name: user.name,
+    });
+    organizationId = bootstrapped.organizationId;
+
+    await prisma.subscription.update({
+      where: { organizationId },
+      data: { plan: "OPS" },
+    });
+
     const bot = await prisma.bot.create({
       data: {
-        userId,
+        organizationId,
         name: `BotA ${suffix}`,
         guildId: guildA,
         status: "ONLINE",
@@ -81,7 +88,7 @@ describe("fulfill + join multi-guild (DB)", () => {
 
     const botB = await prisma.bot.create({
       data: {
-        userId,
+        organizationId,
         name: `BotB ${suffix}`,
         guildId: guildB,
         status: "ONLINE",
@@ -93,7 +100,7 @@ describe("fulfill + join multi-guild (DB)", () => {
 
     const product = await prisma.accessProduct.create({
       data: {
-        userId,
+        organizationId,
         botId,
         name: `Prod ${suffix}`,
         stripePriceId: `price_dbtest_${suffix}`,
@@ -140,8 +147,15 @@ describe("fulfill + join multi-guild (DB)", () => {
   });
 
   afterAll(async () => {
-    if (!prisma || !userId) return;
-    await prisma.user.delete({ where: { id: userId } }).catch(() => undefined);
+    if (!prisma) return;
+    if (organizationId) {
+      await prisma.organization
+        .delete({ where: { id: organizationId } })
+        .catch(() => undefined);
+    }
+    if (userId) {
+      await prisma.user.delete({ where: { id: userId } }).catch(() => undefined);
+    }
   });
 
   it("reste AWAITING_JOIN tant qu’un grant manque", async () => {

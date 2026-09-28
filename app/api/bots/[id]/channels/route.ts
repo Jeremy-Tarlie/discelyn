@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { requireUser, getUserSubscription, canUseProduct } from "@/lib/access";
+import { requireOrg, getOrgSubscription, canUseProduct } from "@/lib/access";
 import { fetchGuildTextChannels } from "@/lib/discord";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
@@ -21,12 +21,12 @@ export async function GET(request: NextRequest, context: RouteContext) {
   });
   if (!limited.ok) return limited.response;
 
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "MEMBER" });
+  if (!org) {
     return NextResponse.json({ error: tApi(locale, "unauthenticated") }, { status: 401 });
   }
 
-  const subscription = await getUserSubscription(user.id);
+  const subscription = await getOrgSubscription(org.organizationId);
   const usable = canUseProduct(subscription);
   if (!usable.ok) {
     return NextResponse.json(
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   const { id } = await context.params;
   const bot = await prisma.bot.findFirst({
-    where: { id, userId: user.id, deletedAt: null },
+    where: { id, organizationId: org.organizationId, deletedAt: null },
     select: { id: true, guildId: true },
   });
 

@@ -23,13 +23,13 @@ function signPayload(secret: string, body: string): string {
 }
 
 export async function dispatchOutboundWebhooks(input: {
-  userId: string;
+  organizationId: string;
   event: OutboundEvent;
   payload: Record<string, string | number | boolean | null>;
 }): Promise<void> {
   const hooks = await prisma.orgOutboundWebhook.findMany({
     where: {
-      userId: input.userId,
+      organizationId: input.organizationId,
       active: true,
       events: { has: input.event },
     },

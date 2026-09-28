@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
-  requireUser,
-  getUserSubscription,
+  requireOrg,
+  getOrgSubscription,
   canUseProduct,
 } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
@@ -19,8 +19,8 @@ type RouteContext = {
 
 export async function GET(request: NextRequest, context: RouteContext) {
   const locale = getRequestLocale(request);
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "MEMBER" });
+  if (!org) {
     return NextResponse.json(
       { error: tApi(locale, "unauthenticated") },
       { status: 401 }
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   const { id: botId, productId } = await context.params;
   const product = await prisma.accessProduct.findFirst({
-    where: { id: productId, botId, userId: user.id },
+    where: { id: productId, botId, organizationId: org.organizationId },
     include: {
       guildGrants: {
         include: { bot: { select: { id: true, name: true, guildId: true } } },
@@ -55,15 +55,15 @@ export async function POST(request: NextRequest, context: RouteContext) {
   });
   if (!limited.ok) return limited.response;
 
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "ADMIN" });
+  if (!org) {
     return NextResponse.json(
       { error: tApi(locale, "unauthenticated") },
       { status: 401 }
     );
   }
 
-  const subscription = await getUserSubscription(user.id);
+  const subscription = await getOrgSubscription(org.organizationId);
   const usable = canUseProduct(subscription);
   if (!usable.ok) {
     return NextResponse.json(
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
   const { id: botId, productId } = await context.params;
   const product = await prisma.accessProduct.findFirst({
-    where: { id: productId, botId, userId: user.id },
+    where: { id: productId, botId, organizationId: org.organizationId },
     select: { id: true },
   });
   if (!product) {
@@ -103,7 +103,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   const targetBot = await prisma.bot.findFirst({
-    where: { id: parsed.data.botId, userId: user.id, deletedAt: null },
+    where: {
+      id: parsed.data.botId,
+      organizationId: org.organizationId,
+      deletedAt: null,
+    },
     select: { id: true, guildId: true },
   });
   if (!targetBot?.guildId) {
@@ -137,8 +141,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
 export async function DELETE(request: NextRequest, context: RouteContext) {
   const locale = getRequestLocale(request);
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "ADMIN" });
+  if (!org) {
     return NextResponse.json(
       { error: tApi(locale, "unauthenticated") },
       { status: 401 }
@@ -155,7 +159,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
 
   const { id: botId, productId } = await context.params;
   const product = await prisma.accessProduct.findFirst({
-    where: { id: productId, botId, userId: user.id },
+    where: { id: productId, botId, organizationId: org.organizationId },
     select: { id: true },
   });
   if (!product) {

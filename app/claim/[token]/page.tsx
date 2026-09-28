@@ -45,7 +45,7 @@ export default async function ClaimPage({ params, searchParams }: PageProps) {
           brandName: true,
           brandLogoUrl: true,
           brandColor: true,
-          userId: true,
+          organizationId: true,
         },
       },
       bot: { select: { name: true } },
@@ -54,7 +54,7 @@ export default async function ClaimPage({ params, searchParams }: PageProps) {
 
   const orgBrand = access
     ? await prisma.orgStripeConfig.findUnique({
-        where: { userId: access.product.userId },
+        where: { organizationId: access.product.organizationId },
         select: {
           displayName: true,
           logoUrl: true,

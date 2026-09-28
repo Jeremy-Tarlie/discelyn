@@ -133,10 +133,10 @@ async function syncConfigs(): Promise<void> {
     where: {
       guildId: { not: null },
       deletedAt: null,
-      user: { deletedAt: null },
+      organization: { deletedAt: null },
     },
     include: {
-      user: { include: { subscription: true } },
+      organization: { include: { subscription: true } },
       accessProducts: {
         where: { active: true, paymentLinkUrl: { not: null } },
         select: {
@@ -154,13 +154,13 @@ async function syncConfigs(): Promise<void> {
 
   const next = new Map<string, GuildBotConfig>();
   const parts: string[] = [];
-  const guildsByUser = new Map<string, number>();
+  const guildsByOrg = new Map<string, number>();
 
   for (const row of rows) {
     const guildId = row.guildId;
     if (!guildId) continue;
 
-    const status = row.user.subscription?.status ?? "ACTIVE";
+    const status = row.organization.subscription?.status ?? "ACTIVE";
     if (status !== "ACTIVE" && status !== "TRIALING") {
       await prisma.bot.update({
         where: { id: row.id },
@@ -172,7 +172,7 @@ async function syncConfigs(): Promise<void> {
     // Ne pas ignorer les bots PAUSED : après reprise d’abonnement / upgrade,
     // ils doivent repasser ONLINE s’ils sont dans les plafonds du plan.
 
-    const plan = row.user.subscription?.plan ?? "FREE";
+    const plan = row.organization.subscription?.plan ?? "FREE";
     const limits = resolvePlanLimits(plan);
     const enabledModules = filterModulesForLimits(limits, row.enabledModules);
     const customCommands = trimCustomCommands(
@@ -180,8 +180,8 @@ async function syncConfigs(): Promise<void> {
       parseCommands(row.customCommands)
     );
 
-    const userGuildCount = guildsByUser.get(row.userId) ?? 0;
-    if (userGuildCount >= limits.maxGuilds) {
+    const orgGuildCount = guildsByOrg.get(row.organizationId) ?? 0;
+    if (orgGuildCount >= limits.maxGuilds) {
       await prisma.bot.update({
         where: { id: row.id },
         data: {
@@ -191,7 +191,7 @@ async function syncConfigs(): Promise<void> {
       });
       continue;
     }
-    guildsByUser.set(row.userId, userGuildCount + 1);
+    guildsByOrg.set(row.organizationId, orgGuildCount + 1);
 
     const stillInGuild =
       !client?.isReady() || client.guilds.cache.has(guildId);
@@ -237,7 +237,6 @@ async function syncConfigs(): Promise<void> {
       enabledModules,
       config: parseConfig(row.config),
       customCommands,
-      forceBranding: limits.forceBranding,
       shop: shopItems,
     });
     parts.push(
@@ -387,11 +386,11 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "POST" && req.url === "/internal/reload") {
       const body = await readJson(req);
       const botId = asOptionalString(body.botId);
-      const userId = asOptionalString(body.userId);
+      const organizationId = asOptionalString(body.organizationId);
       // Resync global : la Map mémoire doit rester cohérente avec toute la DB.
-      // botId / userId sont tracés pour le diagnostic (webhook vs provision).
+      // botId / organizationId sont tracés pour le diagnostic (webhook vs provision).
       console.log(
-        `[platform] reload requested botId=${botId ?? "-"} userId=${userId ?? "-"}`
+        `[platform] reload requested botId=${botId ?? "-"} organizationId=${organizationId ?? "-"}`
       );
       await syncConfigs();
       res.writeHead(200, { "Content-Type": "application/json" });
@@ -400,7 +399,7 @@ const server = http.createServer(async (req, res) => {
           ok: true,
           guilds: guildConfigs.size,
           botId,
-          userId,
+          organizationId,
         })
       );
       return;

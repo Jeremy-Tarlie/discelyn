@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { requireUser, getUserSubscription } from "@/lib/access";
+import { requireOrg, getOrgSubscription } from "@/lib/access";
 import { getStripe } from "@/lib/stripe";
 import { rateLimit } from "@/lib/rate-limit";
 import { trackEvent } from "@/lib/analytics";
@@ -16,12 +16,12 @@ export async function POST(request: NextRequest) {
   });
   if (!limited.ok) return limited.response;
 
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "OWNER" });
+  if (!org) {
     return NextResponse.json({ error: tApi(locale, "unauthenticated") }, { status: 401 });
   }
 
-  const subscription = await getUserSubscription(user.id);
+  const subscription = await getOrgSubscription(org.organizationId);
   if (!subscription.stripeCustomerId) {
     return NextResponse.json(
       { error: tApi(locale, "noStripeCustomer") },
@@ -39,8 +39,9 @@ export async function POST(request: NextRequest) {
 
   await trackEvent({
     name: "portal_opened",
-    userId: user.id,
+    userId: org.userId,
     path: "/api/stripe/portal",
+    meta: { organizationId: org.organizationId },
   });
 
   return NextResponse.json({ url: portal.url });

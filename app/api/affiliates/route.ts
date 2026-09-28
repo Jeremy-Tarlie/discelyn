@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
-  requireUser,
-  getUserSubscription,
+  requireOrg,
+  getOrgSubscription,
   canUseProduct,
 } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { affiliateCreateSchemaFor } from "@/lib/access-validation";
-import { listAffiliatesForUser } from "@/lib/dashboard-data";
+import { listAffiliatesForOrg } from "@/lib/dashboard-data";
 import { affiliateRefUrl } from "@/lib/learner-access";
 import { rateLimit } from "@/lib/rate-limit";
 import { getRequestLocale } from "@/lib/locale";
@@ -24,15 +24,15 @@ export async function GET(request: NextRequest) {
   });
   if (!limited.ok) return limited.response;
 
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "MEMBER" });
+  if (!org) {
     return NextResponse.json(
       { error: tApi(locale, "unauthenticated") },
       { status: 401 }
     );
   }
 
-  const affiliates = await listAffiliatesForUser(user.id);
+  const affiliates = await listAffiliatesForOrg(org.organizationId);
   return NextResponse.json({ affiliates });
 }
 
@@ -45,15 +45,15 @@ export async function POST(request: NextRequest) {
   });
   if (!limited.ok) return limited.response;
 
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "ADMIN" });
+  if (!org) {
     return NextResponse.json(
       { error: tApi(locale, "unauthenticated") },
       { status: 401 }
     );
   }
 
-  const subscription = await getUserSubscription(user.id);
+  const subscription = await getOrgSubscription(org.organizationId);
   const usable = canUseProduct(subscription);
   if (!usable.ok) {
     return NextResponse.json(
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
   try {
     const affiliate = await prisma.affiliate.create({
       data: {
-        userId: user.id,
+        organizationId: org.organizationId,
         code: parsed.data.code.toLowerCase(),
         label: parsed.data.label,
         commissionBps: parsed.data.commissionBps,
@@ -103,8 +103,8 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   const locale = getRequestLocale(request);
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "ADMIN" });
+  if (!org) {
     return NextResponse.json(
       { error: tApi(locale, "unauthenticated") },
       { status: 401 }
@@ -119,6 +119,8 @@ export async function DELETE(request: NextRequest) {
     );
   }
 
-  await prisma.affiliate.deleteMany({ where: { id, userId: user.id } });
+  await prisma.affiliate.deleteMany({
+    where: { id, organizationId: org.organizationId },
+  });
   return NextResponse.json({ ok: true });
 }

@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { getTranslations } from "next-intl/server";
+import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getUserSubscription } from "@/lib/access";
+import { getOrgSubscription } from "@/lib/access";
 import { getPlan, type PlanId } from "@/lib/plans";
 
 type PageProps = {
@@ -14,11 +15,13 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const session = await getServerSession(authOptions);
   const params = await searchParams;
   const t = await getTranslations("dashboard");
-  const userId = session!.user.id;
-  const subscription = await getUserSubscription(userId);
+  const organizationId = session!.user.organizationId;
+  if (!organizationId) redirect("/login");
+
+  const subscription = await getOrgSubscription(organizationId);
   const plan = getPlan(subscription.plan as PlanId);
   const bots = await prisma.bot.findMany({
-    where: { userId, deletedAt: null },
+    where: { organizationId, deletedAt: null },
     orderBy: { createdAt: "desc" },
     select: { id: true, name: true, status: true, enabledModules: true },
   });
@@ -26,16 +29,19 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   const [accessProducts, activeLearners, stripeConfig, primaryBot] =
     await Promise.all([
-      prisma.accessProduct.count({ where: { userId, active: true } }),
+      prisma.accessProduct.count({ where: { organizationId, active: true } }),
       prisma.learnerAccess.count({
-        where: { bot: { userId, deletedAt: null }, status: "ACTIVE" },
+        where: {
+          bot: { organizationId, deletedAt: null },
+          status: "ACTIVE",
+        },
       }),
       prisma.orgStripeConfig.findUnique({
-        where: { userId },
+        where: { organizationId },
         select: { id: true },
       }),
       prisma.bot.findFirst({
-        where: { userId, deletedAt: null },
+        where: { organizationId, deletedAt: null },
         orderBy: { createdAt: "asc" },
         select: { id: true },
       }),

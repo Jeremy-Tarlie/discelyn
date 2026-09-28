@@ -11,7 +11,7 @@ export async function syncPaymentLinkAvailability(
   const product = await prisma.accessProduct.findUnique({
     where: { id: productId },
     select: {
-      userId: true,
+      organizationId: true,
       maxSeats: true,
       seatsUsed: true,
       paymentLinkId: true,
@@ -20,7 +20,7 @@ export async function syncPaymentLinkAvailability(
   if (!product?.paymentLinkId || product.maxSeats == null) return;
 
   const shouldBeActive = product.seatsUsed < product.maxSeats;
-  const stripe = await getOrgStripeClient(product.userId);
+  const stripe = await getOrgStripeClient(product.organizationId);
   if (!stripe) return;
 
   try {

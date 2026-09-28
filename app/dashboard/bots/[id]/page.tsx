@@ -1,9 +1,9 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { getTranslations } from "next-intl/server";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getUserSubscription } from "@/lib/access";
+import { getOrgSubscription } from "@/lib/access";
 import { getPlan, type PlanId } from "@/lib/plans";
 import { parseBotConfig } from "@/lib/bot-config";
 import { assertBotInGuild } from "@/lib/discord";
@@ -33,14 +33,17 @@ function parseCommands(value: unknown): CustomCommand[] {
 export default async function BotDetailPage({ params }: PageProps) {
   const session = await getServerSession(authOptions);
   const t = await getTranslations("dashboard");
+  const organizationId = session!.user.organizationId;
+  if (!organizationId) redirect("/login");
+
   const { id } = await params;
   let bot = await prisma.bot.findFirst({
-    where: { id, userId: session!.user.id, deletedAt: null },
+    where: { id, organizationId, deletedAt: null },
   });
 
   if (!bot) notFound();
 
-  const subscription = await getUserSubscription(session!.user.id);
+  const subscription = await getOrgSubscription(organizationId);
   const plan = getPlan(subscription.plan as PlanId);
 
   let botPresent = false;

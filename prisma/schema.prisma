@@ -31,6 +31,12 @@ enum BotStatus {
   PAUSED
 }
 
+enum OrgRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -43,19 +49,49 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts          Account[]
-  sessions          Session[]
-  subscription      Subscription?
-  bots              Bot[]
-  orgStripeConfig   OrgStripeConfig?
-  accessProducts    AccessProduct[]
-  affiliates        Affiliate[]
-  outboundWebhooks  OrgOutboundWebhook[]
+  accounts           Account[]
+  sessions           Session[]
+  memberships        OrganizationMembership[]
   accessCodesCreated AccessCode[]
-  oversoldEvents    AccessOversoldEvent[]
 
   @@index([discordId])
   @@index([deletedAt])
+}
+
+/// Organisation = locataire SaaS (plan, bots, Stripe formation, produits).
+model Organization {
+  id        String    @id @default(cuid())
+  name      String
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  memberships      OrganizationMembership[]
+  subscription     Subscription?
+  bots             Bot[]
+  orgStripeConfig  OrgStripeConfig?
+  accessProducts   AccessProduct[]
+  affiliates       Affiliate[]
+  outboundWebhooks OrgOutboundWebhook[]
+  oversoldEvents   AccessOversoldEvent[]
+
+  @@index([deletedAt])
+}
+
+model OrganizationMembership {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String
+  role           OrgRole  @default(MEMBER)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+  @@index([organizationId])
 }
 
 model Account {
@@ -98,7 +134,7 @@ model VerificationToken {
 
 model Subscription {
   id                   String             @id @default(cuid())
-  userId               String             @unique
+  organizationId       String             @unique
   plan                 PlanId             @default(FREE)
   status               SubscriptionStatus @default(ACTIVE)
   stripeCustomerId     String?            @unique
@@ -109,17 +145,17 @@ model Subscription {
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([stripeCustomerId])
   @@index([stripeSubscriptionId])
 }
 
-/// Configuration d'un serveur Discord géré via le bot plateforme Botly.
+/// Binding guild Discord géré via le bot plateforme Botly (pas un bot client).
 /// Aucun token Discord utilisateur n'est stocké (conformité Developer Policy §4).
 model Bot {
   id             String    @id @default(cuid())
-  userId         String
+  organizationId String
   name           String
   description    String?   @db.Text
   avatarUrl      String?
@@ -137,14 +173,14 @@ model Bot {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  user            User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization    Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   warnings        ModerationWarning[]
   accessProducts  AccessProduct[]
   learnerAccesses LearnerAccess[]
   guildGrants     AccessProductGuildGrant[]
   oversoldEvents  AccessOversoldEvent[]
 
-  @@index([userId])
+  @@index([organizationId])
   @@index([status])
   @@index([deletedAt])
 }
@@ -217,7 +253,7 @@ enum LearnerAccessSource {
 /// Webhook Stripe du client (ses ventes formation) — distinct de Stripe Botly.
 model OrgStripeConfig {
   id               String   @id @default(cuid())
-  userId           String   @unique
+  organizationId   String   @unique
   /// Token opaque dans l’URL webhook Botly
   webhookPathToken String   @unique
   /// Secret whsec_… toujours chiffré (TOKEN_ENCRYPTION_KEY requis au setup)
@@ -233,13 +269,13 @@ model OrgStripeConfig {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
 
 /// Produit formation : price Stripe client → rôle Discord.
 model AccessProduct {
   id                 String            @id @default(cuid())
-  userId             String
+  organizationId     String
   botId              String
   name               String
   /// Accroche courte affichée sur /boutique
@@ -272,28 +308,28 @@ model AccessProduct {
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
 
-  user        User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bot         Bot                       @relation(fields: [botId], references: [id], onDelete: Cascade)
-  accesses    LearnerAccess[]
-  guildGrants AccessProductGuildGrant[]
-  accessCodes AccessCode[]
+  organization Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  bot          Bot                      @relation(fields: [botId], references: [id], onDelete: Cascade)
+  accesses     LearnerAccess[]
+  guildGrants  AccessProductGuildGrant[]
+  accessCodes  AccessCode[]
   oversoldEvents AccessOversoldEvent[]
 
-  @@unique([userId, stripePriceId])
+  @@unique([organizationId, stripePriceId])
   @@index([botId])
   @@index([stripePriceId])
-  @@index([userId])
+  @@index([organizationId])
 }
 
 /// Grant rôle sur un bot/guild (multi-serveur #13).
 model AccessProductGuildGrant {
-  id            String   @id @default(cuid())
+  id              String   @id @default(cuid())
   accessProductId String
-  botId         String
-  guildId       String
-  discordRoleId String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  botId           String
+  guildId         String
+  discordRoleId   String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   product AccessProduct @relation(fields: [accessProductId], references: [id], onDelete: Cascade)
   bot     Bot           @relation(fields: [botId], references: [id], onDelete: Cascade)
@@ -328,21 +364,21 @@ model AccessCode {
 
 /// Affilié tracking (#14) — attribution / stats uniquement, aucun payout Botly.
 model Affiliate {
-  id            String   @id @default(cuid())
-  userId        String
-  code          String   @unique
-  label         String
-  active        Boolean  @default(true)
+  id             String   @id @default(cuid())
+  organizationId String
+  code           String   @unique
+  label          String
+  active         Boolean  @default(true)
   /// Basis points informatifs pour reporting orga — Botly ne calcule ni ne verse de commission
-  commissionBps Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  commissionBps  Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  clicks   AffiliateClick[]
-  accesses LearnerAccess[]
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  clicks       AffiliateClick[]
+  accesses     LearnerAccess[]
 
-  @@index([userId])
+  @@index([organizationId])
 }
 
 model AffiliateClick {
@@ -359,19 +395,19 @@ model AffiliateClick {
 
 /// Webhook sortant orga (#11).
 model OrgOutboundWebhook {
-  id        String   @id @default(cuid())
-  userId    String
-  url       String
-  secret    String
-  events    String[]
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(cuid())
+  organizationId String
+  url            String
+  secret         String
+  events         String[]
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  user       User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  deliveries OutboundWebhookDelivery[]
+  organization Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  deliveries   OutboundWebhookDelivery[]
 
-  @@index([userId])
+  @@index([organizationId])
 }
 
 model OutboundWebhookDelivery {
@@ -422,9 +458,9 @@ model LearnerAccess {
   createdAt               DateTime            @default(now())
   updatedAt               DateTime            @updatedAt
 
-  product   AccessProduct         @relation(fields: [accessProductId], references: [id], onDelete: Cascade)
-  bot       Bot                   @relation(fields: [botId], references: [id], onDelete: Cascade)
-  affiliate Affiliate?            @relation(fields: [affiliateId], references: [id], onDelete: SetNull)
+  product   AccessProduct        @relation(fields: [accessProductId], references: [id], onDelete: Cascade)
+  bot       Bot                  @relation(fields: [botId], references: [id], onDelete: Cascade)
+  affiliate Affiliate?           @relation(fields: [affiliateId], references: [id], onDelete: SetNull)
   events    LearnerAccessEvent[]
 
   @@index([botId, status])
@@ -454,7 +490,7 @@ model LearnerAccessEvent {
 /// Paiement encaissé alors que le produit n’a plus de siège (oversell).
 model AccessOversoldEvent {
   id                      String   @id @default(cuid())
-  userId                  String
+  organizationId          String
   accessProductId         String
   botId                   String
   stripeCheckoutSessionId String   @unique
@@ -469,11 +505,11 @@ model AccessOversoldEvent {
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 
-  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product AccessProduct @relation(fields: [accessProductId], references: [id], onDelete: Cascade)
-  bot     Bot           @relation(fields: [botId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  product      AccessProduct @relation(fields: [accessProductId], references: [id], onDelete: Cascade)
+  bot          Bot           @relation(fields: [botId], references: [id], onDelete: Cascade)
 
-  @@index([userId, createdAt])
+  @@index([organizationId, createdAt])
   @@index([accessProductId])
   @@index([refundStatus])
 }

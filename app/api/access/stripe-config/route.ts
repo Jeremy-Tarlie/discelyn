@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
-  requireUser,
-  getUserSubscription,
+  requireOrg,
+  getOrgSubscription,
   canUseProduct,
 } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
@@ -25,8 +25,8 @@ export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   const locale = getRequestLocale(request);
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "MEMBER" });
+  if (!org) {
     return NextResponse.json(
       { error: tApi(locale, "unauthenticated") },
       { status: 401 }
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
   }
 
   const config = await prisma.orgStripeConfig.findUnique({
-    where: { userId: user.id },
+    where: { organizationId: org.organizationId },
     select: {
       webhookPathToken: true,
       label: true,
@@ -82,8 +82,8 @@ export async function PUT(request: NextRequest) {
   });
   if (!limited.ok) return limited.response;
 
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "ADMIN" });
+  if (!org) {
     return NextResponse.json(
       { error: tApi(locale, "unauthenticated") },
       { status: 401 }
@@ -97,7 +97,7 @@ export async function PUT(request: NextRequest) {
     );
   }
 
-  const subscription = await getUserSubscription(user.id);
+  const subscription = await getOrgSubscription(org.organizationId);
   const usable = canUseProduct(subscription);
   if (!usable.ok) {
     return NextResponse.json(
@@ -133,7 +133,7 @@ export async function PUT(request: NextRequest) {
   }
 
   const existing = await prisma.orgStripeConfig.findUnique({
-    where: { userId: user.id },
+    where: { organizationId: org.organizationId },
     select: {
       webhookPathToken: true,
       stripeSecretKey: true,
@@ -176,9 +176,9 @@ export async function PUT(request: NextRequest) {
   }
 
   const config = await prisma.orgStripeConfig.upsert({
-    where: { userId: user.id },
+    where: { organizationId: org.organizationId },
     create: {
-      userId: user.id,
+      organizationId: org.organizationId,
       webhookPathToken: pathToken,
       webhookSecret: sealedSecret,
       stripeSecretKey: sealedKey,
@@ -224,4 +224,3 @@ export async function PUT(request: NextRequest) {
     supportUrl: config.supportUrl,
   });
 }
-

@@ -1,6 +1,6 @@
 /**
  * Résolution rôle Discord pour un grant multi-serveur.
- * Doit rester aligné avec bot-runtime/src/guild-grants.ts (parity test).
+ * Résolution des grants multi-guild côté web (source unique).
  */
 
 export type GuildRoleGrant = {

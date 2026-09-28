@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
-  requireUser,
-  getUserSubscription,
+  requireOrg,
+  getOrgSubscription,
   canCreateBot,
 } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
@@ -24,13 +24,13 @@ export async function GET(request: NextRequest) {
   });
   if (!limited.ok) return limited.response;
 
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "MEMBER" });
+  if (!org) {
     return NextResponse.json({ error: tApi(locale, "unauthenticated") }, { status: 401 });
   }
 
   const bots = await prisma.bot.findMany({
-    where: { userId: user.id, deletedAt: null },
+    where: { organizationId: org.organizationId, deletedAt: null },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -59,8 +59,8 @@ export async function POST(request: NextRequest) {
   });
   if (!limited.ok) return limited.response;
 
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "ADMIN" });
+  if (!org) {
     return NextResponse.json({ error: tApi(locale, "unauthenticated") }, { status: 401 });
   }
 
@@ -79,9 +79,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const subscription = await getUserSubscription(user.id);
+  const subscription = await getOrgSubscription(org.organizationId);
   const botCount = await prisma.bot.count({
-    where: { userId: user.id, deletedAt: null },
+    where: { organizationId: org.organizationId, deletedAt: null },
   });
   const limit = canCreateBot(subscription, botCount);
   if (!limit.ok) {
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
 
   const bot = await prisma.bot.create({
     data: {
-      userId: user.id,
+      organizationId: org.organizationId,
       name: parsed.data.name,
       description: parsed.data.description ?? null,
       status: "PENDING",
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
 
   await trackEvent({
     name: "bot_created",
-    userId: user.id,
+    userId: org.userId,
     meta: { botId: bot.id },
   });
 

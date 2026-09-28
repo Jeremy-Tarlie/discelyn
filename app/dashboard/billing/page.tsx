@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
-import { getUserSubscription } from "@/lib/access";
+import { getOrgSubscription } from "@/lib/access";
 import { getPlan, formatPriceEur, type PlanId } from "@/lib/plans";
 import { PortalButton } from "@/components/dashboard/PortalButton";
 import { GdprActions } from "@/components/dashboard/GdprActions";
@@ -14,7 +15,10 @@ type PageProps = {
 export default async function BillingPage({ searchParams }: PageProps) {
   const session = await getServerSession(authOptions);
   const params = await searchParams;
-  const subscription = await getUserSubscription(session!.user.id);
+  const organizationId = session!.user.organizationId;
+  if (!organizationId) redirect("/login");
+
+  const subscription = await getOrgSubscription(organizationId);
   const plan = getPlan(subscription.plan as PlanId);
   const t = await getTranslations("dashboard");
   const locale = await getLocale();

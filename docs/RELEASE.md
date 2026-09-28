@@ -5,11 +5,11 @@ Checklist avant `APP_ENV=production`. À suivre dans l’ordre.
 ## Gate unique (points 2→7)
 
 ```bash
-# Docker Desktop doit tourner (migrate / e2e / backup via compose)
+# Docker Desktop doit tourner (migrate / test:db / backup via compose)
 npm run release:gate
 ```
 
-Enchaîne : migrate → preflight → typecheck → lint → test → **test:e2e money path** → builds → vérif TLS → **backup DB**.
+Enchaîne : migrate → preflight → typecheck → lint → test → **test:db money path** → builds → vérif TLS → **backup DB**.
 
 Flags : `--skip-build` · `--skip-e2e` · `--skip-backup`
 
@@ -21,7 +21,7 @@ npm run typecheck
 npm run typecheck:runtime
 npm run lint
 npm test
-npm run test:e2e          # money path DB (Postgres test :5433)
+npm run test:db          # money path DB (Postgres test :5433) — pas E2E live
 npm run build
 npm --prefix bot-runtime run build
 npm run preflight:prod    # --env-file=.env
@@ -78,10 +78,10 @@ Si runtime / Redis / bot plateforme en échec → HTTP **503** + `status: "degra
 ### Automatisée (obligatoire avant tag)
 
 ```bash
-npm run test:e2e
+npm run test:db
 ```
 
-Couvre : checkout → siège → multi-guild AWAITING_JOIN → grant-on-join → ACTIVE → revoke.
+Couvre : checkout → siège → multi-guild AWAITING_JOIN → grant-on-join → ACTIVE → revoke (Discord mocké).
 
 ### Manuelle post-deploy (1× smoke Discord réel)
 

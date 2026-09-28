@@ -46,11 +46,11 @@ export function canCreateBot(
   if (!product.ok) return product;
 
   const plan = getPlan(subscription.plan as PlanId);
-  if (currentBotCount >= plan.maxBots) {
+  if (currentBotCount >= plan.maxGuilds) {
     return {
       ok: false,
       code: "botLimit",
-      params: { n: plan.maxBots, plan: plan.name },
+      params: { n: plan.maxGuilds, plan: plan.name },
     };
   }
   return { ok: true };

@@ -27,9 +27,11 @@ export function stripeFromSecretKey(secretKey: string): Stripe {
   });
 }
 
-export async function getOrgStripeClient(userId: string): Promise<Stripe | null> {
+export async function getOrgStripeClient(
+  organizationId: string
+): Promise<Stripe | null> {
   const config = await prisma.orgStripeConfig.findUnique({
-    where: { userId },
+    where: { organizationId },
     select: { stripeSecretKey: true },
   });
   if (!config?.stripeSecretKey) return null;
@@ -41,7 +43,7 @@ export async function getOrgStripeClient(userId: string): Promise<Stripe | null>
  * Setup 1 clic : enregistre la sk_ (chiffrée), crée (ou réutilise) le webhook Stripe → Botly.
  */
 export async function bootstrapOrgStripe(input: {
-  userId: string;
+  organizationId: string;
   stripeSecretKey: string;
   label?: string | null;
 }): Promise<{ webhookUrl: string; createdWebhook: boolean }> {
@@ -56,7 +58,7 @@ export async function bootstrapOrgStripe(input: {
   await stripe.balance.retrieve();
 
   const existing = await prisma.orgStripeConfig.findUnique({
-    where: { userId: input.userId },
+    where: { organizationId: input.organizationId },
     select: { webhookPathToken: true, webhookSecret: true },
   });
   const pathToken = existing?.webhookPathToken ?? newWebhookPathToken();
@@ -104,9 +106,9 @@ export async function bootstrapOrgStripe(input: {
     : existing!.webhookSecret;
 
   await prisma.orgStripeConfig.upsert({
-    where: { userId: input.userId },
+    where: { organizationId: input.organizationId },
     create: {
-      userId: input.userId,
+      organizationId: input.organizationId,
       webhookPathToken: pathToken,
       webhookSecret: sealedWhsec,
       stripeSecretKey: sealedKey,
@@ -122,7 +124,7 @@ export async function bootstrapOrgStripe(input: {
   return { webhookUrl, createdWebhook };
 }
 
-export async function listOrgPrices(userId: string): Promise<
+export async function listOrgPrices(organizationId: string): Promise<
   Array<{
     id: string;
     label: string;
@@ -131,7 +133,7 @@ export async function listOrgPrices(userId: string): Promise<
     type: string;
   }>
 > {
-  const stripe = await getOrgStripeClient(userId);
+  const stripe = await getOrgStripeClient(organizationId);
   if (!stripe) return [];
 
   const prices = await stripe.prices.list({
@@ -167,10 +169,10 @@ export async function listOrgPrices(userId: string): Promise<
 }
 
 export async function detectBillingMode(
-  userId: string,
+  organizationId: string,
   stripePriceId: string
 ): Promise<"ONE_TIME" | "RECURRING"> {
-  const stripe = await getOrgStripeClient(userId);
+  const stripe = await getOrgStripeClient(organizationId);
   if (!stripe) return "ONE_TIME";
   try {
     const price = await stripe.prices.retrieve(stripePriceId);
@@ -181,12 +183,12 @@ export async function detectBillingMode(
 }
 
 export async function createAccessPaymentLink(input: {
-  userId: string;
+  organizationId: string;
   stripePriceId: string;
   productName: string;
   customText?: string | null;
 }): Promise<{ url: string; id: string }> {
-  const stripe = await getOrgStripeClient(input.userId);
+  const stripe = await getOrgStripeClient(input.organizationId);
   if (!stripe) {
     throw new Error("Stripe formation non configuré");
   }

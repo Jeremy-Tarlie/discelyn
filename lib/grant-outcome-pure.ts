@@ -1,6 +1,6 @@
 /**
  * Décision multi-guild après tentatives de pose de rôle.
- * Doit rester aligné avec bot-runtime/src/grant-outcome.ts (parity test).
+ * Logique grant web-only (le runtime délègue au web via learner-join).
  *
  * Règle produit :
  * - ACTIVE uniquement si **tous** les grants cibles sont posés (membre présent + rôle OK)

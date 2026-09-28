@@ -32,12 +32,14 @@ describe("soft-delete purge (DB)", () => {
   const guildId = "511111111111111111";
 
   let userId = "";
+  let organizationId = "";
   let botId = "";
   let productId = "";
   let prisma: typeof import("@/lib/prisma").prisma;
   let softDeleteUserAccount: typeof import("@/lib/soft-delete-ops").softDeleteUserAccount;
   let softDeleteBot: typeof import("@/lib/soft-delete-ops").softDeleteBot;
   let purgeOrgAccessInfrastructure: typeof import("@/lib/soft-delete-ops").purgeOrgAccessInfrastructure;
+  let bootstrapOrganizationForUser: typeof import("@/lib/org-access").bootstrapOrganizationForUser;
 
   beforeAll(async () => {
     ({ prisma } = await import("@/lib/prisma"));
@@ -46,20 +48,31 @@ describe("soft-delete purge (DB)", () => {
       softDeleteBot,
       purgeOrgAccessInfrastructure,
     } = await import("@/lib/soft-delete-ops"));
+    ({ bootstrapOrganizationForUser } = await import("@/lib/org-access"));
 
     const user = await prisma.user.create({
       data: {
         email: `softdel_${suffix}@example.com`,
         name: "SoftDel",
         discordId: `7${Date.now().toString().padStart(17, "0").slice(-17)}`,
-        subscription: { create: { plan: "STARTER", status: "ACTIVE" } },
       },
     });
     userId = user.id;
 
+    const bootstrapped = await bootstrapOrganizationForUser({
+      userId: user.id,
+      name: user.name,
+    });
+    organizationId = bootstrapped.organizationId;
+
+    await prisma.subscription.update({
+      where: { organizationId },
+      data: { plan: "STARTER" },
+    });
+
     const bot = await prisma.bot.create({
       data: {
-        userId,
+        organizationId,
         name: `SD-Bot ${suffix}`,
         guildId,
         status: "ONLINE",
@@ -71,7 +84,7 @@ describe("soft-delete purge (DB)", () => {
 
     const product = await prisma.accessProduct.create({
       data: {
-        userId,
+        organizationId,
         botId,
         name: `SD-Prod ${suffix}`,
         stripePriceId: `price_sd_${suffix}`,
@@ -83,7 +96,7 @@ describe("soft-delete purge (DB)", () => {
 
     await prisma.orgStripeConfig.create({
       data: {
-        userId,
+        organizationId,
         webhookPathToken: `tok_sd_${suffix}`,
         webhookSecret: "enc:v1:test_whsec_placeholder",
         stripeSecretKey: "enc:v1:test_sk_placeholder",
@@ -92,7 +105,7 @@ describe("soft-delete purge (DB)", () => {
 
     await prisma.orgOutboundWebhook.create({
       data: {
-        userId,
+        organizationId,
         url: "https://example.com/hook",
         secret: "outbound-secret-live",
         events: ["claim_reminder"],
@@ -102,7 +115,7 @@ describe("soft-delete purge (DB)", () => {
 
     await prisma.affiliate.create({
       data: {
-        userId,
+        organizationId,
         code: `AFF${suffix.slice(0, 6).toUpperCase()}`,
         label: "test",
         active: true,
@@ -111,9 +124,15 @@ describe("soft-delete purge (DB)", () => {
   });
 
   afterAll(async () => {
-    if (!userId) return;
-    // Hard cleanup test rows (cascade) après soft-delete assertions.
-    await prisma.user.delete({ where: { id: userId } }).catch(() => undefined);
+    if (!prisma) return;
+    if (organizationId) {
+      await prisma.organization
+        .delete({ where: { id: organizationId } })
+        .catch(() => undefined);
+    }
+    if (userId) {
+      await prisma.user.delete({ where: { id: userId } }).catch(() => undefined);
+    }
   });
 
   it("softDeleteBot désactive les produits et null guildId", async () => {
@@ -141,23 +160,23 @@ describe("soft-delete purge (DB)", () => {
       data: { active: true },
     });
     const stripe = await prisma.orgStripeConfig.findUnique({
-      where: { userId },
+      where: { organizationId },
     });
     // softDeleteBot n’efface pas OrgStripe — encore présent.
     expect(stripe).not.toBeNull();
 
-    const result = await purgeOrgAccessInfrastructure(userId);
+    const result = await purgeOrgAccessInfrastructure(organizationId);
     expect(result.orgStripeDeleted).toBe(true);
     expect(result.productsDeactivated).toBeGreaterThanOrEqual(1);
     expect(result.outboundDisabled).toBeGreaterThanOrEqual(1);
     expect(result.affiliatesDeactivated).toBeGreaterThanOrEqual(1);
 
     expect(
-      await prisma.orgStripeConfig.findUnique({ where: { userId } })
+      await prisma.orgStripeConfig.findUnique({ where: { organizationId } })
     ).toBeNull();
 
     const hooks = await prisma.orgOutboundWebhook.findMany({
-      where: { userId },
+      where: { organizationId },
     });
     expect(hooks.every((h) => !h.active && h.secret === "revoked")).toBe(true);
   });
@@ -169,25 +188,33 @@ describe("soft-delete purge (DB)", () => {
         email: `softdel2_${suffix}@example.com`,
         name: "SoftDel2",
         discordId: `6${Date.now().toString().padStart(17, "0").slice(-17)}`,
-        subscription: { create: { plan: "OPS", status: "ACTIVE" } },
-        bots: {
-          create: {
-            name: `SD2 ${suffix}`,
-            guildId: "522222222222222222",
-            status: "ONLINE",
-            enabledModules: [],
-            config: {},
-          },
-        },
-        orgStripeConfig: {
-          create: {
-            webhookPathToken: `tok_sd2_${suffix}`,
-            webhookSecret: "enc:v1:whsec2",
-            stripeSecretKey: "enc:v1:sk2",
-          },
-        },
       },
-      include: { bots: true },
+    });
+    const { organizationId: org2Id } = await bootstrapOrganizationForUser({
+      userId: u2.id,
+      name: u2.name,
+    });
+    await prisma.subscription.update({
+      where: { organizationId: org2Id },
+      data: { plan: "OPS" },
+    });
+    await prisma.bot.create({
+      data: {
+        organizationId: org2Id,
+        name: `SD2 ${suffix}`,
+        guildId: "522222222222222222",
+        status: "ONLINE",
+        enabledModules: [],
+        config: {},
+      },
+    });
+    await prisma.orgStripeConfig.create({
+      data: {
+        organizationId: org2Id,
+        webhookPathToken: `tok_sd2_${suffix}`,
+        webhookSecret: "enc:v1:whsec2",
+        stripeSecretKey: "enc:v1:sk2",
+      },
     });
 
     await softDeleteUserAccount({ userId: u2.id, email: u2.email });
@@ -199,20 +226,27 @@ describe("soft-delete purge (DB)", () => {
     expect(gone.name).toBeNull();
 
     const sub = await prisma.subscription.findUniqueOrThrow({
-      where: { userId: u2.id },
+      where: { organizationId: org2Id },
     });
     expect(sub.status).toBe("CANCELED");
     expect(sub.plan).toBe("FREE");
 
     expect(
-      await prisma.orgStripeConfig.findUnique({ where: { userId: u2.id } })
+      await prisma.orgStripeConfig.findUnique({
+        where: { organizationId: org2Id },
+      })
     ).toBeNull();
 
-    const bots = await prisma.bot.findMany({ where: { userId: u2.id } });
+    const bots = await prisma.bot.findMany({
+      where: { organizationId: org2Id },
+    });
     expect(bots.every((b) => b.deletedAt != null && b.guildId == null)).toBe(
       true
     );
 
+    await prisma.organization
+      .delete({ where: { id: org2Id } })
+      .catch(() => undefined);
     await prisma.user.delete({ where: { id: u2.id } }).catch(() => undefined);
   });
 });

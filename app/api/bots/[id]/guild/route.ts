@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 import {
-  requireUser,
-  getUserSubscription,
+  requireOrg,
+  getOrgSubscription,
   canUseProduct,
 } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
@@ -42,12 +42,12 @@ export async function POST(request: NextRequest, context: RouteContext) {
   });
   if (!limited.ok) return limited.response;
 
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "ADMIN" });
+  if (!org) {
     return NextResponse.json({ error: tApi(locale, "unauthenticated") }, { status: 401 });
   }
 
-  const subscription = await getUserSubscription(user.id);
+  const subscription = await getOrgSubscription(org.organizationId);
   const usable = canUseProduct(subscription);
   if (!usable.ok) {
     return NextResponse.json(
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
   const { id } = await context.params;
   const bot = await prisma.bot.findFirst({
-    where: { id, userId: user.id, deletedAt: null },
+    where: { id, organizationId: org.organizationId, deletedAt: null },
   });
 
   if (!bot) {
@@ -80,7 +80,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
     );
   }
 
-  const ownership = await assertUserManagesGuild(user.id, parsed.data.guildId);
+  // OAuth Discord est per-user — token de l’acteur, pas de l’org
+  const ownership = await assertUserManagesGuild(org.userId, parsed.data.guildId);
   if (!ownership.ok) {
     const error =
       "code" in ownership
@@ -146,7 +147,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
   await trackEvent({
     name: "guild_linked",
-    userId: user.id,
+    userId: org.userId,
     meta: { botId: bot.id, guildId: parsed.data.guildId },
   });
 
@@ -163,14 +164,14 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
   });
   if (!limited.ok) return limited.response;
 
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "ADMIN" });
+  if (!org) {
     return NextResponse.json({ error: tApi(locale, "unauthenticated") }, { status: 401 });
   }
 
   const { id } = await context.params;
   const bot = await prisma.bot.findFirst({
-    where: { id, userId: user.id, deletedAt: null },
+    where: { id, organizationId: org.organizationId, deletedAt: null },
   });
 
   if (!bot) {

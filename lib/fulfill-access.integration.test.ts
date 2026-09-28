@@ -67,12 +67,12 @@ function baseAccess(overrides: Record<string, unknown> = {}) {
       name: "Formation X",
       welcomeDm: null,
       onboardingSteps: null,
-      bot: { userId: "user_org" },
+      bot: { organizationId: "org_1" },
     },
     bot: {
       config: {},
       guildId: "guild_primary",
-      userId: "user_org",
+      organizationId: "org_1",
     },
     ...overrides,
   };

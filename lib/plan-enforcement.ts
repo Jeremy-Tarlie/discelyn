@@ -20,12 +20,12 @@ function parseCustomCommands(value: unknown): CustomCommand[] {
  * trim modules et commandes custom sur les configs restantes.
  */
 export async function enforcePlanLimits(
-  userId: string,
+  organizationId: string,
   planId: PlanId
 ): Promise<void> {
   const plan = getPlan(planId);
   const bots = await prisma.bot.findMany({
-    where: { userId, deletedAt: null },
+    where: { organizationId, deletedAt: null },
     orderBy: { createdAt: "asc" },
   });
 
@@ -33,14 +33,14 @@ export async function enforcePlanLimits(
     const bot = bots[index];
     if (!bot) continue;
 
-    if (index >= plan.maxBots) {
+    if (index >= plan.maxGuilds) {
       const guildId = bot.guildId;
       await prisma.bot.update({
         where: { id: bot.id },
         data: {
           status: "PAUSED",
           guildId: null,
-          lastError: `Limite plan ${plan.name} dépassée (${plan.maxBots} serveur${plan.maxBots > 1 ? "s" : ""}).`,
+          lastError: `Limite plan ${plan.name} dépassée (${plan.maxGuilds} serveur${plan.maxGuilds > 1 ? "s" : ""}).`,
         },
       });
       await notifyRuntimeStop(bot.id, guildId);

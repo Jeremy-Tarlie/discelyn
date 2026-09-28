@@ -11,6 +11,10 @@ export {
   isSubscriptionActive,
 } from "@/lib/billing-guards";
 
+export { requireOrg, orgRoleAtLeast } from "@/lib/org-access";
+export type { OrgContext } from "@/lib/org-access";
+
+/** @deprecated Prefer requireOrg — conserve pour routes identité pure (leads admin). */
 export async function requireUser() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -24,21 +28,28 @@ export async function requireUser() {
   return session.user;
 }
 
-export async function getUserSubscription(
-  userId: string
+export async function getOrgSubscription(
+  organizationId: string
 ): Promise<Subscription> {
   const existing = await prisma.subscription.findUnique({
-    where: { userId },
+    where: { organizationId },
   });
   if (existing) return existing;
 
   return prisma.subscription.create({
     data: {
-      userId,
+      organizationId,
       plan: "FREE",
       status: "ACTIVE",
     },
   });
+}
+
+/** @deprecated Prefer getOrgSubscription */
+export async function getUserSubscription(
+  organizationId: string
+): Promise<Subscription> {
+  return getOrgSubscription(organizationId);
 }
 
 export type BotWithAccess = Bot & {

@@ -5,7 +5,7 @@
  *
  * Usage:
  *   node scripts/run-tests.mjs              # suite complète
- *   node scripts/run-tests.mjs --e2e        # money-path + fulfill DB
+ *   node scripts/run-tests.mjs --db         # money-path + fulfill/soft-delete DB
  *   node scripts/run-tests.mjs -- …args    # args passés à vitest
  */
 import { spawn, spawnSync } from "node:child_process";
@@ -20,9 +20,11 @@ const TEST_TOKEN_KEY =
   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
 const args = process.argv.slice(2);
-const e2eOnly = args.includes("--e2e");
+const dbOnly = args.includes("--db") || args.includes("--e2e");
 const watch = args.includes("--watch");
-const passthrough = args.filter((a) => a !== "--e2e" && a !== "--watch");
+const passthrough = args.filter(
+  (a) => a !== "--db" && a !== "--e2e" && a !== "--watch"
+);
 
 function log(msg) {
   console.log(`[test-db] ${msg}`);
@@ -107,11 +109,11 @@ async function ensureDatabase() {
 
 const databaseUrl = await ensureDatabase();
 
-const vitestArgs = e2eOnly
+const vitestArgs = dbOnly
   ? [
       "vitest",
       "run",
-      "lib/money-path.e2e.test.ts",
+      "lib/money-path.db.test.ts",
       "lib/fulfill-access.db.test.ts",
       "lib/soft-delete.db.test.ts",
       ...passthrough,

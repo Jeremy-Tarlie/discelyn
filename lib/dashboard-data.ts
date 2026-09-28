@@ -38,13 +38,13 @@ export type AccessStatsData = {
   }>;
 };
 
-export async function getAccessStatsForUser(
-  userId: string,
+export async function getAccessStatsForOrg(
+  organizationId: string,
   days = 30
 ): Promise<AccessStatsData> {
   const periodDays = Math.min(Math.max(days, 1), 365);
   const since = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000);
-  const baseWhere = { bot: { userId }, createdAt: { gte: since } };
+  const baseWhere = { bot: { organizationId }, createdAt: { gte: since } };
 
   const [
     paid,
@@ -61,17 +61,17 @@ export async function getAccessStatsForUser(
   ] = await Promise.all([
     prisma.learnerAccess.count({ where: baseWhere }),
     prisma.learnerAccess.count({
-      where: { bot: { userId }, status: "ACTIVE" },
+      where: { bot: { organizationId }, status: "ACTIVE" },
     }),
     prisma.learnerAccess.count({
       where: {
-        bot: { userId },
+        bot: { organizationId },
         status: { in: ["PENDING_CLAIM", "AWAITING_JOIN"] },
       },
     }),
     prisma.learnerAccess.count({
       where: {
-        bot: { userId },
+        bot: { organizationId },
         status: { in: ["REVOKED", "EXPIRED"] },
         createdAt: { gte: since },
       },
@@ -84,12 +84,12 @@ export async function getAccessStatsForUser(
       where: {
         type: "access_revoked",
         createdAt: { gte: since },
-        access: { bot: { userId } },
+        access: { bot: { organizationId } },
         meta: { path: ["reason"], equals: "refund" },
       },
     }),
     prisma.accessProduct.findMany({
-      where: { userId, active: true },
+      where: { organizationId, active: true },
       select: {
         id: true,
         name: true,
@@ -100,10 +100,10 @@ export async function getAccessStatsForUser(
       },
     }),
     prisma.accessOversoldEvent.count({
-      where: { userId, createdAt: { gte: since } },
+      where: { organizationId, createdAt: { gte: since } },
     }),
     prisma.accessOversoldEvent.findMany({
-      where: { userId, createdAt: { gte: since } },
+      where: { organizationId, createdAt: { gte: since } },
       orderBy: { createdAt: "desc" },
       take: 10,
       select: {
@@ -118,7 +118,7 @@ export async function getAccessStatsForUser(
     }),
     prisma.learnerAccess.count({
       where: {
-        bot: { userId },
+        bot: { organizationId },
         createdAt: { gte: since },
         status: { in: ["ACTIVE", "AWAITING_JOIN", "REVOKED", "EXPIRED"] },
         grantedAt: { not: null },
@@ -126,7 +126,7 @@ export async function getAccessStatsForUser(
     }),
     prisma.learnerAccess.count({
       where: {
-        bot: { userId },
+        bot: { organizationId },
         status: "ACTIVE",
         product: { billingMode: "RECURRING" },
         stripeSubscriptionId: { not: null },
@@ -188,8 +188,8 @@ export type DashboardLearner = {
   accessEndsAt: string | null;
 };
 
-export async function listLearnersForUser(
-  userId: string,
+export async function listLearnersForOrg(
+  organizationId: string,
   filters: {
     status?: string | null;
     productId?: string | null;
@@ -199,7 +199,7 @@ export async function listLearnersForUser(
   } = {}
 ): Promise<DashboardLearner[]> {
   const where = {
-    bot: { userId },
+    bot: { organizationId },
     ...(filters.status
       ? { status: filters.status as LearnerAccessStatus }
       : {}),
@@ -277,11 +277,11 @@ export type DashboardAffiliate = {
   createdAt: string;
 };
 
-export async function listAffiliatesForUser(
-  userId: string
+export async function listAffiliatesForOrg(
+  organizationId: string
 ): Promise<DashboardAffiliate[]> {
   const affiliates = await prisma.affiliate.findMany({
-    where: { userId },
+    where: { organizationId },
     orderBy: { createdAt: "desc" },
   });
 
@@ -321,11 +321,11 @@ export type DashboardWebhook = {
   createdAt: string;
 };
 
-export async function listOutboundWebhooksForUser(
-  userId: string
+export async function listOutboundWebhooksForOrg(
+  organizationId: string
 ): Promise<DashboardWebhook[]> {
   const webhooks = await prisma.orgOutboundWebhook.findMany({
-    where: { userId },
+    where: { organizationId },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,

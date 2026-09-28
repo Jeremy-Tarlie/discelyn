@@ -1,19 +1,22 @@
 import { getServerSession } from "next-auth";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { canCreateBot, getUserSubscription } from "@/lib/access";
+import { canCreateBot, getOrgSubscription } from "@/lib/access";
 import { CreateBotForm } from "@/components/dashboard/CreateBotForm";
 import { DeleteBotButton } from "@/components/dashboard/DeleteBotButton";
 
 export default async function BotsPage() {
   const session = await getServerSession(authOptions);
   const t = await getTranslations("dashboard");
-  const userId = session!.user.id;
-  const subscription = await getUserSubscription(userId);
+  const organizationId = session!.user.organizationId;
+  if (!organizationId) redirect("/login");
+
+  const subscription = await getOrgSubscription(organizationId);
   const bots = await prisma.bot.findMany({
-    where: { userId, deletedAt: null },
+    where: { organizationId, deletedAt: null },
     orderBy: { createdAt: "desc" },
   });
   const limit = canCreateBot(subscription, bots.length);

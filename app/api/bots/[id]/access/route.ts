@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
-  requireUser,
-  getUserSubscription,
+  requireOrg,
+  getOrgSubscription,
   canUseProduct,
 } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
@@ -23,17 +23,17 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-async function loadOwnedBot(botId: string, userId: string) {
+async function loadOwnedBot(botId: string, organizationId: string) {
   return prisma.bot.findFirst({
-    where: { id: botId, userId, deletedAt: null },
+    where: { id: botId, organizationId, deletedAt: null },
     select: { id: true, guildId: true, name: true },
   });
 }
 
 export async function GET(request: NextRequest, context: RouteContext) {
   const locale = getRequestLocale(request);
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "MEMBER" });
+  if (!org) {
     return NextResponse.json(
       { error: tApi(locale, "unauthenticated") },
       { status: 401 }
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
   }
 
   const { id: botId } = await context.params;
-  const bot = await loadOwnedBot(botId, user.id);
+  const bot = await loadOwnedBot(botId, org.organizationId);
   if (!bot) {
     return NextResponse.json(
       { error: tApi(locale, "botNotFound") },
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     );
   }
 
-  const subscription = await getUserSubscription(user.id);
+  const subscription = await getOrgSubscription(org.organizationId);
   const plan = getPlan(subscription.plan as PlanId);
 
   const [products, recentAccesses] = await Promise.all([
@@ -111,15 +111,15 @@ export async function POST(request: NextRequest, context: RouteContext) {
   });
   if (!limited.ok) return limited.response;
 
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "ADMIN" });
+  if (!org) {
     return NextResponse.json(
       { error: tApi(locale, "unauthenticated") },
       { status: 401 }
     );
   }
 
-  const subscription = await getUserSubscription(user.id);
+  const subscription = await getOrgSubscription(org.organizationId);
   const usable = canUseProduct(subscription);
   if (!usable.ok) {
     return NextResponse.json(
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
   const plan = getPlan(subscription.plan as PlanId);
   const { id: botId } = await context.params;
-  const bot = await loadOwnedBot(botId, user.id);
+  const bot = await loadOwnedBot(botId, org.organizationId);
   if (!bot) {
     return NextResponse.json(
       { error: tApi(locale, "botNotFound") },
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   const count = await prisma.accessProduct.count({
-    where: { userId: user.id },
+    where: { organizationId: org.organizationId },
   });
   if (count >= plan.maxAccessProducts) {
     return NextResponse.json(
@@ -178,14 +178,14 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   const billingMode = await detectBillingMode(
-    user.id,
+    org.organizationId,
     parsed.data.stripePriceId
   );
 
   try {
     const product = await prisma.accessProduct.create({
       data: {
-        userId: user.id,
+        organizationId: org.organizationId,
         botId,
         name: parsed.data.name,
         stripePriceId: parsed.data.stripePriceId,
@@ -216,11 +216,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
     let paymentLinkId: string | null = null;
     try {
       const brand = await prisma.orgStripeConfig.findUnique({
-        where: { userId: user.id },
+        where: { organizationId: org.organizationId },
         select: { displayName: true },
       });
       const link = await createAccessPaymentLink({
-        userId: user.id,
+        organizationId: org.organizationId,
         stripePriceId: product.stripePriceId,
         productName: product.name,
         customText: brand?.displayName

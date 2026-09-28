@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
-  requireUser,
-  getUserSubscription,
+  requireOrg,
+  getOrgSubscription,
   canUseProduct,
 } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
@@ -11,7 +11,7 @@ import {
   newClaimToken,
   revokeLearnerAccess,
 } from "@/lib/learner-access";
-import { listLearnersForUser } from "@/lib/dashboard-data";
+import { listLearnersForOrg } from "@/lib/dashboard-data";
 import { getOrgStripeClient } from "@/lib/org-stripe";
 import { appBaseUrl } from "@/lib/learner-access";
 import { rateLimit } from "@/lib/rate-limit";
@@ -44,8 +44,8 @@ export async function GET(request: NextRequest) {
   });
   if (!limited.ok) return limited.response;
 
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "MEMBER" });
+  if (!org) {
     return NextResponse.json(
       { error: tApi(locale, "unauthenticated") },
       { status: 401 }
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
   const source = request.nextUrl.searchParams.get("source");
   const wantExport = request.nextUrl.searchParams.get("export") === "1";
 
-  const learners = await listLearnersForUser(user.id, {
+  const learners = await listLearnersForOrg(org.organizationId, {
     status,
     productId,
     q,
@@ -132,15 +132,15 @@ export async function POST(request: NextRequest) {
   });
   if (!limited.ok) return limited.response;
 
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "ADMIN" });
+  if (!org) {
     return NextResponse.json(
       { error: tApi(locale, "unauthenticated") },
       { status: 401 }
     );
   }
 
-  const subscription = await getUserSubscription(user.id);
+  const subscription = await getOrgSubscription(org.organizationId);
   const usable = canUseProduct(subscription);
   if (!usable.ok) {
     return NextResponse.json(
@@ -168,8 +168,11 @@ export async function POST(request: NextRequest) {
   }
 
   const access = await prisma.learnerAccess.findFirst({
-    where: { id: parsed.data.accessId, bot: { userId: user.id } },
-    include: { product: { select: { userId: true } } },
+    where: {
+      id: parsed.data.accessId,
+      bot: { organizationId: org.organizationId },
+    },
+    include: { product: { select: { organizationId: true } } },
   });
   if (!access) {
     return NextResponse.json(
@@ -190,7 +193,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const stripe = await getOrgStripeClient(access.product.userId);
+    const stripe = await getOrgStripeClient(access.product.organizationId);
     if (!stripe) {
       return NextResponse.json(
         { error: tApi(locale, "orgStripeMissing") },

@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
-  requireUser,
-  getUserSubscription,
+  requireOrg,
+  getOrgSubscription,
   canUseProduct,
 } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { outboundWebhookSchemaFor } from "@/lib/access-validation";
 import { newOutboundWebhookSecret } from "@/lib/outbound-webhooks";
-import { listOutboundWebhooksForUser } from "@/lib/dashboard-data";
+import { listOutboundWebhooksForOrg } from "@/lib/dashboard-data";
 import { validateOutboundWebhookUrl } from "@/lib/webhook-url-safety";
 import { rateLimit } from "@/lib/rate-limit";
 import { getRequestLocale } from "@/lib/locale";
@@ -19,15 +19,15 @@ export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   const locale = getRequestLocale(request);
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "MEMBER" });
+  if (!org) {
     return NextResponse.json(
       { error: tApi(locale, "unauthenticated") },
       { status: 401 }
     );
   }
 
-  const webhooks = await listOutboundWebhooksForUser(user.id);
+  const webhooks = await listOutboundWebhooksForOrg(org.organizationId);
   return NextResponse.json({ webhooks });
 }
 
@@ -40,15 +40,15 @@ export async function POST(request: NextRequest) {
   });
   if (!limited.ok) return limited.response;
 
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "ADMIN" });
+  if (!org) {
     return NextResponse.json(
       { error: tApi(locale, "unauthenticated") },
       { status: 401 }
     );
   }
 
-  const subscription = await getUserSubscription(user.id);
+  const subscription = await getOrgSubscription(org.organizationId);
   const usable = canUseProduct(subscription);
   if (!usable.ok) {
     return NextResponse.json(
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
 
   const webhook = await prisma.orgOutboundWebhook.create({
     data: {
-      userId: user.id,
+      organizationId: org.organizationId,
       url: urlCheck.url,
       events: parsed.data.events,
       active: parsed.data.active,
@@ -116,8 +116,8 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   const locale = getRequestLocale(request);
-  const user = await requireUser();
-  if (!user) {
+  const org = await requireOrg({ minRole: "ADMIN" });
+  if (!org) {
     return NextResponse.json(
       { error: tApi(locale, "unauthenticated") },
       { status: 401 }
@@ -133,7 +133,7 @@ export async function DELETE(request: NextRequest) {
   }
 
   await prisma.orgOutboundWebhook.deleteMany({
-    where: { id, userId: user.id },
+    where: { id, organizationId: org.organizationId },
   });
   return NextResponse.json({ ok: true });
 }

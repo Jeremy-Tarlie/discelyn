@@ -51,8 +51,8 @@ jobs:
       - run: npm run typecheck:runtime
       - run: npm run lint
       - run: npm test
-      - name: Money-path + soft-delete e2e (Postgres)
-        run: npm run test:e2e
+      - name: Money-path + soft-delete DB (Postgres)
+        run: npm run test:db
       - name: DB smoke (schema reachable)
         run: node scripts/db-smoke.mjs
       - name: Preflight staging env

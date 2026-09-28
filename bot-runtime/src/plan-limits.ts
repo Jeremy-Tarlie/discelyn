@@ -4,7 +4,6 @@ export type RuntimePlanId = "FREE" | "STARTER" | "OPS" | "SCALE";
 export type RuntimePlanLimits = {
   maxGuilds: number;
   maxCustomCommands: number;
-  forceBranding: boolean;
   modules: readonly string[];
 };
 
@@ -21,25 +20,21 @@ export const RUNTIME_PLAN_LIMITS: Record<RuntimePlanId, RuntimePlanLimits> = {
   FREE: {
     maxGuilds: 1,
     maxCustomCommands: 5,
-    forceBranding: false,
     modules: [...OPS_CORE],
   },
   STARTER: {
     maxGuilds: 1,
     maxCustomCommands: 15,
-    forceBranding: false,
     modules: [...OPS_CORE],
   },
   OPS: {
     maxGuilds: 1,
     maxCustomCommands: 40,
-    forceBranding: false,
     modules: [...OPS_CORE],
   },
   SCALE: {
     maxGuilds: 5,
     maxCustomCommands: 100,
-    forceBranding: false,
     modules: [...OPS_CORE, "automod"],
   },
 };

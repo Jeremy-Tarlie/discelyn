@@ -7,13 +7,6 @@ import {
 } from "./plan-limits";
 
 describe("resolvePlanLimits", () => {
-  it("n’force le branding sur aucun plan", () => {
-    expect(resolvePlanLimits("FREE").forceBranding).toBe(false);
-    expect(resolvePlanLimits("STARTER").forceBranding).toBe(false);
-    expect(resolvePlanLimits("OPS").forceBranding).toBe(false);
-    expect(resolvePlanLimits("SCALE").forceBranding).toBe(false);
-  });
-
   it("pousse FREE avec le socle ops + 5 commandes", () => {
     expect([...resolvePlanLimits("FREE").modules]).toEqual([
       "welcome",
@@ -24,6 +17,11 @@ describe("resolvePlanLimits", () => {
       "custom_commands",
     ]);
     expect(resolvePlanLimits("FREE").maxCustomCommands).toBe(5);
+    expect(resolvePlanLimits("FREE").maxGuilds).toBe(1);
+  });
+
+  it("SCALE autorise 5 guilds", () => {
+    expect(resolvePlanLimits("SCALE").maxGuilds).toBe(5);
   });
 
   it("fallback FREE pour plan inconnu", () => {

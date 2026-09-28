@@ -83,9 +83,9 @@ run("lint", "npm", ["run", "lint"]);
 run("test", "npm", ["test"]);
 
 if (!skipE2e) {
-  run("test:e2e (money path)", "npm", ["run", "test:e2e"]);
+  run("test:db (money path)", "npm", ["run", "test:db"]);
 } else {
-  log("skip test:e2e (--skip-e2e)");
+  log("skip test:db (--skip-e2e)");
 }
 
 if (!skipBuild) {
@@ -123,14 +123,14 @@ if (skipBackup) {
 
 log("=== 7. Money path ===");
 check(
-  "suite e2e money-path présente",
-  existsSync(join(process.cwd(), "lib", "money-path.e2e.test.ts"))
+  "suite DB money-path présente",
+  existsSync(join(process.cwd(), "lib", "money-path.db.test.ts"))
 );
-if (!skipE2e && steps.some((s) => s.label.includes("test:e2e") && s.ok)) {
+if (!skipE2e && steps.some((s) => s.label.includes("test:db") && s.ok)) {
   check(
     "preuve money path automatisée",
     true,
-    "checkout → grant → revoke (Discord mocké)"
+    "checkout → grant → revoke (Discord mocké, pas E2E live)"
   );
 }
 log(

@@ -2,14 +2,16 @@ import { getTranslations } from "next-intl/server";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
-import { getAccessStatsForUser } from "@/lib/dashboard-data";
+import { getAccessStatsForOrg } from "@/lib/dashboard-data";
 
 export default async function AccessStatsPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/login");
+  const organizationId = session.user.organizationId;
+  if (!organizationId) redirect("/login");
 
   const t = await getTranslations("dashboard.accessStats");
-  const stats = await getAccessStatsForUser(session.user.id, 30);
+  const stats = await getAccessStatsForOrg(organizationId, 30);
 
   const cards = [
     { label: t("gmv"), value: `${(stats.gmvCents / 100).toFixed(2)}` },

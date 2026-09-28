@@ -92,12 +92,12 @@ async function recordEvent(
 }
 
 async function notifyOutbound(
-  userId: string,
+  organizationId: string,
   event: OutboundEvent,
   payload: Record<string, string | number | boolean | null>
 ): Promise<void> {
   try {
-    await dispatchOutboundWebhooks({ userId, event, payload });
+    await dispatchOutboundWebhooks({ organizationId, event, payload });
   } catch (err) {
     console.warn("[outbound] dispatch failed", err);
   }
@@ -173,7 +173,7 @@ export async function openLearnerAccessFromCheckout(input: {
   amountSubtotal?: number | null;
   currency?: string | null;
   affiliateId?: string | null;
-  userId: string;
+  organizationId: string;
 }): Promise<CheckoutOpenResult> {
   type TxResult =
     | { kind: "existing"; accessId: string; claimToken: string | null }
@@ -285,7 +285,7 @@ export async function openLearnerAccessFromCheckout(input: {
     sessionId: input.stripeCheckoutSessionId,
     amountTotal: input.amountTotal ?? null,
   });
-  await notifyOutbound(input.userId, "payment_received", {
+  await notifyOutbound(input.organizationId, "payment_received", {
     accessId: txResult.accessId,
     productId: input.productId,
     email: input.customerEmail,
@@ -308,7 +308,7 @@ export async function openLearnerAccessFromCheckout(input: {
 }
 
 async function attemptOversoldRefund(input: {
-  userId: string;
+  organizationId: string;
   stripePaymentIntentId: string | null;
   stripeSubscriptionId: string | null;
 }): Promise<{
@@ -316,7 +316,7 @@ async function attemptOversoldRefund(input: {
   stripeRefundId: string | null;
   refundError: string | null;
 }> {
-  const stripe = await getOrgStripeClient(input.userId);
+  const stripe = await getOrgStripeClient(input.organizationId);
   if (!stripe) {
     return {
       refundStatus: "skipped",
@@ -372,7 +372,7 @@ export async function retryOversoldRefunds(): Promise<number> {
     where: { refundStatus: { in: ["pending", "refund_failed"] } },
     select: {
       id: true,
-      userId: true,
+      organizationId: true,
       stripePaymentIntentId: true,
       stripeCheckoutSessionId: true,
     },
@@ -384,7 +384,7 @@ export async function retryOversoldRefunds(): Promise<number> {
   for (const row of rows) {
     // Subscription id non stocké sur l’event — cancel déjà tenté à la création.
     const refund = await attemptOversoldRefund({
-      userId: row.userId,
+      organizationId: row.organizationId,
       stripePaymentIntentId: row.stripePaymentIntentId,
       stripeSubscriptionId: null,
     });
@@ -404,7 +404,7 @@ export async function retryOversoldRefunds(): Promise<number> {
 async function recordOversoldCheckout(input: {
   productId: string;
   botId: string;
-  userId: string;
+  organizationId: string;
   customerEmail: string | null;
   stripeCheckoutSessionId: string;
   stripePaymentIntentId: string | null;
@@ -421,7 +421,7 @@ async function recordOversoldCheckout(input: {
   try {
     await prisma.accessOversoldEvent.create({
       data: {
-        userId: input.userId,
+        organizationId: input.organizationId,
         accessProductId: input.productId,
         botId: input.botId,
         stripeCheckoutSessionId: input.stripeCheckoutSessionId,
@@ -447,7 +447,7 @@ async function recordOversoldCheckout(input: {
   if (!claimed) return;
 
   const refund = await attemptOversoldRefund({
-    userId: input.userId,
+    organizationId: input.organizationId,
     stripePaymentIntentId: input.stripePaymentIntentId,
     stripeSubscriptionId: input.stripeSubscriptionId,
   });
@@ -461,7 +461,7 @@ async function recordOversoldCheckout(input: {
     },
   });
 
-  await notifyOutbound(input.userId, "sold_out", {
+  await notifyOutbound(input.organizationId, "sold_out", {
     productId: input.productId,
     sessionId: input.stripeCheckoutSessionId,
     email: input.customerEmail,
@@ -485,7 +485,7 @@ export async function openLearnerAccessFromCode(input: {
     include: {
       product: {
         include: {
-          bot: { select: { id: true, guildId: true, userId: true } },
+          bot: { select: { id: true, guildId: true, organizationId: true } },
         },
       },
     },
@@ -575,8 +575,8 @@ export async function fulfillDiscordAccess(
   const access = await prisma.learnerAccess.findUnique({
     where: { id: learnerAccessId },
     include: {
-      product: { include: { bot: { select: { userId: true } } } },
-      bot: { select: { config: true, guildId: true, userId: true } },
+      product: { include: { bot: { select: { organizationId: true } } } },
+      bot: { select: { config: true, guildId: true, organizationId: true } },
     },
   });
   if (!access) {
@@ -715,7 +715,7 @@ export async function fulfillDiscordAccess(
     discordUserId: userId,
     grantedCount: outcome.grantedCount,
   });
-  await notifyOutbound(access.bot.userId, "role_granted", {
+  await notifyOutbound(access.bot.organizationId, "role_granted", {
     accessId: access.id,
     productId: access.accessProductId,
     discordUserId: userId,
@@ -752,7 +752,7 @@ export async function grantPendingOnJoin(input: {
     },
     include: {
       product: true,
-      bot: { select: { config: true, userId: true } },
+      bot: { select: { config: true, organizationId: true } },
     },
   });
 
@@ -775,7 +775,7 @@ export async function revokeLearnerAccess(
     where: { id: learnerAccessId },
     include: {
       product: true,
-      bot: { select: { userId: true } },
+      bot: { select: { organizationId: true } },
     },
   });
   if (!access) return;
@@ -829,7 +829,7 @@ export async function revokeLearnerAccess(
 
   const event: OutboundEvent =
     reason === "cohort_ended" ? "expired" : "revoked";
-  await notifyOutbound(access.bot.userId, event, {
+  await notifyOutbound(access.bot.organizationId, event, {
     accessId: access.id,
     productId: access.accessProductId,
     reason,
@@ -924,9 +924,9 @@ export async function sendClaimReminders(): Promise<number> {
       product: { select: { name: true } },
       bot: {
         select: {
-          userId: true,
+          organizationId: true,
           deletedAt: true,
-          user: { select: { deletedAt: true } },
+          organization: { select: { deletedAt: true } },
         },
       },
     },
@@ -945,7 +945,7 @@ export async function sendClaimReminders(): Promise<number> {
 
   let sent = 0;
   for (const access of pending) {
-    if (access.bot.deletedAt || access.bot.user.deletedAt) continue;
+    if (access.bot.deletedAt || access.bot.organization.deletedAt) continue;
     const needsSecond =
       access.claimReminderCount >= 1 && access.createdAt <= day2;
     const needsFirst = access.claimReminderCount === 0;
@@ -986,7 +986,7 @@ export async function sendClaimReminders(): Promise<number> {
       }
 
       // Toujours notifier l’orga (automation) si email connu.
-      await notifyOutbound(access.bot.userId, "claim_reminder", {
+      await notifyOutbound(access.bot.organizationId, "claim_reminder", {
         accessId: access.id,
         productId: access.accessProductId,
         email: access.customerEmail,
