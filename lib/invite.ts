@@ -1,5 +1,5 @@
 /**
- * Invite URL du bot plateforme Botly (jamais un token utilisateur).
+ * Invite URL du bot plateforme Discelyn (jamais un token utilisateur).
  * `guildId` pré-sélectionne le serveur dans le flux OAuth Discord.
  */
 export function buildPlatformInviteUrl(

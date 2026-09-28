@@ -31,7 +31,7 @@ export async function DashboardNav({
     <aside className="flex w-full flex-col gap-6 border-b border-line bg-surface p-4 sm:p-6 md:min-h-screen md:w-64 md:border-b-0 md:border-r md:gap-8">
       <div>
         <Link href="/" className="font-display text-lg font-bold text-page-fg">
-          Botly
+          Discelyn
         </Link>
         <p className="mt-1 text-xs uppercase tracking-wider text-signal">
           {t("planLabel", { name: planName })}

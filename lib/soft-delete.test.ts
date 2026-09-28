@@ -31,7 +31,7 @@ describe("email config", () => {
     delete process.env.EMAIL_FROM;
     expect(isEmailConfigured()).toBe(false);
     process.env.RESEND_API_KEY = "re_test";
-    process.env.EMAIL_FROM = "Botly <noreply@example.com>";
+    process.env.EMAIL_FROM = "Discelyn <noreply@example.com>";
     expect(isEmailConfigured()).toBe(true);
     if (prevKey === undefined) delete process.env.RESEND_API_KEY;
     else process.env.RESEND_API_KEY = prevKey;

@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
   });
   if (!target) {
     return NextResponse.json(
-      { error: "Aucun compte Botly avec cet ID Discord." },
+      { error: "Aucun compte Discelyn avec cet ID Discord." },
       { status: 404 }
     );
   }

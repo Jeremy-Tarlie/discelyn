@@ -143,7 +143,7 @@ export async function softDeleteOrganization(
  * Soft-delete compte utilisateur : pour chaque membership OWNER, soft-delete
  * l’orga si seul OWNER restant, sinon retire la membership ; puis anonymise
  * le user + invalide sessions.
- * Stripe SaaS Botly doit déjà être annulé par l’appelant pour les orgs concernées.
+ * Stripe SaaS Discelyn doit déjà être annulé par l’appelant pour les orgs concernées.
  */
 export async function softDeleteUserAccount(input: {
   userId: string;

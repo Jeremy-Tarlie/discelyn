@@ -92,7 +92,7 @@ async function redisLimit(
   if (redis.status !== "ready") {
     await redis.connect().catch(() => undefined);
   }
-  const redisKey = `botly:rl:${key}`;
+  const redisKey = `discelyn:rl:${key}`;
   const result = (await redis.eval(
     RATE_LIMIT_LUA,
     1,

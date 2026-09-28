@@ -8,7 +8,7 @@ Trois processus applicatifs + deux stores :
 
 | Composant | Rôle |
 |-----------|------|
-| **web** (Next.js) | OAuth, dashboard, API, **double Stripe** (SaaS Botly + formation orga), claim, crons |
+| **web** (Next.js) | OAuth, dashboard, API, **double Stripe** (SaaS Discelyn + formation orga), claim, crons |
 | **bot-runtime** | Un client discord.js (`DISCORD_BOT_TOKEN`), configs par `guildId` en mémoire, join → grant |
 | **PostgreSQL** | Source de vérité (users, **organizations**, memberships, bots, accès apprenants, org Stripe, leads…) |
 | **Redis** | Rate-limit distribué uniquement (fallback mémoire si absent) |
@@ -73,11 +73,11 @@ Création : clair renvoyé **une fois** ; stocké en `codeHash` (SHA-256) + `cod
 4. `POST /api/bots` → modèle `Bot` = **binding guild** plateforme (`PENDING`) ; liaison via `POST /api/bots/[id]/guild`.
 5. `provisionBot` → invite si besoin, sinon `notifyRuntimeReload` → `POST {BOT_RUNTIME_URL}/internal/reload`.
 6. Runtime : sync Prisma → Map mémoire ; poll ~30s si reload manqué.
-7. Équipe : `GET/POST/DELETE /api/org/members` (ajout par Discord ID d’un compte Botly existant).
+7. Équipe : `GET/POST/DELETE /api/org/members` (ajout par Discord ID d’un compte Discelyn existant).
 
 ---
 
-## 3. Checkout Stripe SaaS Botly (plans)
+## 3. Checkout Stripe SaaS Discelyn (plans)
 
 1. `POST /api/stripe/checkout` / portal / `POST /api/stripe/webhook` (metadata `organizationId`).
 2. `syncSubscription` → `enforcePlanLimits(organizationId)` → reload runtime.
@@ -95,7 +95,7 @@ Hors `APP_ENV=production`, `sk_live_` refusée.
 1. Pour chaque membership `OWNER` sans autre OWNER → `softDeleteOrganization` (revoke Discord, soft-delete bots, purge `OrgStripeConfig`, **anonymisation immédiate PII** `LearnerAccess`, `organization.deletedAt`)
 2. Sinon retrait de la membership seulement
 3. Anonymisation user (`email`/`discordId` null) + invalidation sessions
-4. Best-effort cancel / delete customer Stripe Botly (appelant)
+4. Best-effort cancel / delete customer Stripe Discelyn (appelant)
 
 **Rétention PII apprenants** (orgs actives) : cron `POST /api/cron/retention` anonymise `LearnerAccess` en `REVOKED`/`EXPIRED` après **365 jours** (`LEARNER_PII_RETENTION_DAYS`) — nullifie email, discordUserId, claimToken, stripeCustomerId, inviteUrl. Les montants / ids Stripe paiement peuvent rester pour audit comptable.
 
@@ -112,7 +112,7 @@ Voir `lib/soft-delete-ops.ts`, `lib/data-retention.ts`.
 | PostgreSQL | Users, memberships, **Organizations**, OAuth (chiffrés si clé), sessions, subscriptions **par org**, bots (bindings guild), **OrgStripeConfig**, **AccessProduct** / grants / codes hashés, **LearnerAccess**, affiliés tracking, webhooks sortants |
 | Redis | Rate-limit |
 | Mémoire runtime | Map guild → config, client discord.js |
-| Secrets env | `DISCORD_BOT_TOKEN`, Stripe Botly, `TOKEN_ENCRYPTION_KEY`, `BOT_RUNTIME_SECRET`, `CRON_SECRET` |
+| Secrets env | `DISCORD_BOT_TOKEN`, Stripe Discelyn, `TOKEN_ENCRYPTION_KEY`, `BOT_RUNTIME_SECRET`, `CRON_SECRET` |
 
 ---
 

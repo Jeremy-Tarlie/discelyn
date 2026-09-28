@@ -1,19 +1,19 @@
-# Botly
+# Discelyn
 
 ## Description
 
-**Botly** est un SaaS Discord pour les **organismes de formation et infopreneurs FR/UE** dont la communauté vit déjà sur Discord.
+**Discelyn** est un SaaS Discord pour les **organismes de formation et infopreneurs FR/UE** dont la communauté vit déjà sur Discord.
 
 Le cœur du produit n’est pas un bot hobby (levels, music, giveaways) : c’est le **contrôle d’accès apprenant**.
 
 1. L’apprenant **paie** sur le Stripe de la formation  
-2. Botly lui fait **réclamer son Discord** (OAuth)  
+2. Discelyn lui fait **réclamer son Discord** (OAuth)  
 3. Le **rôle** (et donc les salons) s’ouvre  
 4. **Remboursement**, fin d’abonnement ou fin de cohorte → l’accès est **retiré**
 
 Autour de ça : socle ops formation (welcome, tickets support, rôles, logs, modération traçable, commandes FAQ), dashboard web, facturation UE, export / suppression compte RGPD, et offres d’accompagnement (Diagnostic, Setup Pilot).
 
-**Pas un MEE6.** MEE6 et Carl animent un serveur ; Botly **relie le paiement à l’accès Discord**.
+**Pas un MEE6.** MEE6 et Carl animent un serveur ; Discelyn **relie le paiement à l’accès Discord**.
 
 ### Accès formation (features)
 
@@ -44,11 +44,11 @@ Modèle : **Organization** (plan, bots, Stripe formation) + **Memberships** (OWN
 
 ## Différence vs les autres
 
-| | Whop / LaunchPass / PayBot | MEE6 / Carl | **Botly** |
+| | Whop / LaunchPass / PayBot | MEE6 / Carl | **Discelyn** |
 |---|---------------------------|-------------|-----------|
 | Job | Communauté payante US | Animer le serveur | **Accès formation FR** |
 | Setup | Store / bot Discord | Modules hobby | **sk_ + webhook + guild + rôle → lien** |
-| Commission | Souvent un cut | Freemium features | **0 % Botly** (ton Stripe) |
+| Commission | Souvent un cut | Freemium features | **0 % Discelyn** (ton Stripe) |
 | Webhook | Variable | N/A | **Créé automatiquement** |
 
 ## Positionnement
@@ -80,7 +80,7 @@ Variables minimales : `NEXTAUTH_SECRET`, `DISCORD_CLIENT_ID`,
 ### Tests
 
 `npm test` / `npm run test:db` démarrent (si besoin) un Postgres dédié via
-`docker-compose.test.yml` sur le port **5433** (`BOTLY_TEST_DATABASE_URL`).
+`docker-compose.test.yml` sur le port **5433** (`DISCELYN_TEST_DATABASE_URL`).
 `test:db` = money path + soft-delete sur Postgres (Discord mocké) — **pas** un E2E
 Stripe/Discord live. Docker doit tourner. En CI, `DATABASE_URL` du service Postgres est réutilisé.
 

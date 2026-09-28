@@ -10,7 +10,7 @@ describe("validateOutboundWebhookUrl", () => {
   });
 
   it("accepte https public", () => {
-    const r = validateOutboundWebhookUrl("https://hooks.example.com/botly");
+    const r = validateOutboundWebhookUrl("https://hooks.example.com/discelyn");
     expect(r.ok).toBe(true);
   });
 

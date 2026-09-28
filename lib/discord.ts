@@ -201,7 +201,7 @@ async function fetchUserGuildsRaw(
   }
 }
 
-/** Serveurs Discord où l'utilisateur peut installer / lier Botly. */
+/** Serveurs Discord où l'utilisateur peut installer / lier Discelyn. */
 export async function listManageableGuilds(
   userId: string
 ): Promise<

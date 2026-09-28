@@ -3,15 +3,15 @@
 services:
   test-db:
     image: postgres:16-alpine
-    container_name: botly-test-pg
+    container_name: discelyn-test-pg
     ports:
       - "127.0.0.1:5433:5432"
     environment:
-      POSTGRES_USER: botly
-      POSTGRES_PASSWORD: botly
-      POSTGRES_DB: botly
+      POSTGRES_USER: discelyn
+      POSTGRES_PASSWORD: discelyn
+      POSTGRES_DB: discelyn
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U botly -d botly"]
+      test: ["CMD-SHELL", "pg_isready -U discelyn -d discelyn"]
       interval: 2s
       timeout: 3s
       retries: 30

@@ -11,7 +11,7 @@ export const LANDING_FEATURES = [
     d: "Message d’accueil + rôle promo — utile, pas unique.",
     icon: "welcome" as const,
     detail:
-      "Socle ops. Tous les bots le font ; chez Botly c’est secondaire derrière l’accès payant.",
+      "Socle ops. Tous les bots le font ; chez Discelyn c’est secondaire derrière l’accès payant.",
   },
   {
     t: "Tickets support",

@@ -10,7 +10,7 @@ import { Reveal } from "@/components/landing/Reveal";
 import { DiscordIcon } from "@/components/landing/DiscordIcon";
 import { FeatureIcon } from "@/components/landing/FeatureIcon";
 import { HeroPatterns, HeroWave } from "@/components/landing/HeroGraphics";
-import { BotlyMascot } from "@/components/landing/BotlyMascot";
+import { DiscelynMascot } from "@/components/landing/DiscelynMascot";
 import { trackEvent } from "@/lib/analytics";
 
 const FEATURE_KEYS = [
@@ -76,7 +76,7 @@ export default async function HomePage() {
             </div>
 
             <div className="relative z-10 mx-auto w-full md:justify-self-end md:self-end">
-              <BotlyMascot priority className="mx-auto md:-mb-8" />
+              <DiscelynMascot priority className="mx-auto md:-mb-8" />
             </div>
           </div>
 
@@ -190,10 +190,10 @@ export default async function HomePage() {
                 </div>
                 <div className="flex min-h-[6.5rem] flex-col justify-center rounded-2xl border border-signal/40 bg-signal/15 px-5 py-4">
                   <p className="text-xs font-semibold uppercase tracking-wider text-signal-dim">
-                    {t("diffBotlyLabel")}
+                    {t("diffDiscelynLabel")}
                   </p>
                   <p className="mt-2 text-sm leading-relaxed text-[color:var(--page-fg)]">
-                    {t("diffBotlyBody")}
+                    {t("diffDiscelynBody")}
                   </p>
                 </div>
               </div>

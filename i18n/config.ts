@@ -6,9 +6,9 @@ export const themes = ["light", "dark"] as const;
 export type Theme = (typeof themes)[number];
 export const defaultTheme: Theme = "light";
 
-export const LOCALE_COOKIE = "botly_locale";
-export const CONSENT_COOKIE = "botly_consent";
-export const THEME_COOKIE = "botly_theme";
+export const LOCALE_COOKIE = "discelyn_locale";
+export const CONSENT_COOKIE = "discelyn_consent";
+export const THEME_COOKIE = "discelyn_theme";
 
 export const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 export const CONSENT_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;

@@ -1,7 +1,7 @@
 # Rapport de diagnostic Discord — modèle
 
 **À remettre au client sous 48 h ouvrées après l’appel.**  
-Remplacer tous les `[…]`. Ce document doit rester **utile même sans achat Botly**.
+Remplacer tous les `[…]`. Ce document doit rester **utile même sans achat Discelyn**.
 
 ---
 
@@ -13,7 +13,7 @@ Remplacer tous les `[…]`. Ce document doit rester **utile même sans achat Bot
 | Interlocuteur | `[Prénom Nom — rôle]` |
 | Serveur Discord | `[Nom du serveur]` · ID `[si connu]` |
 | Date de l’entretien | `[JJ mois AAAA]` |
-| Auteur | Jérémy Tarlié — Botly |
+| Auteur | Jérémy Tarlié — Discelyn |
 | Offre | Diagnostic Discord — 49 € TTC/HT selon facture |
 | Crédit Setup | 49 € déductibles du Setup Pilot (290 €) si enchaînement |
 
@@ -125,7 +125,7 @@ Classement **P** = Probabilité (Faible / Moyenne / Forte) · **I** = Impact (Fa
 
 ## 4. Plan d’action en trois étapes
 
-Au moins **une** étape doit être faisable **sans** Botly.
+Au moins **une** étape doit être faisable **sans** Discelyn.
 
 ### Étape A — Sous 7 jours (autonomie)
 
@@ -155,7 +155,7 @@ Au moins **une** étape doit être faisable **sans** Botly.
 
 Les étapes A et B ci-dessus suffisent pour réduire le risque le plus urgent : **`[nommer le risque 1]`**.
 
-### Si vous enchaînez sur Botly
+### Si vous enchaînez sur Discelyn
 
 | Prestation | Prix | Délai | Contenu |
 |---|---|---|---|
@@ -186,6 +186,6 @@ Les étapes A et B ci-dessus suffisent pour réduire le risque le plus urgent : 
 
 Document confidentiel destiné à `[Organisme]`.  
 Observations basées sur l’entretien du `[date]` et l’état du serveur à cette date.  
-Botly / Jérémy Tarlié — contact : `[NEXT_PUBLIC_SUPPORT_EMAIL ou email facturation]`.
+Discelyn / Jérémy Tarlié — contact : `[NEXT_PUBLIC_SUPPORT_EMAIL ou email facturation]`.
 
 Ce rapport ne constitue pas un avis juridique. Pour un DPA ou une analyse d’impact formelle, faire intervenir un conseil qualifié.

@@ -1,7 +1,7 @@
 import Image from "next/image";
 
 /** Mascotte hero — même taille partout, sans mask / contour. */
-export function BotlyMascot({
+export function DiscelynMascot({
   priority = false,
   className = "",
   size = "hero",
@@ -18,8 +18,8 @@ export function BotlyMascot({
   return (
     <div className={`animate-float relative ${dim} ${className}`.trim()}>
       <Image
-        src="/brand/botly-mascot-transparent.png"
-        alt="Mascotte Botly"
+        src="/brand/discelyn-mascot-transparent.png"
+        alt="Mascotte Discelyn"
         fill
         priority={priority}
         className="object-contain object-bottom drop-shadow-[0_20px_40px_rgba(0,0,0,0.35)]"

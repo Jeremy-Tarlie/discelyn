@@ -344,7 +344,7 @@ async function attemptOversoldRefund(input: {
     const refund = await stripe.refunds.create({
       payment_intent: input.stripePaymentIntentId,
       reason: "requested_by_customer",
-      metadata: { botly_reason: "oversold" },
+      metadata: { discelyn_reason: "oversold" },
     });
     return {
       refundStatus: "refunded",
@@ -970,8 +970,8 @@ export async function sendClaimReminders(): Promise<number> {
         const mail = await sendEmail({
           to: access.customerEmail,
           subject: `Finalise ton accès « ${access.product.name} »`,
-          text: `Bonjour,\n\nFinalise ton accès Discord « ${access.product.name} » en ouvrant ce lien :\n${url}\n\n— Botly`,
-          html: `<p>Bonjour,</p><p>Finalise ton accès Discord <strong>${access.product.name}</strong> :</p><p><a href="${url}">${url}</a></p><p>— Botly</p>`,
+          text: `Bonjour,\n\nFinalise ton accès Discord « ${access.product.name} » en ouvrant ce lien :\n${url}\n\n— Discelyn`,
+          html: `<p>Bonjour,</p><p>Finalise ton accès Discord <strong>${access.product.name}</strong> :</p><p><a href="${url}">${url}</a></p><p>— Discelyn</p>`,
         });
         if (mail.ok) {
           delivered = true;

@@ -81,8 +81,8 @@ export async function dispatchOutboundWebhooks(input: {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-Botly-Signature": signature,
-            "X-Botly-Event": input.event,
+            "X-Discelyn-Signature": signature,
+            "X-Discelyn-Event": input.event,
           },
           body,
           signal: AbortSignal.timeout(8_000),

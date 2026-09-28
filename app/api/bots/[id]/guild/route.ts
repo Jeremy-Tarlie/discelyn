@@ -29,7 +29,7 @@ function linkSchemaFor(locale: ReturnType<typeof getRequestLocale>) {
 }
 
 /**
- * Lie un serveur Discord à une config Botly.
+ * Lie un serveur Discord à une config Discelyn.
  * Exige que l'utilisateur OAuth administre le serveur (scope guilds).
  * Le bot peut être invité avant ou après le lien.
  */

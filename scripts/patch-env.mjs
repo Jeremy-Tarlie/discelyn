@@ -3,7 +3,7 @@
  * Met à jour des clés .env sans afficher les secrets.
  *
  * Usage :
- *   node scripts/patch-env.mjs --set DATABASE_URL=postgresql://botly:botly@localhost:5432/botly?schema=public
+ *   node scripts/patch-env.mjs --set DATABASE_URL=postgresql://discelyn:discelyn@localhost:5432/discelyn?schema=public
  *   node scripts/patch-env.mjs --set TRUST_PROXY=1 --set APP_ENV=production --set DOMAIN=x --set EMAIL=y
  */
 import { readFileSync, writeFileSync, existsSync } from "node:fs";

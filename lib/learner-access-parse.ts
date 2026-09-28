@@ -5,6 +5,7 @@ export function extractPriceIdFromSession(
   lineItems?: Stripe.LineItem[] | null
 ): string | null {
   const fromMeta =
+    session.metadata?.discelyn_price_id ??
     session.metadata?.botly_price_id ??
     session.metadata?.stripe_price_id ??
     session.metadata?.priceId;

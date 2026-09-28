@@ -1,4 +1,4 @@
-# Trame Diagnostic Botly — 90 minutes
+# Trame Diagnostic Discelyn — 90 minutes
 
 Offre : **49 €** (déductible du Setup Pilot 290 €).  
 Public : organismes de formation / infoproduits FR dont la communauté est déjà sur Discord.
@@ -151,7 +151,7 @@ Ne pas inventer de conseil juridique. Rester factuel : « aujourd’hui vous n�
 ### 80–90 min — Synthèse & suite
 
 1. Reformuler **3 risques** à voix haute (validation client).
-2. Annoncer le **plan en 3 étapes** (dont au moins une faisable sans Botly).
+2. Annoncer le **plan en 3 étapes** (dont au moins une faisable sans Discelyn).
 3. Proposer clairement :
    - Rapport sous 48 h ouvrées
    - Option Setup 290 € − 49 € = **241 €** restants, livraison sous **10 jours ouvrés**
@@ -174,7 +174,7 @@ Ne pas forcer la vente dans les 2 dernières minutes. Clôturer sur le rapport.
 
 ## Ce qu’il ne faut pas faire
 
-- Transformer l’appel en tour du dashboard Botly
+- Transformer l’appel en tour du dashboard Discelyn
 - Promettre un DPA ou un SLA chiffré sans relecture
 - Inventer des chiffres d’audience Discord
 - Remplacer les 3 observations pré-appel par un script

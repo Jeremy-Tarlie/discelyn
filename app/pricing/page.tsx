@@ -9,7 +9,7 @@ import { PricingGrid } from "@/components/landing/PricingGrid";
 import { Reveal } from "@/components/landing/Reveal";
 import { DiscordIcon } from "@/components/landing/DiscordIcon";
 import { HeroPatterns, HeroWave } from "@/components/landing/HeroGraphics";
-import { BotlyMascot } from "@/components/landing/BotlyMascot";
+import { DiscelynMascot } from "@/components/landing/DiscelynMascot";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("meta");
@@ -67,7 +67,7 @@ export default async function PricingPage() {
             </div>
 
             <div className="relative z-10 mx-auto hidden w-full md:block md:justify-self-end md:self-end">
-              <BotlyMascot priority className="mx-auto md:-mb-2" />
+              <DiscelynMascot priority className="mx-auto md:-mb-2" />
             </div>
           </div>
           <HeroWave fill="var(--wave-fill)" />

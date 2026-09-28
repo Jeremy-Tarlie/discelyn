@@ -95,7 +95,7 @@ export async function GET() {
     return NextResponse.json(
       {
         status,
-        service: "botly-web",
+        service: "discelyn-web",
         db: "ok",
         redis,
         runtime: { status: runtime.status, ready: runtime.ready },
@@ -108,7 +108,7 @@ export async function GET() {
     return NextResponse.json(
       {
         status: "error",
-        service: "botly-web",
+        service: "discelyn-web",
         db: "error",
         time: new Date().toISOString(),
       },

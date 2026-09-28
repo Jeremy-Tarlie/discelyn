@@ -65,7 +65,7 @@ export default async function ClaimPage({ params, searchParams }: PageProps) {
     : null;
 
   const brandName =
-    access?.product.brandName ?? orgBrand?.displayName ?? "Botly";
+    access?.product.brandName ?? orgBrand?.displayName ?? "Discelyn";
   const brandLogo =
     access?.product.brandLogoUrl ?? orgBrand?.logoUrl ?? null;
   const brandColor =

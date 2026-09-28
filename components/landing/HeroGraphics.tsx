@@ -10,7 +10,7 @@ export function HeroPatterns({ className = "" }: { className?: string }) {
     >
       <defs>
         <pattern
-          id="botly-dots"
+          id="discelyn-dots"
           x="0"
           y="0"
           width="56"
@@ -20,7 +20,7 @@ export function HeroPatterns({ className = "" }: { className?: string }) {
           <circle cx="6" cy="6" r="2.5" fill="currentColor" opacity="0.45" />
         </pattern>
       </defs>
-      <rect width="1200" height="600" fill="url(#botly-dots)" opacity="0.2" />
+      <rect width="1200" height="600" fill="url(#discelyn-dots)" opacity="0.2" />
 
       <g fill="none" stroke="currentColor" strokeWidth="2.5" opacity="0.35">
         <circle cx="140" cy="160" r="28" />

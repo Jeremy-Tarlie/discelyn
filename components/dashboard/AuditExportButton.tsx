@@ -35,7 +35,7 @@ export function AuditExportButton({
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `botly-audit-${botId}-${Date.now()}.json`;
+      anchor.download = `discelyn-audit-${botId}-${Date.now()}.json`;
       anchor.click();
       URL.revokeObjectURL(url);
       setMessage(t("auditExportDone"));

@@ -47,12 +47,20 @@ describe("extractDiscordUserIdFromSession", () => {
 });
 
 describe("extractPriceIdFromSession", () => {
-  it("préfère botly_price_id", () => {
+  it("préfère discelyn_price_id", () => {
     expect(
       extractPriceIdFromSession(
-        session({ metadata: { botly_price_id: "price_abc" } })
+        session({ metadata: { discelyn_price_id: "price_abc" } })
       )
     ).toBe("price_abc");
+  });
+
+  it("accepte encore botly_price_id (legacy)", () => {
+    expect(
+      extractPriceIdFromSession(
+        session({ metadata: { botly_price_id: "price_legacy" } })
+      )
+    ).toBe("price_legacy");
   });
 });
 

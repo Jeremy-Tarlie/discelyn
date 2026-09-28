@@ -24,22 +24,22 @@ describe("leads-admin", () => {
   });
 
   it("accepte un email listé (case-insensitive) sans liste Discord", () => {
-    process.env.LEADS_ADMIN_EMAILS = "Admin@Botly.fr, other@x.com";
+    process.env.LEADS_ADMIN_EMAILS = "Admin@Discelyn.fr, other@x.com";
     delete process.env.LEADS_ADMIN_DISCORD_IDS;
-    expect(isLeadsAdminEmail("admin@botly.fr")).toBe(true);
+    expect(isLeadsAdminEmail("admin@discelyn.fr")).toBe(true);
     expect(isLeadsAdminEmail("nope@x.com")).toBe(false);
-    expect(isLeadsAdmin({ email: "admin@botly.fr", discordId: null })).toBe(
+    expect(isLeadsAdmin({ email: "admin@discelyn.fr", discordId: null })).toBe(
       true
     );
   });
 
   it("priorise Discord ID quand la liste est configurée", () => {
-    process.env.LEADS_ADMIN_EMAILS = "admin@botly.fr";
+    process.env.LEADS_ADMIN_EMAILS = "admin@discelyn.fr";
     process.env.LEADS_ADMIN_DISCORD_IDS = "123456789012345678";
     expect(isLeadsAdminDiscordId("123456789012345678")).toBe(true);
     expect(
       isLeadsAdmin({
-        email: "admin@botly.fr",
+        email: "admin@discelyn.fr",
         discordId: "999",
       })
     ).toBe(false);

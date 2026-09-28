@@ -51,7 +51,7 @@ export default async function PrivacyPage() {
                 tied to a server — kept while the config / account exists, then
                 purged after 90 days max.
               </li>
-              <li>Billing: Stripe IDs (no card data stored by Botly).</li>
+              <li>Billing: Stripe IDs (no card data stored by Discelyn).</li>
               <li>
                 Commercial leads (landing form): email, name, company, role,
                 message, requested offer, marketing consent timestamp — kept for
@@ -83,7 +83,7 @@ export default async function PrivacyPage() {
                 Modération : warns (raison, auteur, horodatage, ID Discord cible)
                 — conservation max 90 jours puis purge automatique.
               </li>
-              <li>Facturation : IDs Stripe (pas de carte chez Botly).</li>
+              <li>Facturation : IDs Stripe (pas de carte chez Discelyn).</li>
               <li>
                 Leads commerciaux : email, nom, société, message, offre,
                 horodatage du consentement marketing — suivi jusqu’à
@@ -101,8 +101,8 @@ export default async function PrivacyPage() {
           )}
           <p className="font-medium text-[color:var(--page-fg)]">
             {isEn
-              ? "No user Discord bot token is collected or stored — only the Botly platform bot token is used server-side."
-              : "Aucun token de bot Discord utilisateur n’est collecté ni stocké — seul le token du bot plateforme Botly est utilisé côté serveur."}
+              ? "No user Discord bot token is collected or stored — only the Discelyn platform bot token is used server-side."
+              : "Aucun token de bot Discord utilisateur n’est collecté ni stocké — seul le token du bot plateforme Discelyn est utilisé côté serveur."}
           </p>
         </section>
 
@@ -174,19 +174,19 @@ export default async function PrivacyPage() {
                   <td className="px-3 py-2">{isEn ? "Session" : "Session"}</td>
                 </tr>
                 <tr className="border-t border-white/5">
-                  <td className="px-3 py-2 font-mono text-xs">botly_locale</td>
+                  <td className="px-3 py-2 font-mono text-xs">discelyn_locale</td>
                   <td className="px-3 py-2">{isEn ? "UI language" : "Langue de l’interface"}</td>
                   <td className="px-3 py-2">{isEn ? "Essential" : "Essentiel"}</td>
                   <td className="px-3 py-2">1 {isEn ? "year" : "an"}</td>
                 </tr>
                 <tr className="border-t border-white/5">
-                  <td className="px-3 py-2 font-mono text-xs">botly_theme</td>
+                  <td className="px-3 py-2 font-mono text-xs">discelyn_theme</td>
                   <td className="px-3 py-2">{isEn ? "Light / dark theme" : "Thème clair / sombre"}</td>
                   <td className="px-3 py-2">{isEn ? "Essential" : "Essentiel"}</td>
                   <td className="px-3 py-2">1 {isEn ? "year" : "an"}</td>
                 </tr>
                 <tr className="border-t border-white/5">
-                  <td className="px-3 py-2 font-mono text-xs">botly_consent</td>
+                  <td className="px-3 py-2 font-mono text-xs">discelyn_consent</td>
                   <td className="px-3 py-2">{isEn ? "Cookie choice" : "Choix cookies"}</td>
                   <td className="px-3 py-2">{isEn ? "Essential" : "Essentiel"}</td>
                   <td className="px-3 py-2">1 {isEn ? "year" : "an"}</td>
@@ -215,8 +215,8 @@ export default async function PrivacyPage() {
               AI Act
             </Link>
             {isEn
-              ? ": Botly does not operate an AI system within the meaning of the regulation."
-              : " : Botly n’opère pas de système d’IA au sens du règlement."}
+              ? ": Discelyn does not operate an AI system within the meaning of the regulation."
+              : " : Discelyn n’opère pas de système d’IA au sens du règlement."}
           </p>
         </section>
       </main>

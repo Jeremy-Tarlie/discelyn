@@ -151,7 +151,7 @@ model Subscription {
   @@index([stripeSubscriptionId])
 }
 
-/// Binding guild Discord géré via le bot plateforme Botly (pas un bot client).
+/// Binding guild Discord géré via le bot plateforme Discelyn (pas un bot client).
 /// Aucun token Discord utilisateur n'est stocké (conformité Developer Policy §4).
 model Bot {
   id             String    @id @default(cuid())
@@ -250,11 +250,11 @@ enum LearnerAccessSource {
   MANUAL
 }
 
-/// Webhook Stripe du client (ses ventes formation) — distinct de Stripe Botly.
+/// Webhook Stripe du client (ses ventes formation) — distinct de Stripe Discelyn.
 model OrgStripeConfig {
   id               String   @id @default(cuid())
   organizationId   String   @unique
-  /// Token opaque dans l’URL webhook Botly
+  /// Token opaque dans l’URL webhook Discelyn
   webhookPathToken String   @unique
   /// Secret whsec_… toujours chiffré (TOKEN_ENCRYPTION_KEY requis au setup)
   webhookSecret    String   @db.Text
@@ -292,7 +292,7 @@ model AccessProduct {
   /// Fin d’accès cohorte (optionnel)
   accessEndsAt       DateTime?
   reminderDaysBefore Int?              @default(7)
-  /// Lien de paiement Stripe généré par Botly (Payment Link)
+  /// Lien de paiement Stripe généré par Discelyn (Payment Link)
   paymentLinkUrl     String?
   paymentLinkId      String?
   /// Message DM après attribution du rôle (optionnel)
@@ -362,14 +362,14 @@ model AccessCode {
   @@index([createdByUserId])
 }
 
-/// Affilié tracking (#14) — attribution / stats uniquement, aucun payout Botly.
+/// Affilié tracking (#14) — attribution / stats uniquement, aucun payout Discelyn.
 model Affiliate {
   id             String   @id @default(cuid())
   organizationId String
   code           String   @unique
   label          String
   active         Boolean  @default(true)
-  /// Basis points informatifs pour reporting orga — Botly ne calcule ni ne verse de commission
+  /// Basis points informatifs pour reporting orga — Discelyn ne calcule ni ne verse de commission
   commissionBps  Int      @default(0)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -514,7 +514,7 @@ model AccessOversoldEvent {
   @@index([refundStatus])
 }
 
-/// Idempotency des webhooks Stripe (plateforme Botly + formation orga).
+/// Idempotency des webhooks Stripe (plateforme Discelyn + formation orga).
 model StripeProcessedEvent {
   id          String   @id @default(cuid())
   eventId     String   @unique

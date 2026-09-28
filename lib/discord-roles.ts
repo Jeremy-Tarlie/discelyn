@@ -199,7 +199,7 @@ export async function postAccessShop(input: {
           description: description.slice(0, 4096),
           color: 0x5865f2,
           footer: {
-            text: "Paiement sécurisé Stripe · accès Discord automatique via Botly",
+            text: "Paiement sécurisé Stripe · accès Discord automatique via Discelyn",
           },
         },
       ],

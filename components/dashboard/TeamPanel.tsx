@@ -83,7 +83,7 @@ export function TeamPanel({
       <div>
         <h1 className="font-display text-2xl font-bold text-page-fg">Équipe</h1>
         <p className="mt-1 text-sm text-soft">
-          Membres de l’organisation. L’ajout nécessite un compte Botly existant
+          Membres de l’organisation. L’ajout nécessite un compte Discelyn existant
           (ID Discord).
         </p>
       </div>

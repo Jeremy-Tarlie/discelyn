@@ -145,7 +145,7 @@ export function attachPlatformHandlers(
     if (!bot) {
       await interaction
         .reply({
-          content: "Ce serveur n’est pas lié à Botly.",
+          content: "Ce serveur n’est pas lié à Discelyn.",
           ephemeral: true,
         })
         .catch(() => undefined);
@@ -168,7 +168,7 @@ export function attachPlatformHandlers(
         await interaction
           .reply({
             content:
-              "Aucune formation en vente pour l’instant. Configure l’accès dans le dashboard Botly.",
+              "Aucune formation en vente pour l’instant. Configure l’accès dans le dashboard Discelyn.",
             ephemeral: true,
           })
           .catch(() => undefined);
@@ -187,7 +187,7 @@ export function attachPlatformHandlers(
             .slice(0, 4096)
         )
         .setFooter({
-          text: "Paiement Stripe → accès Discord auto · Botly",
+          text: "Paiement Stripe → accès Discord auto · Discelyn",
         });
       const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
         ...shop.slice(0, 5).map((item) =>
@@ -385,7 +385,7 @@ export function attachPlatformHandlers(
               value:
                 "Besoin d’aide ? `/ticket` → accès · facturation · contenu (hors chat général).",
             })
-            .setFooter({ text: "Botly · ops Discord pour organismes de formation" });
+            .setFooter({ text: "Discelyn · ops Discord pour organismes de formation" });
           await channel
             .send({ content: `${member}`, embeds: [embed] })
             .catch(() => undefined);

@@ -23,7 +23,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: {
       default: t("defaultTitle"),
-      template: "%s · Botly",
+      template: "%s · Discelyn",
     },
     description: t("defaultDescription"),
     metadataBase: new URL(

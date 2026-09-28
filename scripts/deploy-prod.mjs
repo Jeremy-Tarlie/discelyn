@@ -3,7 +3,7 @@
  * Déploiement production via compose + overlay TLS (Caddy).
  *
  * Usage :
- *   DOMAIN=botly.example.com EMAIL=admin@example.com npm run deploy:prod
+ *   DOMAIN=discelyn.example.com EMAIL=admin@example.com npm run deploy:prod
  *   node --env-file=.env scripts/deploy-prod.mjs
  *
  * Refuse de démarrer sans DOMAIN / EMAIL / TRUST_PROXY cohérent.
@@ -25,7 +25,7 @@ const email = (process.env.EMAIL || "").trim();
 const appEnv = (process.env.APP_ENV || "").toLowerCase();
 
 if (!domain) {
-  fail("DOMAIN manquant (ex. botly.example.com)");
+  fail("DOMAIN manquant (ex. discelyn.example.com)");
 }
 if (!email) {
   fail("EMAIL manquant (Let's Encrypt)");

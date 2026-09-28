@@ -28,7 +28,7 @@ export function GdprActions() {
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `botly-export-${Date.now()}.json`;
+      anchor.download = `discelyn-export-${Date.now()}.json`;
       anchor.click();
       URL.revokeObjectURL(url);
       setMessage(t("exportDone"));

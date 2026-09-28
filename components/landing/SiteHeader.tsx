@@ -35,7 +35,7 @@ export async function SiteHeader({
           <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-signal text-sm font-bold text-ink-950">
             B
           </span>
-          Botly
+          Discelyn
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm text-[color:var(--muted)] md:flex">

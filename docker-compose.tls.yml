@@ -1,7 +1,7 @@
 # TLS optionnel via Caddy (Let's Encrypt).
 # Prérequis : DNS du domaine → IP du VPS, ports 80/443 ouverts.
 # Usage :
-#   DOMAIN=botly.example.com EMAIL=admin@example.com \
+#   DOMAIN=discelyn.example.com EMAIL=admin@example.com \
 #   docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d
 #
 # Pare-feu : ouvre seulement 80/443 (et SSH). Le port 3000 n'est plus publié.

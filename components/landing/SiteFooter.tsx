@@ -13,7 +13,7 @@ export async function SiteFooter() {
             B
           </span>
           <p className="font-display font-semibold text-[color:var(--page-fg)]">
-            Botly
+            Discelyn
           </p>
         </div>
         <div className="flex flex-wrap gap-5">
@@ -55,7 +55,7 @@ export async function SiteFooter() {
           </Link>
           <CookiePrefsButton className="transition hover:text-[color:var(--page-fg)]" />
         </div>
-        <p>© {new Date().getFullYear()} Botly</p>
+        <p>© {new Date().getFullYear()} Discelyn</p>
       </div>
     </footer>
   );

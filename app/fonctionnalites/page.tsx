@@ -9,7 +9,7 @@ import { Reveal } from "@/components/landing/Reveal";
 import { DiscordIcon } from "@/components/landing/DiscordIcon";
 import { FeatureIcon } from "@/components/landing/FeatureIcon";
 import { HeroPatterns, HeroWave } from "@/components/landing/HeroGraphics";
-import { BotlyMascot } from "@/components/landing/BotlyMascot";
+import { DiscelynMascot } from "@/components/landing/DiscelynMascot";
 
 const FEATURE_KEYS = [
   "access",
@@ -76,7 +76,7 @@ export default async function FeaturesPage() {
             </div>
 
             <div className="relative z-10 mx-auto hidden w-full md:block md:justify-self-end md:self-end">
-              <BotlyMascot priority className="mx-auto md:-mb-2" />
+              <DiscelynMascot priority className="mx-auto md:-mb-2" />
             </div>
           </div>
           <HeroWave fill="var(--wave-fill)" />
@@ -146,7 +146,7 @@ export default async function FeaturesPage() {
                     </Link>
                   </div>
                 </div>
-                <BotlyMascot size="cta" className="mx-auto hidden lg:block" />
+                <DiscelynMascot size="cta" className="mx-auto hidden lg:block" />
               </div>
             </div>
           </Reveal>

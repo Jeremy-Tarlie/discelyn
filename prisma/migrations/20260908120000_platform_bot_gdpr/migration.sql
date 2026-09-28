@@ -1,4 +1,4 @@
--- Pivot: bot plateforme Botly (plus de tokens utilisateurs) + warns persistés
+-- Pivot: bot plateforme Discelyn (plus de tokens utilisateurs) + warns persistés
 
 ALTER TABLE "Bot" ADD COLUMN IF NOT EXISTS "guildId" TEXT;
 

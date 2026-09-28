@@ -164,7 +164,7 @@ export function ProductPreview() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm">
-                      <span className="font-medium text-signal">Botly</span>
+                      <span className="font-medium text-signal">Discelyn</span>
                       <span className="ml-2 text-[10px] text-[#949ba4]">
                         {t("justNow")}
                       </span>

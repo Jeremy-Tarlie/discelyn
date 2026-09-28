@@ -40,7 +40,7 @@ export async function getOrgStripeClient(
 }
 
 /**
- * Setup 1 clic : enregistre la sk_ (chiffrée), crée (ou réutilise) le webhook Stripe → Botly.
+ * Setup 1 clic : enregistre la sk_ (chiffrée), crée (ou réutilise) le webhook Stripe → Discelyn.
  */
 export async function bootstrapOrgStripe(input: {
   organizationId: string;
@@ -73,7 +73,7 @@ export async function bootstrapOrgStripe(input: {
     endpoint = await stripe.webhookEndpoints.create({
       url: webhookUrl,
       enabled_events: ACCESS_EVENTS,
-      description: "Botly — accès Discord formation",
+      description: "Discelyn — accès Discord formation",
     });
     createdWebhook = true;
     signingSecret = endpoint.secret ?? null;
@@ -90,7 +90,7 @@ export async function bootstrapOrgStripe(input: {
     endpoint = await stripe.webhookEndpoints.create({
       url: webhookUrl,
       enabled_events: ACCESS_EVENTS,
-      description: "Botly — accès Discord formation",
+      description: "Discelyn — accès Discord formation",
     });
     createdWebhook = true;
     signingSecret = endpoint.secret ?? null;
@@ -205,14 +205,14 @@ export async function createAccessPaymentLink(input: {
     },
     allow_promotion_codes: true,
     metadata: {
-      botly_price_id: input.stripePriceId,
-      botly_product: input.productName.slice(0, 400),
+      discelyn_price_id: input.stripePriceId,
+      discelyn_product: input.productName.slice(0, 400),
     },
     ...(isRecurring
       ? {
           subscription_data: {
             metadata: {
-              botly_price_id: input.stripePriceId,
+              discelyn_price_id: input.stripePriceId,
             },
           },
         }

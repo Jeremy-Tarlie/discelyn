@@ -266,7 +266,7 @@ export function hasOptionalConsentFromCookieHeader(
   const match = header
     .split(";")
     .map((c) => c.trim())
-    .find((c) => c.startsWith("botly_consent="));
+    .find((c) => c.startsWith("discelyn_consent="));
   if (!match) return false;
   return parseConsent(match.split("=")[1] ?? "") === "all";
 }

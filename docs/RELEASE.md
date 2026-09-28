@@ -1,4 +1,4 @@
-# Release & ops — Botly
+# Release & ops — Discelyn
 
 Checklist avant `APP_ENV=production`. À suivre dans l’ordre.
 
@@ -46,7 +46,7 @@ npm run backup:db           # snapshot avant cutover (pg_dump local ou docker ex
 | `CRON_SECRET` | access-cron + retention-cron |
 | `BOT_RUNTIME_SECRET` | reload + learner-join |
 | `WEB_INTERNAL_URL` | grant-on-join runtime → web |
-| `STRIPE_SECRET_KEY` (`sk_live_`) | SaaS Botly |
+| `STRIPE_SECRET_KEY` (`sk_live_`) | SaaS Discelyn |
 | `STRIPE_WEBHOOK_SECRET` | webhook SaaS |
 | `DISCORD_BOT_TOKEN` | bot plateforme |
 | `REDIS_URL` | rate-limit multi-instance (**obligatoire** en production) |
@@ -95,12 +95,12 @@ Couvre : checkout → siège → multi-guild AWAITING_JOIN → grant-on-join →
 ## 6. Tag release
 
 ```bash
-git tag -a v2.x.y -m "Botly v2.x.y — accès formation"
+git tag -a v2.x.y -m "Discelyn v2.x.y — accès formation"
 git push origin v2.x.y   # seulement quand tu es prêt
 ```
 
 ## Rollback
 
 1. `docker compose` image précédente / tag git précédent.
-2. Restaurer dump : `gunzip -c backups/botly-….sql.gz | psql "$DATABASE_URL"`.
+2. Restaurer dump : `gunzip -c backups/discelyn-….sql.gz | psql "$DATABASE_URL"`.
 3. Ne pas rejouer une migration destructive sans backup.

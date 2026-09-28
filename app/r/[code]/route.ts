@@ -65,7 +65,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
   }
 
   const response = NextResponse.redirect(redirectUrl);
-  response.cookies.set("botly_aff", affiliate.code, {
+  response.cookies.set("discelyn_aff", affiliate.code, {
     httpOnly: true,
     sameSite: "lax",
     maxAge: 30 * 24 * 60 * 60,

@@ -11,7 +11,7 @@ export default async function ClaimCodePage() {
     <div className="min-h-screen bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
       <SiteHeader signedIn={false} />
       <main className="mx-auto max-w-lg px-6 py-16">
-        <p className="text-xs uppercase tracking-wide text-signal">Botly</p>
+        <p className="text-xs uppercase tracking-wide text-signal">Discelyn</p>
         <h1 className="mt-2 font-display text-3xl font-bold">
           {t("codeTitle")}
         </h1>

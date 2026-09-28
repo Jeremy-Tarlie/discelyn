@@ -12,8 +12,8 @@ import { spawn, spawnSync } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
 
 const TEST_DATABASE_URL =
-  process.env.BOTLY_TEST_DATABASE_URL ??
-  "postgresql://botly:botly@127.0.0.1:5433/botly?schema=public";
+  process.env.DISCELYN_TEST_DATABASE_URL ??
+  "postgresql://discelyn:discelyn@127.0.0.1:5433/discelyn?schema=public";
 
 const TEST_TOKEN_KEY =
   process.env.TOKEN_ENCRYPTION_KEY ??
@@ -53,7 +53,7 @@ function dockerComposeUp() {
     const err = (r.stderr || r.stdout || "").trim();
     throw new Error(
       `Impossible de démarrer docker-compose.test.yml.\n${err}\n` +
-        "Docker doit être démarré (ou définis DATABASE_URL / BOTLY_TEST_DATABASE_URL)."
+        "Docker doit être démarré (ou définis DATABASE_URL / DISCELYN_TEST_DATABASE_URL)."
     );
   }
 }
@@ -79,13 +79,13 @@ async function ensureDatabase() {
   }
 
   // Override explicite (dev avancé).
-  if (process.env.BOTLY_TEST_DATABASE_URL) {
-    log(`BOTLY_TEST_DATABASE_URL`);
-    if (!(await canConnect(process.env.BOTLY_TEST_DATABASE_URL))) {
-      throw new Error("BOTLY_TEST_DATABASE_URL injoignable");
+  if (process.env.DISCELYN_TEST_DATABASE_URL) {
+    log(`DISCELYN_TEST_DATABASE_URL`);
+    if (!(await canConnect(process.env.DISCELYN_TEST_DATABASE_URL))) {
+      throw new Error("DISCELYN_TEST_DATABASE_URL injoignable");
     }
-    migrate(process.env.BOTLY_TEST_DATABASE_URL);
-    return process.env.BOTLY_TEST_DATABASE_URL;
+    migrate(process.env.DISCELYN_TEST_DATABASE_URL);
+    return process.env.DISCELYN_TEST_DATABASE_URL;
   }
 
   if (await canConnect(TEST_DATABASE_URL)) {

@@ -42,6 +42,7 @@ async function resolvePriceId(input: {
   apiKey: string | null;
 }): Promise<string | null> {
   const meta =
+    input.session.metadata?.discelyn_price_id ??
     input.session.metadata?.botly_price_id ??
     input.session.metadata?.stripe_price_id ??
     input.session.metadata?.priceId;
@@ -137,6 +138,7 @@ async function handleCheckoutCompleted(
       : session.payment_intent?.id ?? null;
 
   const affiliateCode =
+    session.metadata?.discelyn_affiliate ??
     session.metadata?.botly_affiliate ??
     session.client_reference_id ??
     null;

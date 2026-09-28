@@ -203,7 +203,7 @@ async function syncConfigs(): Promise<void> {
         : {
             status: "PENDING",
             lastError:
-              "Bot absent du serveur — invite Botly ou attends la synchro.",
+              "Bot absent du serveur — invite Discelyn ou attends la synchro.",
             lastSeenAt: new Date(),
           },
     });
@@ -369,7 +369,7 @@ const server = http.createServer(async (req, res) => {
     res.end(
       JSON.stringify({
         status: "ok",
-        service: "botly-runtime",
+        service: "discelyn-runtime",
         ready: Boolean(client?.isReady()),
         time: new Date().toISOString(),
       })
@@ -510,6 +510,6 @@ setInterval(() => {
 }, 30_000);
 
 server.listen(port, () => {
-  console.log(`botly-runtime (platform) listening on :${port}`);
+  console.log(`discelyn-runtime (platform) listening on :${port}`);
 });
 

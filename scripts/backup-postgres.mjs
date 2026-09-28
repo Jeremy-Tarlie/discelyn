@@ -27,9 +27,9 @@ function requireEnv(name) {
 function parseDbName(databaseUrl) {
   try {
     const u = new URL(databaseUrl);
-    return (u.pathname || "/botly").replace(/^\//, "") || "botly";
+    return (u.pathname || "/discelyn").replace(/^\//, "") || "discelyn";
   } catch {
-    return "botly";
+    return "discelyn";
   }
 }
 
@@ -60,11 +60,11 @@ function tryLocalPgDump() {
 }
 
 function tryDockerPgDump() {
-  const user = process.env.POSTGRES_USER || "botly";
+  const user = process.env.POSTGRES_USER || "discelyn";
   const candidates = [
     ["compose", "-f", "docker-compose.yml", "exec", "-T", "db"],
     ["compose", "-f", "docker-compose.test.yml", "exec", "-T", "test-db"],
-    ["exec", "-T", "botly-test-pg"],
+    ["exec", "-T", "discelyn-test-pg"],
     ["exec", "-T", "mydiscordbot-db-1"],
   ];
 
@@ -119,12 +119,12 @@ const gzip = spawnSync("gzip", ["-c"], {
 });
 
 if (gzip.status !== 0) {
-  const plain = join(outDir, `botly-${stamp}.sql`);
+  const plain = join(outDir, `discelyn-${stamp}.sql`);
   writeFileSync(plain, sql);
   console.log(`[backup] écrit (sans gzip): ${plain}`);
   process.exit(0);
 }
 
-const file = join(outDir, `botly-${stamp}.sql.gz`);
+const file = join(outDir, `discelyn-${stamp}.sql.gz`);
 writeFileSync(file, gzip.stdout);
 console.log(`[backup] écrit: ${file}`);

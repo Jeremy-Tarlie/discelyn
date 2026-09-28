@@ -31,7 +31,7 @@ export default async function TermsPage() {
                 1. Purpose
               </h2>
               <p>
-                Botly provides a Discord ops service for organisations
+                Discelyn provides a Discord ops service for organisations
                 (configuration via a platform bot, optional setup, subscription)
                 — hereafter “the Service”. By creating an account or submitting a
                 lead, you accept these Terms.
@@ -52,10 +52,10 @@ export default async function TermsPage() {
                 3. Platform bot — no user token
               </h2>
               <p>
-                Botly collects{" "}
+                Discelyn collects{" "}
                 <strong className="text-[color:var(--page-fg)]">no</strong>{" "}
                 Discord bot token belonging to the user. You invite the official
-                Botly bot to your server and link the server ID in the dashboard.
+                Discelyn bot to your server and link the server ID in the dashboard.
                 You remain responsible for complying with{" "}
                 <a
                   className="text-signal underline"
@@ -74,7 +74,7 @@ export default async function TermsPage() {
               </h2>
               <p>
                 Spam, raids, harassment, illegal content, phishing or module
-                abuse may lead to suspension. Botly may remove the bot from a
+                abuse may lead to suspension. Discelyn may remove the bot from a
                 server or delete an account in case of violation.
               </p>
             </section>
@@ -97,7 +97,7 @@ export default async function TermsPage() {
                 6. Liability
               </h2>
               <p>
-                Service provided “as is”. Botly is not liable for Discord
+                Service provided “as is”. Discelyn is not liable for Discord
                 sanctions, indirect losses, or misconfigured permissions on your
                 server.
               </p>
@@ -122,7 +122,7 @@ export default async function TermsPage() {
                 1. Objet
               </h2>
               <p>
-                Botly fournit un service d&apos;ops Discord pour organisations
+                Discelyn fournit un service d&apos;ops Discord pour organisations
                 (configuration via bot plateforme, setup optionnel, abonnement)
                 — ci-après « le Service ». En créant un compte ou en soumettant
                 un lead, tu acceptes les présentes CGU.
@@ -143,10 +143,10 @@ export default async function TermsPage() {
                 3. Bot plateforme — pas de token utilisateur
               </h2>
               <p>
-                Botly n&apos;collecte{" "}
+                Discelyn n&apos;collecte{" "}
                 <strong className="text-[color:var(--page-fg)]">aucun</strong>{" "}
                 token de bot Discord appartenant à l&apos;utilisateur. Tu invites
-                le bot officiel Botly sur ton serveur et tu lie l&apos;ID du
+                le bot officiel Discelyn sur ton serveur et tu lie l&apos;ID du
                 serveur dans le dashboard. Tu restes responsable du respect des{" "}
                 <a
                   className="text-signal underline"
@@ -165,7 +165,7 @@ export default async function TermsPage() {
               </h2>
               <p>
                 Spam, raids, harcèlement, contenu illégal, phishing ou abus des
-                modules entraînent la suspension. Botly peut retirer le bot
+                modules entraînent la suspension. Discelyn peut retirer le bot
                 d&apos;un serveur ou supprimer un compte en cas de violation.
               </p>
             </section>
@@ -189,7 +189,7 @@ export default async function TermsPage() {
                 6. Responsabilité
               </h2>
               <p>
-                Service fourni « en l&apos;état ». Botly n&apos;est pas
+                Service fourni « en l&apos;état ». Discelyn n&apos;est pas
                 responsable des sanctions Discord, pertes indirectes, ou
                 mauvaises configurations de permissions sur ton serveur.
               </p>

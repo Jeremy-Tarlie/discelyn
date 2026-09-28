@@ -41,13 +41,13 @@ export default async function AiActPage() {
             </section>
             <section className="space-y-3">
               <h2 className="font-display text-xl text-[color:var(--page-fg)]">
-                2. Botly’s position
+                2. Discelyn’s position
               </h2>
               <p>
-                Botly hosts and configures Discord modules (welcome, moderation,
+                Discelyn hosts and configures Discord modules (welcome, moderation,
                 tickets, rule-based automod).{" "}
                 <strong className="text-[color:var(--page-fg)]">
-                  Botly does not use generative AI models, high-risk AI systems,
+                  Discelyn does not use generative AI models, high-risk AI systems,
                   or social scoring
                 </strong>
                 . Automod filters rely on text matches and user-configured
@@ -59,7 +59,7 @@ export default async function AiActPage() {
                 3. Classification
               </h2>
               <p>
-                As deployed, Botly is not an “AI system” under the AI Act. No
+                As deployed, Discelyn is not an “AI system” under the AI Act. No
                 high-risk conformity assessment or EU database registration
                 applies to this product as shipped.
               </p>
@@ -92,14 +92,14 @@ export default async function AiActPage() {
             </section>
             <section className="space-y-3">
               <h2 className="font-display text-xl text-[color:var(--page-fg)]">
-                2. Position de Botly
+                2. Position de Discelyn
               </h2>
               <p>
-                Botly est un service d&apos;hébergement et de configuration de
+                Discelyn est un service d&apos;hébergement et de configuration de
                 modules Discord (welcome, modération, tickets, automod basé sur
                 des règles déterministes).{" "}
                 <strong className="text-[color:var(--page-fg)]">
-                  Botly n&apos;utilise pas de modèle d&apos;IA générative, de
+                  Discelyn n&apos;utilise pas de modèle d&apos;IA générative, de
                   système d&apos;IA à haut risque, ni de scoring social
                 </strong>
                 . Les filtres automod reposent sur des correspondances de texte
@@ -112,7 +112,7 @@ export default async function AiActPage() {
                 3. Classification
               </h2>
               <p>
-                En l&apos;état, Botly n&apos;est pas un « système d&apos;IA »
+                En l&apos;état, Discelyn n&apos;est pas un « système d&apos;IA »
                 au sens de l&apos;AI Act. Aucune obligation de marquage,
                 d&apos;évaluation de conformité haute risque, ou
                 d&apos;enregistrement dans la base UE ne s&apos;applique à ce
