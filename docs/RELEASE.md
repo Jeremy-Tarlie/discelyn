@@ -58,11 +58,39 @@ Ne jamais committer `.env`. Référence : `.env.example`.
 
 ## 4. Déploiement compose (TLS uniquement)
 
+Deux modes TLS (`TLS_MODE` dans `.env`) :
+
+| Mode | Overlay | Quand |
+|------|---------|--------|
+| `caddy` (défaut) | `docker-compose.tls.yml` | tout-Docker |
+| `nginx` | `docker-compose.host-nginx.yml` | VPS durci (nginx + fail2ban + UFW + SSH) |
+
+### 4a. Bootstrap hôte nginx + fail2ban (une fois)
+
+Depuis ton PC (clé SSH déjà créée) :
+
+```bash
+# Dans .env : SSH_HOST, SSH_USER, SSH_KEY, DOMAIN, EMAIL, TLS_MODE=nginx
+npm run provision:remote
+# + deploy compose : npm run provision:remote -- --deploy
+```
+
+Ou sur le VPS (root) :
+
+```bash
+export DOMAIN=… EMAIL=… SSH_PUBKEY='ssh-ed25519 AAAA…'
+# Crée user discelyn (sudo), coupe root SSH + auth mot de passe
+bash deploy/bootstrap-host.sh
+# Ensuite : ssh discelyn@IP  (plus root, plus de mdp)
+```
+
+### 4b. App
+
 ```bash
 # DOMAIN + EMAIL dans .env (ou exportés)
 npm run deploy:prod
-# équivalent :
-# docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d --build
+# Caddy :  docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d --build
+# nginx :  TLS_MODE=nginx + docker-compose.host-nginx.yml (web sur 127.0.0.1:3000)
 
 curl -fsS https://TON_DOMAINE/api/health
 docker compose -f docker-compose.yml -f docker-compose.tls.yml logs -f access-cron retention-cron runtime web

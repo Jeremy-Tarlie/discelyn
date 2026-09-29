@@ -70,10 +70,22 @@ if (!existsSync(join(process.cwd(), ".env"))) {
 }
 
 const tlsFile = join(process.cwd(), "docker-compose.tls.yml");
+const hostNginxFile = join(process.cwd(), "docker-compose.host-nginx.yml");
+const bootstrapFile = join(process.cwd(), "deploy", "bootstrap-host.sh");
 check(
   "docker-compose.tls.yml",
   existsSync(tlsFile),
-  "overlay TLS obligatoire en prod"
+  "overlay TLS Caddy obligatoire en prod"
+);
+check(
+  "docker-compose.host-nginx.yml",
+  existsSync(hostNginxFile),
+  "overlay TLS nginx hôte"
+);
+check(
+  "deploy/bootstrap-host.sh",
+  existsSync(bootstrapFile),
+  "bootstrap nginx/fail2ban/SSH"
 );
 
 log("=== 4. Qualité + money path e2e + builds ===");

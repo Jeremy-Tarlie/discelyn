@@ -1,0 +1,14 @@
+# TLS via nginx hôte (pas Caddy).
+# Prérequis : deploy/bootstrap-host.sh déjà exécuté (nginx + certbot + fail2ban + UFW).
+# Usage :
+#   TLS_MODE=nginx DOMAIN=… EMAIL=… npm run deploy:prod
+#   docker compose -f docker-compose.yml -f docker-compose.host-nginx.yml up -d --build
+#
+# web n’écoute que sur loopback — nginx proxyfie 443 → 127.0.0.1:3000.
+
+services:
+  web:
+    ports: !reset
+      - "127.0.0.1:3000:3000"
+    environment:
+      TRUST_PROXY: "1"
