@@ -4,6 +4,16 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { DashboardWebhook } from "@/lib/dashboard-data";
+import {
+  DashboardAlert,
+  DashboardBadge,
+  DashboardEmptyState,
+  DashboardPageHeader,
+  DashboardPanel,
+  dashBtnGhostClass,
+  dashBtnPrimaryClass,
+  dashFieldClass,
+} from "@/components/dashboard/ui";
 
 const ALL_EVENTS = [
   "payment_received",
@@ -35,6 +45,26 @@ export function WebhooksPanel({
   ]);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+
+  function eventLabel(ev: string): string {
+    switch (ev) {
+      case "payment_received":
+        return t("event_payment_received");
+      case "role_granted":
+        return t("event_role_granted");
+      case "revoked":
+        return t("event_revoked");
+      case "expired":
+        return t("event_expired");
+      case "sold_out":
+        return t("event_sold_out");
+      case "claim_reminder":
+        return t("event_claim_reminder");
+      default:
+        return ev;
+    }
+  }
+
   async function create() {
     setError(null);
     const res = await fetch("/api/outbound-webhooks", {
@@ -71,83 +101,106 @@ export function WebhooksPanel({
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl text-page-fg">{t("title")}</h1>
-        <p className="mt-1 text-sm text-soft">{t("body")}</p>
-      </div>
+    <div className="mx-auto max-w-3xl space-y-6">
+      <DashboardPageHeader title={t("title")} description={t("body")} />
 
-      <div className="space-y-3 rounded-2xl border border-line bg-surface p-4">
-        <div>
-          <label htmlFor="webhook-url" className="sr-only">
-            {t("url")}
+      {pending ? <DashboardAlert tone="muted">{t("loading")}</DashboardAlert> : null}
+      {error ? <DashboardAlert tone="error">{error}</DashboardAlert> : null}
+      {message ? <DashboardAlert tone="ok">{message}</DashboardAlert> : null}
+
+      <DashboardPanel title={t("formTitle")}>
+        <div className="space-y-4">
+          <label className="flex flex-col gap-1.5 text-sm">
+            <span className="font-medium text-soft">{t("url")}</span>
+            <input
+              id="webhook-url"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder={t("urlPlaceholder")}
+              className={dashFieldClass}
+            />
           </label>
-          <input
-            id="webhook-url"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder={t("urlPlaceholder")}
-            className="w-full rounded-xl border border-line bg-surface-muted px-3 py-2 text-sm"
-          />
+          <fieldset>
+            <legend className="mb-2.5 text-sm font-medium text-soft">
+              {t("events")}
+            </legend>
+            <div className="flex flex-wrap gap-2">
+              {ALL_EVENTS.map((ev) => {
+                const checked = events.includes(ev);
+                return (
+                  <label
+                    key={ev}
+                    className={`cursor-pointer select-none rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                      checked
+                        ? "border-signal/40 bg-signal/10 text-signal"
+                        : "border-line bg-surface-muted text-soft hover:border-signal/30"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="sr-only"
+                      checked={checked}
+                      onChange={(e) => {
+                        setEvents((prev) =>
+                          e.target.checked
+                            ? [...prev, ev]
+                            : prev.filter((x) => x !== ev)
+                        );
+                      }}
+                    />
+                    {eventLabel(ev)}
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+          <button
+            type="button"
+            onClick={() => void create()}
+            className={dashBtnPrimaryClass}
+          >
+            {t("create")}
+          </button>
         </div>
-        <fieldset>
-          <legend className="mb-2 text-xs text-soft">{t("events")}</legend>
-          <div className="flex flex-wrap gap-2">
-            {ALL_EVENTS.map((ev) => (
-              <label
-                key={ev}
-                className="flex items-center gap-1 text-xs text-soft"
-              >
-                <input
-                  type="checkbox"
-                  checked={events.includes(ev)}
-                  onChange={(e) => {
-                    setEvents((prev) =>
-                      e.target.checked
-                        ? [...prev, ev]
-                        : prev.filter((x) => x !== ev)
-                    );
-                  }}
-                />
-                {ev}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-        <button
-          type="button"
-          onClick={() => void create()}
-          className="rounded-full bg-[#5865F2] px-4 py-2 text-sm font-semibold text-white"
-        >
-          {t("create")}
-        </button>
-      </div>
-      {pending ? <p className="text-sm text-soft">{t("loading")}</p> : null}
-      {error ? <p className="text-sm text-warn">{error}</p> : null}
-      {message ? <p className="text-sm text-signal">{message}</p> : null}
+      </DashboardPanel>
 
-      <ul className="divide-y divide-line rounded-2xl border border-line">
+      <DashboardPanel title={t("listTitle")}>
         {hooks.length === 0 ? (
-          <li className="px-4 py-3 text-sm text-soft">{t("empty")}</li>
+          <DashboardEmptyState title={t("empty")} hint={t("emptyHint")} />
         ) : (
-          hooks.map((h) => (
-            <li key={h.id} className="space-y-1 px-4 py-3 text-sm">
-              <p className="break-all font-medium text-page-fg">{h.url}</p>
-              <p className="text-xs text-soft">{h.events.join(", ")}</p>
-              <p className="font-mono text-xs text-soft">
-                {t("secretPrefix")} {h.secret.slice(0, 8)}…
-              </p>
-              <button
-                type="button"
-                className="text-xs text-warn underline"
-                onClick={() => void remove(h.id)}
+          <ul className="divide-y divide-line">
+            {hooks.map((h) => (
+              <li
+                key={h.id}
+                className="flex flex-col gap-2 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between"
               >
-                {t("delete")}
-              </button>
-            </li>
-          ))
+                <div className="min-w-0 space-y-2">
+                  <p className="break-all text-sm font-medium text-page-fg">
+                    {h.url}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {h.events.map((ev) => (
+                      <DashboardBadge key={ev} tone="neutral">
+                        {eventLabel(ev)}
+                      </DashboardBadge>
+                    ))}
+                  </div>
+                  <p className="font-mono text-xs text-soft">
+                    {t("secretPrefix")} {h.secret.slice(0, 8)}…
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className={`${dashBtnGhostClass} text-warn hover:border-warn/40 hover:text-warn`}
+                  onClick={() => void remove(h.id)}
+                >
+                  {t("delete")}
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
-      </ul>
+      </DashboardPanel>
     </div>
   );
 }

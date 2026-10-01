@@ -643,6 +643,7 @@
       "copyClaim": "Copy claim",
       "revoke": "Revoke",
       "empty": "No learners.",
+      "emptyHint": "Learners appear after a training Stripe payment (or an access code).",
       "exportCsv": "Export CSV",
       "exported": "CSV downloaded.",
       "exportFailed": "Export failed",
@@ -711,7 +712,10 @@
       "copyLink": "Copy /r/… link",
       "copied": "Link copied.",
       "stats": "{clicks} clicks · {paid} paid · {claimed} claimed · memo {bps} bps",
-      "empty": "No affiliates yet."
+      "empty": "No affiliates yet.",
+      "emptyHint": "Create a code to track clicks and conversions on your /r/… links.",
+      "formTitle": "New code",
+      "listTitle": "Your affiliates"
     },
     "webhooks": {
       "title": "Outbound webhooks",
@@ -727,7 +731,16 @@
       "delete": "Delete",
       "deleteConfirm": "Delete this webhook?",
       "empty": "No webhooks yet.",
-      "secretPrefix": "secret:"
+      "emptyHint": "Add a Zapier / Make URL to receive access events.",
+      "formTitle": "New webhook",
+      "listTitle": "Active webhooks",
+      "secretPrefix": "secret:",
+      "event_payment_received": "Payment received",
+      "event_role_granted": "Role granted",
+      "event_revoked": "Revoked",
+      "event_expired": "Expired",
+      "event_sold_out": "Sold out",
+      "event_claim_reminder": "Claim reminder"
     },
     "editor": {
       "descriptionPlaceholder": "e.g. March cohort — access & billing support",

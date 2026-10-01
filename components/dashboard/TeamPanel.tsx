@@ -1,6 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import {
+  DashboardAlert,
+  DashboardBadge,
+  DashboardEmptyState,
+  DashboardPageHeader,
+  DashboardPanel,
+  dashBtnPrimaryClass,
+  dashFieldClass,
+} from "@/components/dashboard/ui";
 
 export type MemberRow = {
   id: string;
@@ -14,6 +23,19 @@ export type MemberRow = {
     discordId: string | null;
   };
 };
+
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).slice(0, 2);
+  return parts.map((p) => p[0]?.toUpperCase() ?? "").join("") || "?";
+}
+
+function roleTone(
+  role: MemberRow["role"]
+): "signal" | "accent" | "neutral" {
+  if (role === "OWNER") return "signal";
+  if (role === "ADMIN") return "accent";
+  return "neutral";
+}
 
 export function TeamPanel({
   canManage,
@@ -79,79 +101,115 @@ export function TeamPanel({
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-bold text-page-fg">Équipe</h1>
-        <p className="mt-1 text-sm text-soft">
-          Membres de l’organisation. L’ajout nécessite un compte Discelyn existant
-          (ID Discord).
-        </p>
-      </div>
+    <div className="mx-auto max-w-3xl space-y-6">
+      <DashboardPageHeader
+        title="Équipe"
+        description="Membres de l’organisation. L’ajout nécessite un compte Discelyn existant (ID Discord)."
+      />
 
-      {error ? <p className="text-sm text-warn">{error}</p> : null}
+      {error ? <DashboardAlert tone="error">{error}</DashboardAlert> : null}
 
-      <ul className="divide-y divide-line border border-line">
-        {members.map((m) => (
-          <li
-            key={m.id}
-            className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
-          >
-            <div>
-              <p className="text-sm font-medium text-page-fg">
-                {m.user.name ?? m.user.email ?? m.user.discordId ?? m.user.id}
-              </p>
-              <p className="text-xs text-soft">
-                {m.role}
-                {m.user.discordId ? ` · ${m.user.discordId}` : ""}
-              </p>
-            </div>
-            {canManage && m.role !== "OWNER" ? (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void onRemove(m.id)}
-                className="text-sm text-warn hover:underline disabled:opacity-50"
-              >
-                Retirer
-              </button>
-            ) : null}
-          </li>
-        ))}
-      </ul>
+      <DashboardPanel title="Membres">
+        {members.length === 0 ? (
+          <DashboardEmptyState
+            title="Aucun membre"
+            hint="Ajoute un compte Discelyn via son ID Discord."
+          />
+        ) : (
+          <ul className="divide-y divide-line">
+            {members.map((m) => {
+              const display =
+                m.user.name ?? m.user.email ?? m.user.discordId ?? m.user.id;
+              return (
+                <li
+                  key={m.id}
+                  className="flex flex-wrap items-center justify-between gap-3 py-3.5 first:pt-0 last:pb-0"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    {m.user.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={m.user.image}
+                        alt=""
+                        className="h-10 w-10 rounded-full object-cover ring-1 ring-line"
+                      />
+                    ) : (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-signal/15 text-sm font-semibold text-signal">
+                        {initials(display)}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-page-fg">
+                        {display}
+                      </p>
+                      <p className="mt-0.5 truncate font-mono text-xs text-soft">
+                        {m.user.discordId ?? "—"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <DashboardBadge tone={roleTone(m.role)}>
+                      {m.role}
+                    </DashboardBadge>
+                    {canManage && m.role !== "OWNER" ? (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void onRemove(m.id)}
+                        className="text-sm font-medium text-warn hover:underline disabled:opacity-50"
+                      >
+                        Retirer
+                      </button>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </DashboardPanel>
 
       {canManage ? (
-        <form onSubmit={onAdd} className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-soft">ID Discord</span>
-            <input
-              value={discordId}
-              onChange={(e) => setDiscordId(e.target.value)}
-              className="border border-line bg-surface px-3 py-2 text-page-fg"
-              placeholder="123456789012345678"
-              required
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-soft">Rôle</span>
-            <select
-              value={role}
-              onChange={(e) =>
-                setRole(e.target.value as "ADMIN" | "MEMBER")
-              }
-              className="border border-line bg-surface px-3 py-2 text-page-fg"
-            >
-              <option value="MEMBER">MEMBER</option>
-              <option value="ADMIN">ADMIN</option>
-            </select>
-          </label>
-          <button
-            type="submit"
-            disabled={busy}
-            className="bg-signal px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+        <DashboardPanel
+          title="Ajouter un membre"
+          description="Le Discord ID doit correspondre à un compte déjà connecté sur Discelyn."
+        >
+          <form
+            onSubmit={onAdd}
+            className="grid gap-4 sm:grid-cols-[1fr_auto_auto] sm:items-end"
           >
-            Ajouter
-          </button>
-        </form>
+            <label className="flex flex-col gap-1.5 text-sm">
+              <span className="font-medium text-soft">ID Discord</span>
+              <input
+                value={discordId}
+                onChange={(e) => setDiscordId(e.target.value)}
+                className={dashFieldClass}
+                placeholder="123456789012345678"
+                required
+              />
+            </label>
+            <label className="flex flex-col gap-1.5 text-sm">
+              <span className="font-medium text-soft">Rôle</span>
+              <select
+                value={role}
+                onChange={(e) =>
+                  setRole(e.target.value as "ADMIN" | "MEMBER")
+                }
+                className={dashFieldClass}
+              >
+                <option value="MEMBER">MEMBER</option>
+                <option value="ADMIN">ADMIN</option>
+              </select>
+            </label>
+            <button
+              type="submit"
+              disabled={busy}
+              className={dashBtnPrimaryClass}
+            >
+              Ajouter
+            </button>
+          </form>
+        </DashboardPanel>
       ) : null}
     </div>
   );

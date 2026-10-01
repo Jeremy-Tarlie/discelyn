@@ -643,6 +643,7 @@
       "copyClaim": "Copier claim",
       "revoke": "Révoquer",
       "empty": "Aucun apprenant.",
+      "emptyHint": "Les apprenants apparaissent après un paiement Stripe formation (ou un code d’accès).",
       "exportCsv": "Exporter CSV",
       "exported": "CSV téléchargé.",
       "exportFailed": "Export impossible",
@@ -711,7 +712,10 @@
       "copyLink": "Copier le lien /r/…",
       "copied": "Lien copié.",
       "stats": "{clicks} clics · {paid} payés · {claimed} claimés · mémo {bps} bps",
-      "empty": "Aucun affilié pour l’instant."
+      "empty": "Aucun affilié pour l’instant.",
+      "emptyHint": "Crée un code pour tracker les clics et conversions sur tes liens /r/…",
+      "formTitle": "Nouveau code",
+      "listTitle": "Tes affiliés"
     },
     "webhooks": {
       "title": "Webhooks sortants",
@@ -727,7 +731,16 @@
       "delete": "Supprimer",
       "deleteConfirm": "Supprimer ce webhook ?",
       "empty": "Aucun webhook pour l’instant.",
-      "secretPrefix": "secret :"
+      "emptyHint": "Ajoute une URL Zapier / Make pour recevoir les événements accès.",
+      "formTitle": "Nouveau webhook",
+      "listTitle": "Webhooks actifs",
+      "secretPrefix": "secret :",
+      "event_payment_received": "Paiement reçu",
+      "event_role_granted": "Rôle attribué",
+      "event_revoked": "Révoqué",
+      "event_expired": "Expiré",
+      "event_sold_out": "Complet",
+      "event_claim_reminder": "Relance claim"
     },
     "editor": {
       "descriptionPlaceholder": "Ex. Promo mars — support accès & facturation",

@@ -5,6 +5,15 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { DashboardLearner } from "@/lib/dashboard-data";
 import { isLearnerPaymentAtRisk } from "@/lib/access-lifecycle-pure";
+import {
+  DashboardAlert,
+  DashboardBadge,
+  DashboardEmptyState,
+  DashboardPageHeader,
+  DashboardPanel,
+  dashBtnGhostClass,
+  dashFieldClass,
+} from "@/components/dashboard/ui";
 
 export function LearnersPanel({
   initialLearners,
@@ -115,196 +124,211 @@ export function LearnersPanel({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl text-page-fg">{t("title")}</h1>
-          <p className="mt-1 text-sm text-soft">{t("body")}</p>
+    <div className="mx-auto max-w-6xl space-y-6">
+      <DashboardPageHeader
+        title={t("title")}
+        description={t("body")}
+        action={
+          <button
+            type="button"
+            onClick={() => void exportCsv()}
+            className={dashBtnGhostClass}
+          >
+            {t("exportCsv")}
+          </button>
+        }
+      />
+
+      <DashboardPanel>
+        <div className="flex flex-wrap gap-2">
+          <label className="sr-only" htmlFor="learners-status">
+            {t("filterStatus")}
+          </label>
+          <select
+            id="learners-status"
+            value={status}
+            onChange={(e) => pushFilters(e.target.value, billing, q)}
+            className={`${dashFieldClass} w-auto min-w-[10rem]`}
+          >
+            <option value="">{t("filterAll")}</option>
+            <option value="PENDING_CLAIM">{t("statusPendingClaim")}</option>
+            <option value="AWAITING_JOIN">{t("statusAwaitingJoin")}</option>
+            <option value="ACTIVE">{t("statusActive")}</option>
+            <option value="REVOKED">{t("statusRevoked")}</option>
+            <option value="EXPIRED">{t("statusExpired")}</option>
+          </select>
+          <label className="sr-only" htmlFor="learners-billing">
+            {t("filterBilling")}
+          </label>
+          <select
+            id="learners-billing"
+            value={billing}
+            onChange={(e) => pushFilters(status, e.target.value, q)}
+            className={`${dashFieldClass} w-auto min-w-[10rem]`}
+          >
+            <option value="">{t("billingAll")}</option>
+            <option value="past_due">{t("billingPastDue")}</option>
+            <option value="ok">{t("billingOk")}</option>
+          </select>
+          <label className="sr-only" htmlFor="learners-search">
+            {t("searchLabel")}
+          </label>
+          <input
+            id="learners-search"
+            value={searchDraft}
+            onChange={(e) => setSearchDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                pushFilters(status, billing, searchDraft.trim());
+              }
+            }}
+            onBlur={() => {
+              if (searchDraft.trim() !== q) {
+                pushFilters(status, billing, searchDraft.trim());
+              }
+            }}
+            placeholder={t("search")}
+            className={`${dashFieldClass} min-w-[14rem] flex-1`}
+          />
         </div>
-        <button
-          type="button"
-          onClick={() => void exportCsv()}
-          className="rounded-full border border-line px-4 py-2 text-sm font-semibold hover:border-signal"
-        >
-          {t("exportCsv")}
-        </button>
-      </div>
+      </DashboardPanel>
 
-      <div className="flex flex-wrap gap-2">
-        <label className="sr-only" htmlFor="learners-status">
-          {t("filterStatus")}
-        </label>
-        <select
-          id="learners-status"
-          value={status}
-          onChange={(e) => pushFilters(e.target.value, billing, q)}
-          className="rounded-xl border border-line bg-surface-muted px-3 py-2 text-sm"
-        >
-          <option value="">{t("filterAll")}</option>
-          <option value="PENDING_CLAIM">{t("statusPendingClaim")}</option>
-          <option value="AWAITING_JOIN">{t("statusAwaitingJoin")}</option>
-          <option value="ACTIVE">{t("statusActive")}</option>
-          <option value="REVOKED">{t("statusRevoked")}</option>
-          <option value="EXPIRED">{t("statusExpired")}</option>
-        </select>
-        <label className="sr-only" htmlFor="learners-billing">
-          {t("filterBilling")}
-        </label>
-        <select
-          id="learners-billing"
-          value={billing}
-          onChange={(e) => pushFilters(status, e.target.value, q)}
-          className="rounded-xl border border-line bg-surface-muted px-3 py-2 text-sm"
-        >
-          <option value="">{t("billingAll")}</option>
-          <option value="past_due">{t("billingPastDue")}</option>
-          <option value="ok">{t("billingOk")}</option>
-        </select>
-        <label className="sr-only" htmlFor="learners-search">
-          {t("searchLabel")}
-        </label>
-        <input
-          id="learners-search"
-          value={searchDraft}
-          onChange={(e) => setSearchDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              pushFilters(status, billing, searchDraft.trim());
-            }
-          }}
-          onBlur={() => {
-            if (searchDraft.trim() !== q) {
-              pushFilters(status, billing, searchDraft.trim());
-            }
-          }}
-          placeholder={t("search")}
-          className="rounded-xl border border-line bg-surface-muted px-3 py-2 text-sm"
-        />
-      </div>
+      {pending ? <DashboardAlert tone="muted">{t("loading")}</DashboardAlert> : null}
+      {error ? <DashboardAlert tone="error">{error}</DashboardAlert> : null}
+      {message ? <DashboardAlert tone="ok">{message}</DashboardAlert> : null}
 
-      {pending ? <p className="text-sm text-soft">{t("loading")}</p> : null}
-      {error ? <p className="text-sm text-warn">{error}</p> : null}
-      {message ? <p className="text-sm text-signal">{message}</p> : null}
-
-      <div className="overflow-x-auto rounded-2xl border border-line">
-        <table className="min-w-full text-left text-sm">
-          <thead className="bg-surface-muted text-xs uppercase text-soft">
-            <tr>
-              <th className="px-3 py-2">{t("colProduct")}</th>
-              <th className="px-3 py-2">{t("colEmail")}</th>
-              <th className="px-3 py-2">{t("colStatus")}</th>
-              <th className="px-3 py-2">{t("colPayment")}</th>
-              <th className="px-3 py-2">{t("colLastPayment")}</th>
-              <th className="px-3 py-2">{t("colAmount")}</th>
-              <th className="px-3 py-2">{t("colAffiliate")}</th>
-              <th className="px-3 py-2">{t("colActions")}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-line">
-            {learners.map((row) => {
-              const atRisk = isLearnerPaymentAtRisk(row.stripeBillingStatus);
-              return (
-                <tr key={row.id}>
-                  <td className="px-3 py-2">
-                    <p className="font-medium text-page-fg">{row.product.name}</p>
-                    <p className="text-xs text-soft">
-                      {row.source}
-                      {row.product.billingMode === "RECURRING" ? " · abo" : ""}
-                      {row.accessEndsAt
-                        ? ` · exp. ${row.accessEndsAt.slice(0, 10)}`
-                        : ""}
-                    </p>
-                  </td>
-                  <td className="px-3 py-2 text-soft">
-                    {row.customerEmail ?? "—"}
-                    {row.discordUserId ? (
-                      <span className="block text-xs">{row.discordUserId}</span>
-                    ) : null}
-                  </td>
-                  <td className="px-3 py-2">
-                    <span className="rounded-full bg-surface-muted px-2 py-0.5 text-xs">
-                      {statusLabel(row.status)}
-                    </span>
-                    {row.claimReminderCount > 0 ? (
-                      <span className="ml-1 text-xs text-soft">
-                        (relance ×{row.claimReminderCount})
-                      </span>
-                    ) : null}
-                  </td>
-                  <td className="px-3 py-2">
-                    {row.stripeBillingStatus ? (
-                      <span
-                        className={
-                          atRisk
-                            ? "rounded-full bg-warn/15 px-2 py-0.5 text-xs font-medium text-warn"
-                            : "rounded-full bg-surface-muted px-2 py-0.5 text-xs text-soft"
+      {learners.length === 0 ? (
+        <DashboardEmptyState title={t("empty")} hint={t("emptyHint")} />
+      ) : (
+        <div className="overflow-x-auto rounded-2xl border border-line bg-surface shadow-[0_1px_0_rgba(15,23,42,0.04)]">
+          <table className="min-w-full text-left text-sm">
+            <thead className="border-b border-line bg-surface-muted/70 text-xs uppercase tracking-wide text-soft">
+              <tr>
+                <th className="px-4 py-3 font-medium">{t("colProduct")}</th>
+                <th className="px-4 py-3 font-medium">{t("colEmail")}</th>
+                <th className="px-4 py-3 font-medium">{t("colStatus")}</th>
+                <th className="px-4 py-3 font-medium">{t("colPayment")}</th>
+                <th className="px-4 py-3 font-medium">{t("colLastPayment")}</th>
+                <th className="px-4 py-3 font-medium">{t("colAmount")}</th>
+                <th className="px-4 py-3 font-medium">{t("colAffiliate")}</th>
+                <th className="px-4 py-3 font-medium">{t("colActions")}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {learners.map((row) => {
+                const atRisk = isLearnerPaymentAtRisk(row.stripeBillingStatus);
+                return (
+                  <tr
+                    key={row.id}
+                    className="transition hover:bg-surface-muted/40"
+                  >
+                    <td className="px-4 py-3.5">
+                      <p className="font-medium text-page-fg">
+                        {row.product.name}
+                      </p>
+                      <p className="mt-0.5 text-xs text-soft">
+                        {row.source}
+                        {row.product.billingMode === "RECURRING"
+                          ? " · abo"
+                          : ""}
+                        {row.accessEndsAt
+                          ? ` · exp. ${row.accessEndsAt.slice(0, 10)}`
+                          : ""}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3.5 text-soft">
+                      {row.customerEmail ?? "—"}
+                      {row.discordUserId ? (
+                        <span className="mt-0.5 block font-mono text-xs">
+                          {row.discordUserId}
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <DashboardBadge
+                        tone={
+                          row.status === "ACTIVE"
+                            ? "signal"
+                            : row.status === "REVOKED" ||
+                                row.status === "EXPIRED"
+                              ? "warn"
+                              : "neutral"
                         }
                       >
-                        {atRisk
-                          ? t("paymentPastDue")
-                          : row.stripeBillingStatus === "active"
-                            ? t("paymentOk")
-                            : row.stripeBillingStatus}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-soft">—</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2 text-soft">
-                    {row.lastPaymentAt
-                      ? row.lastPaymentAt.slice(0, 10)
-                      : "—"}
-                  </td>
-                  <td className="px-3 py-2 text-soft">
-                    {row.amountTotal != null
-                      ? `${(row.amountTotal / 100).toFixed(2)} ${
-                          row.currency?.toUpperCase() ?? ""
-                        }`
-                      : "—"}
-                  </td>
-                  <td className="px-3 py-2 text-soft">
-                    {row.affiliate?.code ?? "—"}
-                  </td>
-                  <td className="space-x-2 px-3 py-2">
-                    {row.stripeCustomerId ? (
-                      <button
-                        type="button"
-                        className="text-xs text-[#5865F2] underline"
-                        onClick={() => void act(row.id, "open_portal")}
-                      >
-                        {t("portal")}
-                      </button>
-                    ) : null}
-                    {row.status === "PENDING_CLAIM" || row.claimUrl ? (
-                      <button
-                        type="button"
-                        className="text-xs text-[#5865F2] underline"
-                        onClick={() => void act(row.id, "refresh_claim")}
-                      >
-                        {t("copyClaim")}
-                      </button>
-                    ) : null}
-                    {row.status === "ACTIVE" ||
-                    row.status === "PENDING_CLAIM" ||
-                    row.status === "AWAITING_JOIN" ? (
-                      <button
-                        type="button"
-                        className="text-xs text-warn underline"
-                        onClick={() => void act(row.id, "revoke")}
-                      >
-                        {t("revoke")}
-                      </button>
-                    ) : null}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        {learners.length === 0 ? (
-          <p className="p-4 text-sm text-soft">{t("empty")}</p>
-        ) : null}
-      </div>
+                        {statusLabel(row.status)}
+                      </DashboardBadge>
+                      {row.claimReminderCount > 0 ? (
+                        <span className="ml-1.5 text-xs text-soft">
+                          ×{row.claimReminderCount}
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-3.5">
+                      {row.stripeBillingStatus ? (
+                        <DashboardBadge tone={atRisk ? "warn" : "signal"}>
+                          {atRisk
+                            ? t("paymentPastDue")
+                            : row.stripeBillingStatus === "active"
+                              ? t("paymentOk")
+                              : row.stripeBillingStatus}
+                        </DashboardBadge>
+                      ) : (
+                        <span className="text-xs text-soft">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3.5 text-soft">
+                      {row.lastPaymentAt
+                        ? row.lastPaymentAt.slice(0, 10)
+                        : "—"}
+                    </td>
+                    <td className="px-4 py-3.5 tabular-nums text-soft">
+                      {row.amountTotal != null
+                        ? `${(row.amountTotal / 100).toFixed(2)} ${
+                            row.currency?.toUpperCase() ?? ""
+                          }`
+                        : "—"}
+                    </td>
+                    <td className="px-4 py-3.5 text-soft">
+                      {row.affiliate?.code ?? "—"}
+                    </td>
+                    <td className="space-x-3 px-4 py-3.5 whitespace-nowrap">
+                      {row.stripeCustomerId ? (
+                        <button
+                          type="button"
+                          className="text-xs font-medium text-signal hover:underline"
+                          onClick={() => void act(row.id, "open_portal")}
+                        >
+                          {t("portal")}
+                        </button>
+                      ) : null}
+                      {row.status === "PENDING_CLAIM" || row.claimUrl ? (
+                        <button
+                          type="button"
+                          className="text-xs font-medium text-signal hover:underline"
+                          onClick={() => void act(row.id, "refresh_claim")}
+                        >
+                          {t("copyClaim")}
+                        </button>
+                      ) : null}
+                      {row.status === "ACTIVE" ||
+                      row.status === "PENDING_CLAIM" ||
+                      row.status === "AWAITING_JOIN" ? (
+                        <button
+                          type="button"
+                          className="text-xs font-medium text-warn hover:underline"
+                          onClick={() => void act(row.id, "revoke")}
+                        >
+                          {t("revoke")}
+                        </button>
+                      ) : null}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
