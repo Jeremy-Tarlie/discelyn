@@ -139,9 +139,11 @@ services:
           "-qO-",
           "http://127.0.0.1:4001/health",
         ]
-      interval: 15s
+      interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 6
+      # migrate + boot Node avant /health (Discord login peut suivre)
+      start_period: 60s
 
 volumes:
   discelyn_pg:

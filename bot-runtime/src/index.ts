@@ -453,63 +453,76 @@ process.on("unhandledRejection", (reason) => {
   Sentry.captureException(reason);
 });
 
-await syncConfigs();
-client = createPlatformClient();
-
-client.on(Events.ShardError, (error, shardId) => {
-  console.error(`[platform] shard ${shardId} error`, error);
-  Sentry.captureException(error);
-});
-client.on(Events.ShardDisconnect, (event, shardId) => {
-  console.warn(`[platform] shard ${shardId} disconnected`, event.code);
-});
-client.on(Events.ShardReconnecting, (shardId) => {
-  console.log(`[platform] shard ${shardId} reconnecting`);
-});
-client.on(Events.ShardResume, (shardId) => {
-  console.log(`[platform] shard ${shardId} resumed`);
+// Health HTTP d’abord : Docker healthcheck ne doit pas attendre Discord login.
+await new Promise<void>((resolve) => {
+  server.listen(port, () => {
+    console.log(`discelyn-runtime (platform) listening on :${port}`);
+    resolve();
+  });
 });
 
-const learnerAccessJoiner = {
-  async grantOnJoin(guildId: string, discordUserId: string): Promise<number> {
-    try {
-      return await requestGrantOnJoinViaWeb({
-        guildId,
-        discordUserId,
-        secret: runtimeSecret,
-      });
-    } catch (error) {
-      console.error(
-        "[access] grant-on-join web failed (pas de fallback local)",
-        { guildId, discordUserId, error }
-      );
+try {
+  await syncConfigs();
+  client = createPlatformClient();
+
+  client.on(Events.ShardError, (error, shardId) => {
+    console.error(`[platform] shard ${shardId} error`, error);
+    Sentry.captureException(error);
+  });
+  client.on(Events.ShardDisconnect, (event, shardId) => {
+    console.warn(`[platform] shard ${shardId} disconnected`, event.code);
+  });
+  client.on(Events.ShardReconnecting, (shardId) => {
+    console.log(`[platform] shard ${shardId} reconnecting`);
+  });
+  client.on(Events.ShardResume, (shardId) => {
+    console.log(`[platform] shard ${shardId} resumed`);
+  });
+
+  const learnerAccessJoiner = {
+    async grantOnJoin(guildId: string, discordUserId: string): Promise<number> {
+      try {
+        return await requestGrantOnJoinViaWeb({
+          guildId,
+          discordUserId,
+          secret: runtimeSecret,
+        });
+      } catch (error) {
+        console.error(
+          "[access] grant-on-join web failed (pas de fallback local)",
+          { guildId, discordUserId, error }
+        );
+        Sentry.captureException(error);
+        return 0;
+      }
+    },
+  };
+
+  attachPlatformHandlers(client, configs, warnings, learnerAccessJoiner);
+
+  client.on(Events.GuildCreate, (guild) => {
+    guildJoinedAt.set(guild.id, Date.now());
+    console.log(
+      `[platform] joined guild ${guild.id} — grace ${UNLINKED_LEAVE_GRACE_MS / 1000}s`
+    );
+    void syncConfigs().catch((error) => {
+      console.error("[platform] sync after GuildCreate failed", error);
       Sentry.captureException(error);
-      return 0;
-    }
-  },
-};
-
-attachPlatformHandlers(client, configs, warnings, learnerAccessJoiner);
-
-client.on(Events.GuildCreate, (guild) => {
-  guildJoinedAt.set(guild.id, Date.now());
-  console.log(`[platform] joined guild ${guild.id} — grace ${UNLINKED_LEAVE_GRACE_MS / 1000}s`);
-  void syncConfigs().catch((error) => {
-    console.error("[platform] sync after GuildCreate failed", error);
-    Sentry.captureException(error);
+    });
   });
-});
 
-await client.login(discordBotToken);
+  await client.login(discordBotToken);
+  console.log("[platform] Discord ready");
 
-setInterval(() => {
-  void syncConfigs().catch((error) => {
-    console.error("[platform] sync failed", error);
-    Sentry.captureException(error);
-  });
-}, 30_000);
-
-server.listen(port, () => {
-  console.log(`discelyn-runtime (platform) listening on :${port}`);
-});
-
+  setInterval(() => {
+    void syncConfigs().catch((error) => {
+      console.error("[platform] sync failed", error);
+      Sentry.captureException(error);
+    });
+  }, 30_000);
+} catch (error) {
+  console.error("[platform] bootstrap failed", error);
+  Sentry.captureException(error);
+  await Sentry.close(2000);
+  process.exit(1);
+}
