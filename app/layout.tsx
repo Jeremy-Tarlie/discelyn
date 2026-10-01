@@ -29,6 +29,14 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(
       process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
     ),
+    icons: {
+      icon: [{ url: "/icon", type: "image/png" }],
+      apple: [{ url: "/apple-icon", type: "image/png" }],
+    },
+    themeColor: [
+      { media: "(prefers-color-scheme: light)", color: "#f3f5f8" },
+      { media: "(prefers-color-scheme: dark)", color: "#1a1c21" },
+    ],
   };
 }
 

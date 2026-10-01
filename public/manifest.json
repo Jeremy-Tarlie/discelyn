@@ -1,96 +1,29 @@
 {
-  "name": "MyDiscordBot - Créateur de Bots Discord Personnalisés",
-  "short_name": "MyDiscordBot",
-  "description": "Service officiel de création de bots Discord personnalisés. Créez votre bot sur mesure pour la modération, les mini-jeux et la gestion de communauté.",
+  "name": "Discelyn",
+  "short_name": "Discelyn",
+  "description": "Accès formation Discord : paiement Stripe → rôle. Ops + contrôle d’accès pour OF.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#2F3136",
-  "theme_color": "#5865F2",
+  "background_color": "#f3f5f8",
+  "theme_color": "#3dcfb0",
   "scope": "/",
-  "id": "mydiscordbot-app",
+  "id": "discelyn-app",
   "icons": [
     {
-      "src": "/favicon.ico",
-      "sizes": "16x16 32x32 48x48",
-      "type": "image/x-icon"
-    },
-    {
-      "src": "/logo-192x192.png",
-      "sizes": "192x192",
+      "src": "/icon",
+      "sizes": "32x32",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/logo-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/apple-touch-icon.png",
+      "src": "/apple-icon",
       "sizes": "180x180",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
   "lang": "fr-FR",
   "dir": "ltr",
-  "orientation": "portrait-primary",
-  "categories": ["business", "productivity", "utilities", "developer"],
-  "screenshots": [
-    {
-      "src": "/screenshots/home-desktop.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Page d'accueil MyDiscordBot sur desktop"
-    },
-    {
-      "src": "/screenshots/home-mobile.png",
-      "sizes": "390x844",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Page d'accueil MyDiscordBot sur mobile"
-    },
-    {
-      "src": "/screenshots/bots-desktop.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Liste des bots disponibles"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "Créer un Bot",
-      "short_name": "Créer",
-      "description": "Créer un nouveau bot Discord personnalisé",
-      "url": "/fr/command",
-      "icons": [
-        {
-          "src": "/icons/create-bot.png",
-          "sizes": "96x96"
-        }
-      ]
-    },
-    {
-      "name": "Mes Bots",
-      "short_name": "Bots",
-      "description": "Voir la liste des bots disponibles",
-      "url": "/fr/bots",
-      "icons": [
-        {
-          "src": "/icons/bots-list.png",
-          "sizes": "96x96"
-        }
-      ]
-    }
-  ],
-  "related_applications": [],
-  "prefer_related_applications": false,
-  "edge_side_panel": {
-    "preferred_width": 400
-  },
-  "launch_handler": {
-    "client_mode": "navigate-existing"
-  }
-} 
+  "orientation": "any",
+  "categories": ["business", "productivity", "utilities"]
+}
