@@ -17,9 +17,16 @@ export function planFromPriceId(
 ): PlanId | null {
   if (!priceId) return null;
   for (const plan of Object.values(PLANS)) {
-    if (!plan.stripePriceEnvKey) continue;
-    const envPrice = process.env[plan.stripePriceEnvKey];
-    if (envPrice && envPrice === priceId) {
+    const monthly = plan.stripePriceEnvKey
+      ? process.env[plan.stripePriceEnvKey]
+      : undefined;
+    if (monthly && monthly === priceId) {
+      return plan.id;
+    }
+    const yearly = plan.stripePriceYearlyEnvKey
+      ? process.env[plan.stripePriceYearlyEnvKey]
+      : undefined;
+    if (yearly && yearly === priceId) {
       return plan.id;
     }
   }

@@ -85,7 +85,7 @@ export default async function TermsPage() {
               <p>
                 Offers: free trial, Discord Diagnostic (one-shot, credit
                 applicable to Setup), Setup Pilot (one-shot), Ops and Scale
-                (monthly Stripe subscriptions). Subscriptions can be cancelled
+                (monthly or yearly Stripe subscriptions). Subscriptions can be cancelled
                 from the customer portal. On non-payment, configs may be paused.
                 Diagnostic and Setup do not grant a recurring subscription until
                 Ops/Scale is purchased. Diagnostic credit on Setup is applied
@@ -176,7 +176,7 @@ export default async function TermsPage() {
               <p>
                 Offres : essai gratuit, Diagnostic Discord (paiement one-shot,
                 crédit applicable sur le Setup), Setup Pilot (paiement one-shot),
-                Ops et Scale (abonnements mensuels Stripe). Les abonnements sont
+                Ops et Scale (abonnements mensuels ou annuels Stripe). Les abonnements sont
                 résiliables depuis le portail client. En cas d&apos;impayé, les
                 configs peuvent être mises en pause. Le Diagnostic et le Setup
                 ne confèrent pas d&apos;abonnement récurrent tant qu&apos;Ops/Scale

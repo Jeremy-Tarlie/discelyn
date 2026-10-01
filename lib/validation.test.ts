@@ -42,9 +42,33 @@ describe("checkoutSchema", () => {
     );
   });
 
-  it("refuse Free et les valeurs invalides", () => {
+  it("défaut interval à month et accepte year", () => {
+    const monthly = checkoutSchema.safeParse({ planId: "STARTER" });
+    expect(monthly.success && monthly.data.interval).toBe("month");
+    const yearly = checkoutSchema.safeParse({
+      planId: "OPS",
+      interval: "year",
+    });
+    expect(yearly.success && yearly.data.interval).toBe("year");
+  });
+
+  it("refuse Free, interval invalide et priceId client", () => {
     expect(checkoutSchema.safeParse({ planId: "FREE" }).success).toBe(false);
     expect(checkoutSchema.safeParse({ planId: "GOLD" }).success).toBe(false);
+    expect(
+      checkoutSchema.safeParse({ planId: "STARTER", interval: "week" }).success
+    ).toBe(false);
+    expect(
+      checkoutSchema.safeParse({
+        planId: "STARTER",
+        priceId: "price_attacker",
+      }).success
+    ).toBe(true); // priceId client est ignoré (pas dans le schéma)
+    const parsed = checkoutSchema.safeParse({
+      planId: "STARTER",
+      priceId: "price_attacker",
+    });
+    expect(parsed.success && "priceId" in parsed.data).toBe(false);
   });
 });
 

@@ -26,11 +26,23 @@ describe("PLANS", () => {
   it("a des prix self-serve accessibles", () => {
     expect(PLANS.FREE.priceMonthlyEur).toBe(0);
     expect(PLANS.STARTER.priceMonthlyEur).toBe(19.99);
+    expect(PLANS.STARTER.priceYearlyEur).toBe(199.9);
     expect(PLANS.OPS.priceMonthlyEur).toBe(49);
+    expect(PLANS.OPS.priceYearlyEur).toBe(490);
     expect(PLANS.SCALE.priceMonthlyEur).toBe(99);
+    expect(PLANS.SCALE.priceYearlyEur).toBe(990);
     expect(SETUP_OFFER.priceEur).toBe(290);
     expect(DIAGNOSTIC_OFFER.priceEur).toBe(49);
     expect(DIAGNOSTIC_OFFER.setupCreditEur).toBe(49);
+  });
+
+  it("expose les env keys mensuel et annuel pour les plans payants", () => {
+    expect(PLANS.STARTER.stripePriceEnvKey).toBe("STRIPE_PRICE_STARTER");
+    expect(PLANS.STARTER.stripePriceYearlyEnvKey).toBe(
+      "STRIPE_PRICE_STARTER_YEARLY"
+    );
+    expect(PLANS.FREE.stripePriceEnvKey).toBeNull();
+    expect(PLANS.FREE.stripePriceYearlyEnvKey).toBeNull();
   });
 
   it("pousse le freemium avec le socle ops + 1 produit accès", () => {

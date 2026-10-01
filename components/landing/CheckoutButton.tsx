@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import type { PlanId } from "@/lib/plans";
+import type { BillingInterval, PlanId } from "@/lib/plans";
 
 type CheckoutOfferId = PlanId | "SETUP" | "DIAGNOSTIC";
 
@@ -10,10 +10,13 @@ export function CheckoutButton({
   planId,
   label,
   variant = "primary",
+  interval = "month",
 }: {
   planId: CheckoutOfferId;
   label: string;
   variant?: "primary" | "ghost";
+  /** Abonnements uniquement — ignoré pour FREE / SETUP / DIAGNOSTIC. */
+  interval?: BillingInterval;
 }) {
   const t = useTranslations("pricing");
   const tc = useTranslations("common");
@@ -29,11 +32,16 @@ export function CheckoutButton({
     setLoading(true);
     setError(null);
 
+    const isSubscription =
+      planId === "STARTER" || planId === "OPS" || planId === "SCALE";
+
     try {
       const response = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planId }),
+        body: JSON.stringify(
+          isSubscription ? { planId, interval } : { planId }
+        ),
       });
       const data = (await response.json()) as { url?: string; error?: string };
 

@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import {
   DIAGNOSTIC_OFFER,
   formatPriceEur,
+  planDisplayPriceEur,
   PLANS,
   SETUP_OFFER,
+  type BillingInterval,
   type PlanId,
 } from "@/lib/plans";
 import { CheckoutButton } from "@/components/landing/CheckoutButton";
@@ -16,6 +19,7 @@ const ORDER: PlanId[] = ["FREE", "STARTER", "OPS", "SCALE"];
 export function PricingGrid() {
   const t = useTranslations("pricing");
   const tp = useTranslations("plans");
+  const [interval, setInterval] = useState<BillingInterval>("month");
 
   function planBullets(planId: PlanId): string[] {
     const plan = PLANS[planId];
@@ -31,6 +35,12 @@ export function PricingGrid() {
     return [guilds, ...(t.raw("scaleBullets") as string[])];
   }
 
+  function displayAmount(planId: PlanId): string {
+    const amount = planDisplayPriceEur(planId, interval);
+    if (amount === 0) return "0 €";
+    return `${formatPriceEur(amount)} €`;
+  }
+
   return (
     <div className="space-y-12">
       <div>
@@ -42,10 +52,50 @@ export function PricingGrid() {
             {t("subscriptionsHint")}
           </p>
         </Reveal>
+
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <div
+            role="group"
+            aria-label={t("billingToggleLabel")}
+            className="inline-flex rounded-full border border-[color:var(--border)] bg-[color:var(--surface-muted)] p-1 dark:border-white/10"
+          >
+            <button
+              type="button"
+              aria-pressed={interval === "month"}
+              onClick={() => setInterval("month")}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+                interval === "month"
+                  ? "bg-[#5865F2] text-white shadow-sm"
+                  : "text-[color:var(--muted)] hover:text-[color:var(--page-fg)]"
+              }`}
+            >
+              {t("billingMonthly")}
+            </button>
+            <button
+              type="button"
+              aria-pressed={interval === "year"}
+              onClick={() => setInterval("year")}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+                interval === "year"
+                  ? "bg-[#5865F2] text-white shadow-sm"
+                  : "text-[color:var(--muted)] hover:text-[color:var(--page-fg)]"
+              }`}
+            >
+              {t("billingYearly")}
+            </button>
+          </div>
+          {interval === "year" ? (
+            <span className="rounded-full bg-signal/15 px-3 py-1 text-xs font-semibold text-signal">
+              {t("yearlyDiscount")}
+            </span>
+          ) : null}
+        </div>
+
         <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {ORDER.map((id, index) => {
             const plan = PLANS[id];
             const delay = Math.min(index + 1, 4) as 1 | 2 | 3 | 4;
+            const isPaid = plan.priceMonthlyEur > 0;
             return (
               <Reveal key={plan.id} delay={delay} variant="scale">
                 <article
@@ -67,14 +117,29 @@ export function PricingGrid() {
                     {tp(`${plan.id}.description`)}
                   </p>
                   <p className="mt-6 font-display text-4xl font-bold text-[color:var(--page-fg)]">
-                    {plan.priceMonthlyEur === 0
-                      ? "0 €"
-                      : `${formatPriceEur(plan.priceMonthlyEur)} €`}
+                    {displayAmount(plan.id)}
                     <span className="text-base font-sans font-normal text-[color:var(--muted)]">
                       {" "}
-                      {t("perMonth")}
+                      {isPaid
+                        ? interval === "year"
+                          ? t("perYear")
+                          : t("perMonth")
+                        : t("perMonth")}
                     </span>
                   </p>
+                  {isPaid && interval === "year" ? (
+                    <p className="mt-1 text-xs text-[color:var(--muted)]">
+                      {t("yearlyEquivalent", {
+                        price: formatPriceEur(
+                          Math.round((plan.priceYearlyEur / 12) * 100) / 100
+                        ),
+                      })}
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-xs text-transparent" aria-hidden>
+                      —
+                    </p>
+                  )}
                   <ul className="mt-6 flex-1 space-y-2.5 text-sm text-[color:var(--muted)]">
                     {planBullets(plan.id).map((line) => (
                       <li key={line} className="flex items-start gap-2.5">
@@ -88,6 +153,7 @@ export function PricingGrid() {
                   <div className="mt-8">
                     <CheckoutButton
                       planId={plan.id}
+                      interval={interval}
                       label={
                         plan.id === "FREE" ? t("tryFree") : t("subscribe")
                       }

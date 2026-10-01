@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import type Stripe from "stripe";
 import { requireOrg, getOrgSubscription } from "@/lib/access";
 import { getStripe } from "@/lib/stripe";
 import {
   getOneShotStripePriceId,
   getStripePriceId,
+  type BillingInterval,
   type OneShotOfferId,
   type PlanId,
 } from "@/lib/plans";
@@ -17,6 +19,20 @@ import { tApi } from "@/lib/i18n-api";
 
 function isOneShotOffer(offerId: string): offerId is OneShotOfferId {
   return offerId === "SETUP" || offerId === "DIAGNOSTIC";
+}
+
+/**
+ * Vérifie que le Price env correspond à l’intervalle demandé (anti-mauvaise config).
+ * Ne fait jamais confiance à un price_ envoyé par le client.
+ */
+async function assertPriceMatchesInterval(
+  stripe: Stripe,
+  priceId: string,
+  interval: BillingInterval
+): Promise<boolean> {
+  const price = await stripe.prices.retrieve(priceId);
+  if (!price.active || price.type !== "recurring") return false;
+  return price.recurring?.interval === interval;
 }
 
 export async function POST(request: NextRequest) {
@@ -47,9 +63,12 @@ export async function POST(request: NextRequest) {
 
   const offerId = parsed.data.planId;
   const oneShot = isOneShotOffer(offerId);
+  // One-shot : interval ignoré (toujours payment unique).
+  const interval: BillingInterval = oneShot ? "month" : parsed.data.interval;
+
   const priceId = oneShot
     ? getOneShotStripePriceId(offerId)
-    : getStripePriceId(offerId as PlanId);
+    : getStripePriceId(offerId as PlanId, interval);
 
   if (!priceId) {
     return NextResponse.json(
@@ -76,6 +95,19 @@ export async function POST(request: NextRequest) {
 
   const stripe = getStripe();
 
+  if (!oneShot) {
+    const ok = await assertPriceMatchesInterval(stripe, priceId, interval);
+    if (!ok) {
+      console.error(
+        `[stripe] price mismatch plan=${offerId} interval=${interval} price=${priceId}`
+      );
+      return NextResponse.json(
+        { error: tApi(locale, "priceNotConfigured") },
+        { status: 500 }
+      );
+    }
+  }
+
   let customerId = subscription.stripeCustomerId;
   if (!customerId) {
     const customer = await stripe.customers.create({
@@ -97,7 +129,11 @@ export async function POST(request: NextRequest) {
     name: "checkout_started",
     userId: org.userId,
     path: "/api/stripe/checkout",
-    meta: { offerId, organizationId: org.organizationId },
+    meta: {
+      offerId,
+      interval: oneShot ? "one_shot" : interval,
+      organizationId: org.organizationId,
+    },
   });
 
   const successPath =
@@ -107,6 +143,13 @@ export async function POST(request: NextRequest) {
         ? "/dashboard?setup=1"
         : "/dashboard/billing?success=1";
 
+  const sharedMeta = {
+    organizationId: org.organizationId,
+    userId: org.userId,
+    planId: offerId,
+    ...(oneShot ? {} : { billingInterval: interval }),
+  };
+
   const session = oneShot
     ? await stripe.checkout.sessions.create({
         mode: "payment",
@@ -115,11 +158,7 @@ export async function POST(request: NextRequest) {
         success_url: `${appUrl}${successPath}`,
         cancel_url: `${appUrl}/#offres?canceled=1`,
         allow_promotion_codes: true,
-        metadata: {
-          organizationId: org.organizationId,
-          userId: org.userId,
-          planId: offerId,
-        },
+        metadata: sharedMeta,
       })
     : await stripe.checkout.sessions.create({
         mode: "subscription",
@@ -128,17 +167,9 @@ export async function POST(request: NextRequest) {
         success_url: `${appUrl}${successPath}`,
         cancel_url: `${appUrl}/#offres?canceled=1`,
         allow_promotion_codes: true,
-        metadata: {
-          organizationId: org.organizationId,
-          userId: org.userId,
-          planId: offerId,
-        },
+        metadata: sharedMeta,
         subscription_data: {
-          metadata: {
-            organizationId: org.organizationId,
-            userId: org.userId,
-            planId: offerId,
-          },
+          metadata: sharedMeta,
         },
       });
 

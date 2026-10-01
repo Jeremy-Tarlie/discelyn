@@ -1,5 +1,11 @@
 export type PlanId = "FREE" | "STARTER" | "OPS" | "SCALE";
 
+/** Intervalle d’abonnement SaaS (jamais un Price ID client). */
+export type BillingInterval = "month" | "year";
+
+/** 2 mois offerts à l’année (= 10 × mensuel). */
+export const YEARLY_BILLED_MONTHS = 10;
+
 export type BotModuleId =
   | "welcome"
   | "roles"
@@ -23,6 +29,8 @@ export type PlanDefinition = {
   id: PlanId;
   name: string;
   priceMonthlyEur: number;
+  /** Prix annuel affiché (2 mois offerts). */
+  priceYearlyEur: number;
   description: string;
   /** Nombre max de bindings guild (modèle Prisma `Bot`). */
   maxGuilds: number;
@@ -38,8 +46,13 @@ export type PlanDefinition = {
   highlighted?: boolean;
   commercial: boolean;
   stripePriceEnvKey: string | null;
+  stripePriceYearlyEnvKey: string | null;
   status: "available" | "beta";
 };
+
+function yearlyFromMonthly(monthly: number): number {
+  return Math.round(monthly * YEARLY_BILLED_MONTHS * 100) / 100;
+}
 
 /**
  * Offres self-serve + packs installation optionnels.
@@ -53,6 +66,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     id: "FREE",
     name: "Essai",
     priceMonthlyEur: 0,
+    priceYearlyEur: 0,
     description:
       "Socle ops + contrôle d’accès : 1 produit Stripe→rôle Discord. Preview warns — export = Starter.",
     maxGuilds: 1,
@@ -64,12 +78,14 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     dpaAvailable: false,
     commercial: false,
     stripePriceEnvKey: null,
+    stripePriceYearlyEnvKey: null,
     status: "available",
   },
   STARTER: {
     id: "STARTER",
     name: "Starter",
     priceMonthlyEur: 19.99,
+    priceYearlyEur: yearlyFromMonthly(19.99),
     description:
       "Jusqu’à 5 produits accès, export audit, 15 commandes FAQ.",
     maxGuilds: 1,
@@ -81,12 +97,14 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     dpaAvailable: false,
     commercial: true,
     stripePriceEnvKey: "STRIPE_PRICE_STARTER",
+    stripePriceYearlyEnvKey: "STRIPE_PRICE_STARTER_YEARLY",
     status: "available",
   },
   OPS: {
     id: "OPS",
     name: "Ops",
     priceMonthlyEur: 49,
+    priceYearlyEur: yearlyFromMonthly(49),
     description:
       "Jusqu’à 20 produits accès, export audit, 40 commandes — pack ops formation.",
     maxGuilds: 1,
@@ -99,12 +117,14 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     highlighted: true,
     commercial: true,
     stripePriceEnvKey: "STRIPE_PRICE_OPS",
+    stripePriceYearlyEnvKey: "STRIPE_PRICE_OPS_YEARLY",
     status: "available",
   },
   SCALE: {
     id: "SCALE",
     name: "Scale",
     priceMonthlyEur: 99,
+    priceYearlyEur: yearlyFromMonthly(99),
     description:
       "Jusqu’à 5 serveurs, 100 produits accès, automod, DPA sur demande, support prioritaire.",
     maxGuilds: 5,
@@ -116,6 +136,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     dpaAvailable: true,
     commercial: true,
     stripePriceEnvKey: "STRIPE_PRICE_SCALE",
+    stripePriceYearlyEnvKey: "STRIPE_PRICE_SCALE_YEARLY",
     status: "available",
   },
 };
@@ -198,11 +219,33 @@ export function planAllowsModule(
   return PLANS[planId].modules.includes(moduleId);
 }
 
-export function getStripePriceId(planId: PlanId): string | null {
-  const plan = PLANS[planId];
-  if (!plan.stripePriceEnvKey) return null;
-  const value = process.env[plan.stripePriceEnvKey];
+function envPrice(key: string | null): string | null {
+  if (!key) return null;
+  const value = process.env[key];
   return value && value.length > 0 ? value : null;
+}
+
+/**
+ * Résout le Price ID Stripe côté serveur uniquement.
+ * Le client n’envoie jamais de price_ — seulement planId + interval.
+ */
+export function getStripePriceId(
+  planId: PlanId,
+  interval: BillingInterval = "month"
+): string | null {
+  const plan = PLANS[planId];
+  if (interval === "year") {
+    return envPrice(plan.stripePriceYearlyEnvKey);
+  }
+  return envPrice(plan.stripePriceEnvKey);
+}
+
+export function planDisplayPriceEur(
+  planId: PlanId,
+  interval: BillingInterval
+): number {
+  const plan = PLANS[planId];
+  return interval === "year" ? plan.priceYearlyEur : plan.priceMonthlyEur;
 }
 
 export function getSetupStripePriceId(): string | null {

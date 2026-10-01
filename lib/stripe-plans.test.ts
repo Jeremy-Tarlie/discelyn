@@ -29,20 +29,26 @@ describe("planFromMetadata", () => {
 describe("planFromPriceId", () => {
   const prev = {
     STARTER: process.env.STRIPE_PRICE_STARTER,
+    STARTER_Y: process.env.STRIPE_PRICE_STARTER_YEARLY,
     OPS: process.env.STRIPE_PRICE_OPS,
   };
 
   afterEach(() => {
     if (prev.STARTER === undefined) delete process.env.STRIPE_PRICE_STARTER;
     else process.env.STRIPE_PRICE_STARTER = prev.STARTER;
+    if (prev.STARTER_Y === undefined)
+      delete process.env.STRIPE_PRICE_STARTER_YEARLY;
+    else process.env.STRIPE_PRICE_STARTER_YEARLY = prev.STARTER_Y;
     if (prev.OPS === undefined) delete process.env.STRIPE_PRICE_OPS;
     else process.env.STRIPE_PRICE_OPS = prev.OPS;
   });
 
-  it("résout via env price IDs", () => {
+  it("résout via env price IDs mensuels et annuels", () => {
     process.env.STRIPE_PRICE_STARTER = "price_starter_test";
+    process.env.STRIPE_PRICE_STARTER_YEARLY = "price_starter_yearly_test";
     process.env.STRIPE_PRICE_OPS = "price_ops_test";
     expect(planFromPriceId("price_starter_test")).toBe("STARTER");
+    expect(planFromPriceId("price_starter_yearly_test")).toBe("STARTER");
     expect(planFromPriceId("price_ops_test")).toBe("OPS");
     expect(planFromPriceId("price_unknown")).toBeNull();
   });

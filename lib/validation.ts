@@ -18,6 +18,8 @@ export const createBotSchema = createBotSchemaFor("fr");
 
 export const checkoutSchema = z.object({
   planId: z.enum(["STARTER", "OPS", "SCALE", "SETUP", "DIAGNOSTIC"]),
+  /** Abonnements uniquement. Ignoré pour SETUP / DIAGNOSTIC. Défaut: month. */
+  interval: z.enum(["month", "year"]).optional().default("month"),
 });
 
 export function leadSchemaFor(locale: Locale) {
