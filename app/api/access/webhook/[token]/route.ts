@@ -7,13 +7,17 @@ import { extractDiscordUserIdFromSession } from "@/lib/learner-access-parse";
 import {
   shouldOpenAccessFromCheckout,
   shouldRevokeOnSubscriptionStatus,
+  shouldRevokeOnRefund,
 } from "@/lib/access-lifecycle-pure";
 import {
   openLearnerAccessFromCheckout,
   recordSubscriptionEvent,
   revokeByPaymentIntentId,
   revokeBySubscriptionId,
+  syncLearnerBillingStatus,
+  syncLearnerLastPayment,
 } from "@/lib/learner-access";
+import { captureMoneyPathError } from "@/lib/money-path-sentry";
 import { rateLimit } from "@/lib/rate-limit";
 import {
   claimStripeEvent,
@@ -174,8 +178,13 @@ async function handleCheckoutCompleted(
   });
 
   if (result.soldOut) {
-    console.error(
-      `[access-webhook] OVERSOLD product=${product.id} session=${session.id} — remboursement auto tenté`
+    captureMoneyPathError(
+      new Error(`OVERSOLD product=${product.id} session=${session.id}`),
+      {
+        area: "access-webhook.oversold",
+        organizationId,
+        extra: { productId: product.id, sessionId: session.id },
+      }
     );
   }
 }
@@ -185,6 +194,7 @@ async function handleSubscriptionUpdated(sub: Stripe.Subscription): Promise<void
   await recordSubscriptionEvent(sub.id, "subscription_updated", {
     status,
   });
+  await syncLearnerBillingStatus(sub.id, status);
   if (shouldRevokeOnSubscriptionStatus(status)) {
     await revokeBySubscriptionId(sub.id, `subscription_${status}`);
   }
@@ -208,6 +218,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
     invoiceId: invoice.id ?? null,
     amountPaid: invoice.amount_paid ?? null,
   });
+  await syncLearnerLastPayment(sub, new Date());
 }
 
 async function handleInvoiceFailed(invoice: Stripe.Invoice): Promise<void> {
@@ -216,6 +227,9 @@ async function handleInvoiceFailed(invoice: Stripe.Invoice): Promise<void> {
   await recordSubscriptionEvent(sub, "invoice_payment_failed", {
     invoiceId: invoice.id ?? null,
   });
+  // Ne force pas past_due ici : subscription.updated porte le statut Stripe canonique.
+  // Si l’abo restait « active » brièvement, on marque quand même un risque visible.
+  await syncLearnerBillingStatus(sub, "past_due");
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {
@@ -313,7 +327,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
           typeof charge.payment_intent === "string"
             ? charge.payment_intent
             : charge.payment_intent?.id ?? null;
-        if (pi) {
+        const fullRefund = shouldRevokeOnRefund({
+          revokeOnRefund: true,
+          refunded: Boolean(charge.refunded),
+          amount: charge.amount,
+          amountRefunded: charge.amount_refunded,
+        });
+        if (pi && fullRefund) {
           await revokeByPaymentIntentId(pi, "refund");
         }
         break;
@@ -332,7 +352,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       });
     }
     await releaseStripeEventClaim(event.id);
-    console.error("[access-webhook] handler error (claim released)", error);
+    captureMoneyPathError(error, { area: "access-webhook" });
     return NextResponse.json({ error: "handler failed" }, { status: 500 });
   }
 

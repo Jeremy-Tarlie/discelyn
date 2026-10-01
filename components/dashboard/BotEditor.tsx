@@ -214,7 +214,8 @@ export function BotEditor({
     }
   }
 
-  const setupInProgress = !welcomeConfigured;
+  const accessReady = Boolean(guildId) && botPresent;
+  const setupInProgress = !accessReady;
 
   return (
     <div className="space-y-8">
@@ -228,7 +229,8 @@ export function BotEditor({
             {botPresent ? "✓" : "○"} {t("checklistBot")}
           </li>
           <li className={welcomeConfigured ? "text-signal" : "text-soft"}>
-            {welcomeConfigured ? "✓" : "○"} {t("checklistWelcome")}
+            {welcomeConfigured ? "✓" : "○"} {t("checklistWelcome")}{" "}
+            <span className="text-xs">({t("checklistWelcomeOptional")})</span>
           </li>
         </ul>
         <span className="mt-2 block text-soft">
@@ -238,6 +240,9 @@ export function BotEditor({
         </span>
         {lastError ? (
           <span className="mt-1 block text-warn">{lastError}</span>
+        ) : null}
+        {accessReady && !welcomeConfigured ? (
+          <p className="mt-2 text-xs text-soft">{t("checklistAccessFirst")}</p>
         ) : null}
       </div>
 
@@ -250,7 +255,11 @@ export function BotEditor({
 
       <GuildHealthPanel botId={botId} inviteUrl={inviteUrl} />
 
-      {setupInProgress ? null : (
+      {setupInProgress ? (
+        <p className="rounded-2xl border border-dashed border-line bg-surface p-4 text-sm text-soft">
+          {t("accessNeedsGuild")}
+        </p>
+      ) : (
         <AccessControlPanel
           botId={botId}
           maxAccessProducts={plan.maxAccessProducts}

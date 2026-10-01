@@ -13,7 +13,7 @@ import {
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import {
-  parseConsent,
+  clearAffiliateCookie,
   readConsentFromDocument,
   writeConsentCookie,
   type ConsentValue,
@@ -63,6 +63,9 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
 
   const applyConsent = useCallback((value: ConsentValue) => {
     writeConsentCookie(value);
+    if (value !== "all") {
+      clearAffiliateCookie();
+    }
     setConsentState(value);
     setPrefsOpen(false);
     window.location.reload();
@@ -259,14 +262,3 @@ export function CookiePrefsButton({
   );
 }
 
-export function hasOptionalConsentFromCookieHeader(
-  header: string | null
-): boolean {
-  if (!header) return false;
-  const match = header
-    .split(";")
-    .map((c) => c.trim())
-    .find((c) => c.startsWith("discelyn_consent="));
-  if (!match) return false;
-  return parseConsent(match.split("=")[1] ?? "") === "all";
-}

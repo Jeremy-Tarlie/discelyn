@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { authOptions } from "@/lib/auth";
+import { userNeedsMfaChallenge } from "@/lib/mfa-session";
 import { SiteHeader } from "@/components/landing/SiteHeader";
 import { SiteFooter } from "@/components/landing/SiteFooter";
 import { LoginButton } from "@/components/landing/LoginButton";
@@ -15,7 +16,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function LoginPage() {
   const session = await getServerSession(authOptions);
-  if (session) {
+  if (session?.user?.id) {
+    if (await userNeedsMfaChallenge(session.user.id)) {
+      redirect("/login/mfa");
+    }
     redirect("/dashboard");
   }
 

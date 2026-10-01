@@ -58,11 +58,14 @@ Webhook formation après purge : `200 ignored` (orga/produit/bot morts) ou `404`
 ```bash
 npm run backup:db
 # Planifier quotidiennement (cron host / CI scheduled) → stocker hors machine
+# Exemple : scripts/backup-cron.example
 ```
 
-Rétention recommandée : 7 j quotidiens + 4 hebdo.
+Rétention recommandée : 7 j quotidiens + 4 hebdo. Tester un restore 1×/mois.
 
 ## Rotations
+
+Voir **`docs/KEY-ROTATION.md`** (TOKEN_ENCRYPTION_KEY, bot token, Stripe).
 
 | Secret | Action |
 |--------|--------|
@@ -81,4 +84,9 @@ Mitigations en place :
 - `DISCORD_SHARD_COUNT` optionnel (multi-shard **in-process**, même token)
 - cron `retryStuckGrants` si le runtime a manqué un join
 
+Procédure incident : `docs/KEY-ROTATION.md` § SPOF bot.
 Multi-bot / bot-par-orga = rewrite produit.
+
+## Go-live
+
+Checklist complète : **`docs/GO-LIVE.md`**. DPA modèle : **`docs/DPA.md`**. Smoke : **`docs/SMOKE-LIVE.md`**.

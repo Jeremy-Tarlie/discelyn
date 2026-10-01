@@ -150,6 +150,20 @@ export async function PUT(request: NextRequest) {
 
   const pathToken = existing?.webhookPathToken ?? newWebhookPathToken();
 
+  const rawKeyIncoming = parsed.data.stripeSecretKey;
+  if (rawKeyIncoming && rawKeyIncoming.length > 0) {
+    const mfaUser = await prisma.user.findFirst({
+      where: { id: org.userId, deletedAt: null },
+      select: { totpEnabled: true },
+    });
+    if (!mfaUser?.totpEnabled) {
+      return NextResponse.json(
+        { error: tApi(locale, "mfaRequiredForStripeSecret") },
+        { status: 403 }
+      );
+    }
+  }
+
   let sealedSecret: string;
   let sealedKey: string | null;
   try {

@@ -141,8 +141,27 @@ export default async function ClaimPage({ params, searchParams }: PageProps) {
         ) : null}
 
         {!showSuccess && !errorMessage && !canClaim ? (
-          <div className="mt-8 rounded-2xl border border-warn/40 bg-surface p-6 text-warn">
-            {t("errors.invalid")}
+          <div className="mt-8 space-y-3 rounded-2xl border border-warn/40 bg-surface p-6 text-warn">
+            <p>
+              {!access
+                ? t("errors.notFound")
+                : access.status === "ACTIVE"
+                  ? t("errors.alreadyActive")
+                  : access.status === "REVOKED"
+                    ? t("errors.revoked")
+                    : access.status === "EXPIRED" ||
+                        (access.claimTokenExpiresAt &&
+                          access.claimTokenExpiresAt.getTime() < currentTimeMs())
+                      ? t("errors.expired")
+                      : access.status === "AWAITING_JOIN"
+                        ? t("errors.awaitingJoin")
+                        : t("errors.invalid")}
+            </p>
+            {supportUrl ? (
+              <a href={supportUrl} className="block text-sm underline">
+                {t("support")}
+              </a>
+            ) : null}
           </div>
         ) : null}
 

@@ -56,6 +56,7 @@ export async function GET(request: NextRequest) {
   const productId = request.nextUrl.searchParams.get("productId");
   const q = request.nextUrl.searchParams.get("q")?.trim() ?? null;
   const source = request.nextUrl.searchParams.get("source");
+  const billing = request.nextUrl.searchParams.get("billing");
   const wantExport = request.nextUrl.searchParams.get("export") === "1";
 
   const learners = await listLearnersForOrg(org.organizationId, {
@@ -63,6 +64,7 @@ export async function GET(request: NextRequest) {
     productId,
     q,
     source,
+    billing,
     take: wantExport ? EXPORT_LIMIT : 100,
   });
 
@@ -80,6 +82,8 @@ export async function GET(request: NextRequest) {
       "affiliate_code",
       "stripe_customer_id",
       "stripe_subscription_id",
+      "stripe_billing_status",
+      "last_payment_at",
       "granted_at",
       "revoked_at",
       "revoke_reason",
@@ -102,6 +106,8 @@ export async function GET(request: NextRequest) {
           row.affiliate?.code ?? "",
           row.stripeCustomerId ?? "",
           row.stripeSubscriptionId ?? "",
+          row.stripeBillingStatus ?? "",
+          row.lastPaymentAt ?? "",
           row.grantedAt ?? "",
           row.revokedAt ?? "",
           csvEscape(row.revokeReason ?? ""),

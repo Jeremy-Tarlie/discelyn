@@ -5,6 +5,7 @@ import { requireOrg } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
+import { ownerHasMfaEnabled } from "@/lib/mfa-guards";
 
 export const runtime = "nodejs";
 
@@ -68,6 +69,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: tApi(locale, "unauthorized") },
       { status: 401 }
+    );
+  }
+
+  if (!(await ownerHasMfaEnabled(org.userId))) {
+    return NextResponse.json(
+      { error: tApi(locale, "mfaRequiredForOwner") },
+      { status: 403 }
     );
   }
 
@@ -146,6 +154,13 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json(
       { error: tApi(locale, "unauthorized") },
       { status: 401 }
+    );
+  }
+
+  if (!(await ownerHasMfaEnabled(org.userId))) {
+    return NextResponse.json(
+      { error: tApi(locale, "mfaRequiredForOwner") },
+      { status: 403 }
     );
   }
 

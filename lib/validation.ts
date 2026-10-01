@@ -22,6 +22,12 @@ export const checkoutSchema = z.object({
   interval: z.enum(["month", "year"]).optional().default("month"),
 });
 
+/** Changement de plan pour un abonnement Stripe déjà actif. */
+export const changePlanSchema = z.object({
+  planId: z.enum(["STARTER", "OPS", "SCALE"]),
+  interval: z.enum(["month", "year"]).optional().default("month"),
+});
+
 export function leadSchemaFor(locale: Locale) {
   return z.object({
     email: z.string().trim().email(),
@@ -109,6 +115,7 @@ export const updateBotSchema = updateBotSchemaFor("fr");
 
 export type CreateBotInput = z.infer<typeof createBotSchema>;
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
+export type ChangePlanInput = z.infer<typeof changePlanSchema>;
 export type BotConfigInput = z.infer<typeof botConfigSchema>;
 export type UpdateBotInput = z.infer<typeof updateBotSchema>;
 

@@ -28,6 +28,7 @@ import {
 } from "@/lib/outbound-webhooks";
 import { getOrgStripeClient } from "@/lib/org-stripe";
 import { isEmailConfigured, sendEmail } from "@/lib/email";
+import { captureMoneyPathError } from "@/lib/money-path-sentry";
 
 export {
   extractDiscordUserIdFromSession,
@@ -217,6 +218,8 @@ export async function openLearnerAccessFromCheckout(input: {
             stripePaymentIntentId: input.stripePaymentIntentId,
             stripeSubscriptionId: input.stripeSubscriptionId,
             stripeCustomerId: input.stripeCustomerId,
+            stripeBillingStatus: input.stripeSubscriptionId ? "active" : null,
+            lastPaymentAt: new Date(),
             amountTotal: input.amountTotal ?? null,
             amountSubtotal: input.amountSubtotal ?? null,
             currency: input.currency ?? null,
@@ -275,7 +278,10 @@ export async function openLearnerAccessFromCheckout(input: {
       try {
         await fulfillDiscordAccess(txResult.accessId, discordUserId);
       } catch (err) {
-        console.error("[access] re-fulfill existing checkout failed", err);
+        captureMoneyPathError(err, {
+          area: "access.refulfill",
+          accessId: txResult.accessId,
+        });
       }
     }
     return { accessId: txResult.accessId, claimToken: txResult.claimToken };
@@ -300,7 +306,10 @@ export async function openLearnerAccessFromCheckout(input: {
     } catch (err) {
       // Accès créé + siège réservé : ne pas faire échouer le webhook.
       // retryStuckGrants (cron) reprendra.
-      console.error("[access] fulfill after checkout failed", err);
+      captureMoneyPathError(err, {
+        area: "access.fulfill_after_checkout",
+        accessId: txResult.accessId,
+      });
     }
   }
 
@@ -354,7 +363,14 @@ async function attemptOversoldRefund(input: {
   } catch (err) {
     const message =
       err instanceof Error ? err.message.slice(0, 500) : "refund_failed";
-    console.error("[access] oversold refund failed", message);
+    captureMoneyPathError(new Error(message), {
+      area: "access.oversold_refund",
+      extra: {
+        message,
+        organizationId: input.organizationId,
+        paymentIntentId: input.stripePaymentIntentId,
+      },
+    });
     return {
       refundStatus: "refund_failed",
       stripeRefundId: null,
@@ -1039,7 +1055,10 @@ export async function retryStuckGrants(): Promise<number> {
       const result = await fulfillDiscordAccess(row.id);
       if (result.status === "ACTIVE") fixed += 1;
     } catch (err) {
-      console.error("[access] retryStuckGrants failed", row.id, err);
+      captureMoneyPathError(err, {
+        area: "access.retry_stuck_grants",
+        accessId: row.id,
+      });
     }
   }
   return fixed;
@@ -1166,4 +1185,31 @@ export async function recordSubscriptionEvent(
   for (const row of rows) {
     await recordEvent(row.id, type, meta);
   }
+}
+
+/**
+ * Met à jour le statut billing Stripe dénormalisé (UI past_due / filtre).
+ */
+export async function syncLearnerBillingStatus(
+  stripeSubscriptionId: string,
+  status: string
+): Promise<void> {
+  await prisma.learnerAccess.updateMany({
+    where: { stripeSubscriptionId },
+    data: { stripeBillingStatus: status },
+  });
+}
+
+/** Marque un paiement abo réussi (invoice.paid). */
+export async function syncLearnerLastPayment(
+  stripeSubscriptionId: string,
+  paidAt: Date = new Date()
+): Promise<void> {
+  await prisma.learnerAccess.updateMany({
+    where: { stripeSubscriptionId },
+    data: {
+      lastPaymentAt: paidAt,
+      stripeBillingStatus: "active",
+    },
+  });
 }

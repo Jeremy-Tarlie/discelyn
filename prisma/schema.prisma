@@ -46,6 +46,22 @@ model User {
   discordId     String?   @unique
   /// Soft-delete RGPD / résiliation — les rows liées restent pour audit.
   deletedAt     DateTime?
+  /// TOTP activé (Authenticator). Secret chiffré si TOKEN_ENCRYPTION_KEY.
+  totpEnabled   Boolean   @default(false)
+  totpSecret    String?   @db.Text
+  /// Secret en cours de setup (avant confirmation du 1er code).
+  totpPendingSecret String? @db.Text
+  /// Hashes SHA-256 des codes de récupération (JSON string[]).
+  totpRecoveryHashes String? @db.Text
+  totpEnabledAt DateTime?
+  /// Fuseau IANA pour affichage dates (factures, activité).
+  timezone      String    @default("Europe/Paris")
+  /// E-mails facturation (paiement échoué, facture, changement de plan).
+  notifyBillingEmail  Boolean @default(true)
+  /// E-mails sécurité (2FA, nouvelles sessions).
+  notifySecurityEmail Boolean @default(true)
+  /// E-mails produit (relances claim, alertes accès).
+  notifyProductEmail  Boolean @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -53,9 +69,23 @@ model User {
   sessions           Session[]
   memberships        OrganizationMembership[]
   accessCodesCreated AccessCode[]
+  activityLogs       UserActivityLog[]
 
   @@index([discordId])
   @@index([deletedAt])
+}
+
+/// Journal d’activité compte (sécurité / billing / prefs).
+model UserActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }
 
 /// Organisation = locataire SaaS (plan, bots, Stripe formation, produits).
@@ -115,11 +145,13 @@ model Account {
 }
 
 model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String    @id @default(cuid())
+  sessionToken   String    @unique
+  userId         String
+  expires        DateTime
+  /// Renseigné après challenge TOTP réussi (si MFA activée).
+  mfaVerifiedAt  DateTime?
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -442,6 +474,10 @@ model LearnerAccess {
   stripePaymentIntentId   String?
   stripeSubscriptionId    String?
   stripeCustomerId        String?
+  /// Statut Stripe abo formation (active, past_due, unpaid, canceled…). Null = one-shot / code.
+  stripeBillingStatus     String?
+  /// Dernier invoice.paid (ou ouverture checkout paid) — santé paiement.
+  lastPaymentAt           DateTime?
   amountTotal             Int?
   currency                String?
   amountSubtotal          Int?
@@ -472,6 +508,7 @@ model LearnerAccess {
   @@index([affiliateId])
   @@index([status, createdAt])
   @@index([status, claimReminderSentAt])
+  @@index([stripeBillingStatus])
 }
 
 model LearnerAccessEvent {

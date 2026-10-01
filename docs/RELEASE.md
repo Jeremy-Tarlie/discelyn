@@ -50,11 +50,15 @@ npm run backup:db           # snapshot avant cutover (pg_dump local ou docker ex
 | `STRIPE_WEBHOOK_SECRET` | webhook SaaS |
 | `DISCORD_BOT_TOKEN` | bot plateforme |
 | `REDIS_URL` | rate-limit multi-instance (**obligatoire** en production) |
-| `SENTRY_DSN` | erreurs (recommandé) |
-| `RESEND_API_KEY` + `EMAIL_FROM` | emails claim (optionnel) |
+| `SENTRY_DSN` | erreurs (**obligatoire** en prod — preflight) |
+| `RESEND_API_KEY` + `EMAIL_FROM` | emails claim (recommandé) |
+| `STRIPE_PRICE_STARTER` / `OPS` / `SCALE` | checkout SaaS (**obligatoire** en prod) |
+| `BOT_RUNTIME_URL` + `WEB_INTERNAL_URL` | runtime + grant-on-join (**obligatoire** en prod) |
 | `DOMAIN` + `EMAIL` | Let's Encrypt (deploy:prod) |
 
 Ne jamais committer `.env`. Référence : `.env.example`.
+
+Checklist « produit fini » : **`docs/GO-LIVE.md`**.
 
 ## 4. Déploiement compose (TLS uniquement)
 
@@ -113,12 +117,19 @@ Couvre : checkout → siège → multi-guild AWAITING_JOIN → grant-on-join →
 
 ### Manuelle post-deploy (1× smoke Discord réel)
 
+```bash
+npm run smoke:live
+```
+
+Puis `docs/SMOKE-LIVE.md` :
+
 1. Brancher Stripe **test** orga via dashboard accès.
 2. Créer un produit price → rôle.
 3. Payer le Payment Link (carte test).
 4. Claim OAuth → rôle Discord.
 5. Refund / cancel → rôle retiré.
-6. `POST /api/cron/access` avec Bearer → 200.
+6. (abo) past_due → badge Apprenants sans revoke immédiat.
+7. `POST /api/cron/access` avec Bearer → 200.
 
 ## 6. Tag release
 

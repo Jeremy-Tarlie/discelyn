@@ -4,14 +4,17 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { DashboardLearner } from "@/lib/dashboard-data";
+import { isLearnerPaymentAtRisk } from "@/lib/access-lifecycle-pure";
 
 export function LearnersPanel({
   initialLearners,
   status,
+  billing,
   q,
 }: {
   initialLearners: DashboardLearner[];
   status: string;
+  billing: string;
   q: string;
 }) {
   const t = useTranslations("dashboard.learners");
@@ -32,9 +35,10 @@ export function LearnersPanel({
     setSearchDraft(q);
   }
 
-  function pushFilters(nextStatus: string, nextQ: string) {
+  function pushFilters(nextStatus: string, nextBilling: string, nextQ: string) {
     const params = new URLSearchParams();
     if (nextStatus) params.set("status", nextStatus);
+    if (nextBilling) params.set("billing", nextBilling);
     if (nextQ) params.set("q", nextQ);
     const qs = params.toString();
     startTransition(() => {
@@ -83,6 +87,7 @@ export function LearnersPanel({
   async function exportCsv() {
     const params = new URLSearchParams({ export: "1" });
     if (status) params.set("status", status);
+    if (billing) params.set("billing", billing);
     if (q) params.set("q", q);
     const res = await fetch(`/api/learners?${params}`);
     if (!res.ok) {
@@ -98,6 +103,15 @@ export function LearnersPanel({
     a.click();
     URL.revokeObjectURL(url);
     setMessage(t("exported"));
+  }
+
+  function statusLabel(value: string): string {
+    if (value === "PENDING_CLAIM") return t("statusPendingClaim");
+    if (value === "AWAITING_JOIN") return t("statusAwaitingJoin");
+    if (value === "ACTIVE") return t("statusActive");
+    if (value === "REVOKED") return t("statusRevoked");
+    if (value === "EXPIRED") return t("statusExpired");
+    return value;
   }
 
   return (
@@ -123,15 +137,28 @@ export function LearnersPanel({
         <select
           id="learners-status"
           value={status}
-          onChange={(e) => pushFilters(e.target.value, q)}
+          onChange={(e) => pushFilters(e.target.value, billing, q)}
           className="rounded-xl border border-line bg-surface-muted px-3 py-2 text-sm"
         >
           <option value="">{t("filterAll")}</option>
-          <option value="PENDING_CLAIM">PENDING_CLAIM</option>
-          <option value="AWAITING_JOIN">AWAITING_JOIN</option>
-          <option value="ACTIVE">ACTIVE</option>
-          <option value="REVOKED">REVOKED</option>
-          <option value="EXPIRED">EXPIRED</option>
+          <option value="PENDING_CLAIM">{t("statusPendingClaim")}</option>
+          <option value="AWAITING_JOIN">{t("statusAwaitingJoin")}</option>
+          <option value="ACTIVE">{t("statusActive")}</option>
+          <option value="REVOKED">{t("statusRevoked")}</option>
+          <option value="EXPIRED">{t("statusExpired")}</option>
+        </select>
+        <label className="sr-only" htmlFor="learners-billing">
+          {t("filterBilling")}
+        </label>
+        <select
+          id="learners-billing"
+          value={billing}
+          onChange={(e) => pushFilters(status, e.target.value, q)}
+          className="rounded-xl border border-line bg-surface-muted px-3 py-2 text-sm"
+        >
+          <option value="">{t("billingAll")}</option>
+          <option value="past_due">{t("billingPastDue")}</option>
+          <option value="ok">{t("billingOk")}</option>
         </select>
         <label className="sr-only" htmlFor="learners-search">
           {t("searchLabel")}
@@ -141,11 +168,13 @@ export function LearnersPanel({
           value={searchDraft}
           onChange={(e) => setSearchDraft(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter") pushFilters(status, searchDraft.trim());
+            if (e.key === "Enter") {
+              pushFilters(status, billing, searchDraft.trim());
+            }
           }}
           onBlur={() => {
             if (searchDraft.trim() !== q) {
-              pushFilters(status, searchDraft.trim());
+              pushFilters(status, billing, searchDraft.trim());
             }
           }}
           placeholder={t("search")}
@@ -164,83 +193,112 @@ export function LearnersPanel({
               <th className="px-3 py-2">{t("colProduct")}</th>
               <th className="px-3 py-2">{t("colEmail")}</th>
               <th className="px-3 py-2">{t("colStatus")}</th>
+              <th className="px-3 py-2">{t("colPayment")}</th>
+              <th className="px-3 py-2">{t("colLastPayment")}</th>
               <th className="px-3 py-2">{t("colAmount")}</th>
               <th className="px-3 py-2">{t("colAffiliate")}</th>
               <th className="px-3 py-2">{t("colActions")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
-            {learners.map((row) => (
-              <tr key={row.id}>
-                <td className="px-3 py-2">
-                  <p className="font-medium text-page-fg">{row.product.name}</p>
-                  <p className="text-xs text-soft">
-                    {row.source}
-                    {row.product.billingMode === "RECURRING" ? " · abo" : ""}
-                    {row.accessEndsAt
-                      ? ` · exp. ${row.accessEndsAt.slice(0, 10)}`
-                      : ""}
-                  </p>
-                </td>
-                <td className="px-3 py-2 text-soft">
-                  {row.customerEmail ?? "—"}
-                  {row.discordUserId ? (
-                    <span className="block text-xs">{row.discordUserId}</span>
-                  ) : null}
-                </td>
-                <td className="px-3 py-2">
-                  <span className="rounded-full bg-surface-muted px-2 py-0.5 text-xs">
-                    {row.status}
-                  </span>
-                  {row.claimReminderCount > 0 ? (
-                    <span className="ml-1 text-xs text-soft">
-                      (relance ×{row.claimReminderCount})
+            {learners.map((row) => {
+              const atRisk = isLearnerPaymentAtRisk(row.stripeBillingStatus);
+              return (
+                <tr key={row.id}>
+                  <td className="px-3 py-2">
+                    <p className="font-medium text-page-fg">{row.product.name}</p>
+                    <p className="text-xs text-soft">
+                      {row.source}
+                      {row.product.billingMode === "RECURRING" ? " · abo" : ""}
+                      {row.accessEndsAt
+                        ? ` · exp. ${row.accessEndsAt.slice(0, 10)}`
+                        : ""}
+                    </p>
+                  </td>
+                  <td className="px-3 py-2 text-soft">
+                    {row.customerEmail ?? "—"}
+                    {row.discordUserId ? (
+                      <span className="block text-xs">{row.discordUserId}</span>
+                    ) : null}
+                  </td>
+                  <td className="px-3 py-2">
+                    <span className="rounded-full bg-surface-muted px-2 py-0.5 text-xs">
+                      {statusLabel(row.status)}
                     </span>
-                  ) : null}
-                </td>
-                <td className="px-3 py-2 text-soft">
-                  {row.amountTotal != null
-                    ? `${(row.amountTotal / 100).toFixed(2)} ${
-                        row.currency?.toUpperCase() ?? ""
-                      }`
-                    : "—"}
-                </td>
-                <td className="px-3 py-2 text-soft">
-                  {row.affiliate?.code ?? "—"}
-                </td>
-                <td className="space-x-2 px-3 py-2">
-                  {row.stripeCustomerId ? (
-                    <button
-                      type="button"
-                      className="text-xs text-[#5865F2] underline"
-                      onClick={() => void act(row.id, "open_portal")}
-                    >
-                      {t("portal")}
-                    </button>
-                  ) : null}
-                  {row.status === "PENDING_CLAIM" || row.claimUrl ? (
-                    <button
-                      type="button"
-                      className="text-xs text-[#5865F2] underline"
-                      onClick={() => void act(row.id, "refresh_claim")}
-                    >
-                      {t("copyClaim")}
-                    </button>
-                  ) : null}
-                  {row.status === "ACTIVE" ||
-                  row.status === "PENDING_CLAIM" ||
-                  row.status === "AWAITING_JOIN" ? (
-                    <button
-                      type="button"
-                      className="text-xs text-warn underline"
-                      onClick={() => void act(row.id, "revoke")}
-                    >
-                      {t("revoke")}
-                    </button>
-                  ) : null}
-                </td>
-              </tr>
-            ))}
+                    {row.claimReminderCount > 0 ? (
+                      <span className="ml-1 text-xs text-soft">
+                        (relance ×{row.claimReminderCount})
+                      </span>
+                    ) : null}
+                  </td>
+                  <td className="px-3 py-2">
+                    {row.stripeBillingStatus ? (
+                      <span
+                        className={
+                          atRisk
+                            ? "rounded-full bg-warn/15 px-2 py-0.5 text-xs font-medium text-warn"
+                            : "rounded-full bg-surface-muted px-2 py-0.5 text-xs text-soft"
+                        }
+                      >
+                        {atRisk
+                          ? t("paymentPastDue")
+                          : row.stripeBillingStatus === "active"
+                            ? t("paymentOk")
+                            : row.stripeBillingStatus}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-soft">—</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-soft">
+                    {row.lastPaymentAt
+                      ? row.lastPaymentAt.slice(0, 10)
+                      : "—"}
+                  </td>
+                  <td className="px-3 py-2 text-soft">
+                    {row.amountTotal != null
+                      ? `${(row.amountTotal / 100).toFixed(2)} ${
+                          row.currency?.toUpperCase() ?? ""
+                        }`
+                      : "—"}
+                  </td>
+                  <td className="px-3 py-2 text-soft">
+                    {row.affiliate?.code ?? "—"}
+                  </td>
+                  <td className="space-x-2 px-3 py-2">
+                    {row.stripeCustomerId ? (
+                      <button
+                        type="button"
+                        className="text-xs text-[#5865F2] underline"
+                        onClick={() => void act(row.id, "open_portal")}
+                      >
+                        {t("portal")}
+                      </button>
+                    ) : null}
+                    {row.status === "PENDING_CLAIM" || row.claimUrl ? (
+                      <button
+                        type="button"
+                        className="text-xs text-[#5865F2] underline"
+                        onClick={() => void act(row.id, "refresh_claim")}
+                      >
+                        {t("copyClaim")}
+                      </button>
+                    ) : null}
+                    {row.status === "ACTIVE" ||
+                    row.status === "PENDING_CLAIM" ||
+                    row.status === "AWAITING_JOIN" ? (
+                      <button
+                        type="button"
+                        className="text-xs text-warn underline"
+                        onClick={() => void act(row.id, "revoke")}
+                      >
+                        {t("revoke")}
+                      </button>
+                    ) : null}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
         {learners.length === 0 ? (

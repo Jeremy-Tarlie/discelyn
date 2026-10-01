@@ -96,10 +96,10 @@ Sur une base existante après ajout de la clé :
 Aide diagnostic (rapport 49 €) : `node scripts/diagnostic-collect.mjs --help`
 (voir `docs/DIAGNOSTIC-TRAME.md`).
 
-Release / ops : `docs/RELEASE.md`, `docs/OPS-RUNBOOK.md`.
-Avant prod : `npm run release:gate` · `npm run deploy:prod` · `npm run backup:db`.
+Release / ops : `docs/RELEASE.md`, `docs/OPS-RUNBOOK.md`, `docs/GO-LIVE.md`, `docs/DPA.md`.
+Avant prod : `npm run release:gate` · `npm run deploy:prod` · `npm run backup:db` · `npm run smoke:live`.
 VPS durci (nginx + fail2ban + UFW + SSH) : `npm run provision:remote` puis `TLS_MODE=nginx`.
-Voir `docs/RELEASE.md`.
+Voir `docs/GO-LIVE.md` puis `docs/RELEASE.md`.
 
 ## Sécurité dépôt
 

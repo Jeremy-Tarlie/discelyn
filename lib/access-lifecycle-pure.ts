@@ -32,9 +32,41 @@ export function shouldRevokeOnSubscriptionStatus(
   return status === "unpaid" || status === "canceled";
 }
 
+/** Paiement formation en retard (accès encore possible tant que non unpaid/canceled). */
+export function isLearnerPaymentPastDue(
+  billingStatus: string | null | undefined
+): boolean {
+  return billingStatus === "past_due";
+}
+
+/** Badge UI : past_due ou unpaid (si encore visible avant revoke). */
+export function isLearnerPaymentAtRisk(
+  billingStatus: string | null | undefined
+): boolean {
+  return billingStatus === "past_due" || billingStatus === "unpaid";
+}
+
+/**
+ * Révocation sur refund : uniquement si le remboursement est total
+ * (amount_refunded >= amount). Un remboursement partiel / geste commercial
+ * ne doit pas couper l’accès Discord.
+ */
 export function shouldRevokeOnRefund(input: {
   revokeOnRefund: boolean;
   refunded: boolean;
+  /** Montant charge en centimes (Stripe). */
+  amount?: number | null;
+  /** Cumul remboursé en centimes. */
+  amountRefunded?: number | null;
 }): boolean {
-  return input.revokeOnRefund && input.refunded;
+  if (!input.revokeOnRefund || !input.refunded) return false;
+  if (
+    typeof input.amount === "number" &&
+    typeof input.amountRefunded === "number" &&
+    input.amount > 0
+  ) {
+    return input.amountRefunded >= input.amount;
+  }
+  // Sans montants (tests / events incomplets) : conserver l’ancien comportement.
+  return true;
 }

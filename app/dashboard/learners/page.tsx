@@ -5,7 +5,7 @@ import { listLearnersForOrg } from "@/lib/dashboard-data";
 import { LearnersPanel } from "@/components/dashboard/LearnersPanel";
 
 type PageProps = {
-  searchParams: Promise<{ status?: string; q?: string }>;
+  searchParams: Promise<{ status?: string; billing?: string; q?: string }>;
 };
 
 export default async function LearnersPage({ searchParams }: PageProps) {
@@ -16,14 +16,21 @@ export default async function LearnersPage({ searchParams }: PageProps) {
 
   const params = await searchParams;
   const status = params.status?.trim() ?? "";
+  const billing = params.billing?.trim() ?? "";
   const q = params.q?.trim() ?? "";
 
   const learners = await listLearnersForOrg(organizationId, {
     status: status || null,
+    billing: billing || null,
     q: q || null,
   });
 
   return (
-    <LearnersPanel initialLearners={learners} status={status} q={q} />
+    <LearnersPanel
+      initialLearners={learners}
+      status={status}
+      billing={billing}
+      q={q}
+    />
   );
 }

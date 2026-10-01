@@ -34,13 +34,30 @@ const requiredProd = [
   "STRIPE_SECRET_KEY",
   "STRIPE_WEBHOOK_SECRET",
   "REDIS_URL",
-];
-
-const recommended = [
   "BOT_RUNTIME_URL",
   "WEB_INTERNAL_URL",
   "SENTRY_DSN",
+];
+
+/** Prices SaaS mensuels — sans eux checkout / change-plan cassent. */
+const requiredStripePricesProd = [
+  "STRIPE_PRICE_STARTER",
+  "STRIPE_PRICE_OPS",
+  "STRIPE_PRICE_SCALE",
+];
+
+const recommendedStripePrices = [
+  "STRIPE_PRICE_STARTER_YEARLY",
+  "STRIPE_PRICE_OPS_YEARLY",
+  "STRIPE_PRICE_SCALE_YEARLY",
+  "STRIPE_PRICE_SETUP",
+  "STRIPE_PRICE_DIAGNOSTIC",
+];
+
+const recommended = [
   "NEXT_PUBLIC_APP_ENV",
+  "RESEND_API_KEY",
+  "EMAIL_FROM",
 ];
 
 function present(name) {
@@ -78,6 +95,11 @@ if (appEnv === "staging" || appEnv === "production") {
 if (appEnv === "production") {
   for (const name of requiredProd) {
     if (!present(name)) errors.push(`manquant (production): ${name}`);
+  }
+  for (const name of requiredStripePricesProd) {
+    if (!present(name)) {
+      errors.push(`manquant (production): ${name} — checkout SaaS cassé sans ce price`);
+    }
   }
   if (
     present("STRIPE_SECRET_KEY") &&
@@ -123,6 +145,12 @@ if (present("RESEND_API_KEY") && !present("EMAIL_FROM")) {
 }
 if (present("EMAIL_FROM") && !present("RESEND_API_KEY")) {
   warnings.push("EMAIL_FROM sans RESEND_API_KEY — emails claim non envoyés");
+}
+
+for (const name of recommendedStripePrices) {
+  if (!present(name)) {
+    warnings.push(`recommandé: ${name}`);
+  }
 }
 
 for (const name of recommended) {

@@ -59,7 +59,9 @@ export default async function PrivacyPage() {
               </li>
               <li>
                 Product analytics (internal events: landing views, signup,
-                checkout…) — no third-party ads, no tracking cookie.
+                checkout…) — first-party only, no ads; recorded only with
+                optional cookie consent (except server webhooks needed to fulfill
+                payments).
               </li>
               <li>
                 Technical: IP for rate-limiting, error logs (Sentry if configured
@@ -90,8 +92,9 @@ export default async function PrivacyPage() {
                 suppression / demande d’effacement (max 24 mois).
               </li>
               <li>
-                Analytics produit (événements internes) — sans publicité tierce,
-                sans cookie de tracking.
+                Analytics produit (événements internes) — first-party, sans pub ;
+                enregistrés seulement avec le consentement cookies optionnel
+                (sauf webhooks serveur nécessaires au paiement).
               </li>
               <li>
                 Technique : IP pour rate-limiting, logs d’erreur (Sentry si
@@ -112,15 +115,21 @@ export default async function PrivacyPage() {
             <ul className="list-disc space-y-2 pl-5">
               <li>Contract: account, bot configs, paid subscription.</li>
               <li>Legal obligation: invoicing / accounting traces via Stripe.</li>
-              <li>Legitimate interest: security, abuse prevention, first-party product analytics.</li>
-              <li>Consent: optional Sentry browser cookies; marketing contact via lead form.</li>
+              <li>Legitimate interest: security, abuse prevention.</li>
+              <li>
+                Consent: optional Sentry browser cookies, product analytics,
+                affiliate cookie; marketing contact via lead form.
+              </li>
             </ul>
           ) : (
             <ul className="list-disc space-y-2 pl-5">
               <li>Contrat : compte, configs bot, abonnement payant.</li>
               <li>Obligation légale : facturation / traces comptables via Stripe.</li>
-              <li>Intérêt légitime : sécurité, anti-abus, analytics produit first-party.</li>
-              <li>Consentement : cookies Sentry optionnels ; contact commercial via formulaire lead.</li>
+              <li>Intérêt légitime : sécurité, anti-abus.</li>
+              <li>
+                Consentement : Sentry navigateur, analytics produit, cookie
+                affilié ; contact commercial via formulaire lead.
+              </li>
             </ul>
           )}
         </section>
@@ -133,7 +142,19 @@ export default async function PrivacyPage() {
             <li>{isEn ? "Hosting provider of the instance" : "Hébergeur VPS / cloud de l’instance"}</li>
             <li>Sentry (optional) — application errors</li>
             <li>Redis (optional) — distributed rate-limiting</li>
+            <li>Resend (optional) — claim / reminder emails</li>
           </ul>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="font-display text-xl text-[color:var(--page-fg)]">
+            {isEn ? "Security" : "Sécurité"}
+          </h2>
+          <p>
+            {isEn
+              ? "Owners must enable TOTP 2FA before billing actions and pasting training Stripe secret keys. OAuth and org Stripe secrets are encrypted at rest when TOKEN_ENCRYPTION_KEY is configured. A DPA template is available on request for Scale plans."
+              : "Les OWNER doivent activer la 2FA TOTP avant les actions billing et le collage d’une clé secrète Stripe formation. Les secrets OAuth et Stripe orga sont chiffrés au repos (TOKEN_ENCRYPTION_KEY). Un modèle de DPA est disponible sur demande pour le plan Scale."}
+          </p>
         </section>
 
         <section className="space-y-3">
@@ -196,6 +217,16 @@ export default async function PrivacyPage() {
                   <td className="px-3 py-2">{isEn ? "Error diagnostics" : "Diagnostics d’erreurs"}</td>
                   <td className="px-3 py-2">{isEn ? "Optional (consent)" : "Optionnel (consentement)"}</td>
                   <td className="px-3 py-2">{isEn ? "Per Sentry" : "Selon Sentry"}</td>
+                </tr>
+                <tr className="border-t border-white/5">
+                  <td className="px-3 py-2 font-mono text-xs">discelyn_aff</td>
+                  <td className="px-3 py-2">
+                    {isEn
+                      ? "Affiliate referral (optional)"
+                      : "Parrainage affilié (optionnel)"}
+                  </td>
+                  <td className="px-3 py-2">{isEn ? "Optional (consent)" : "Optionnel (consentement)"}</td>
+                  <td className="px-3 py-2">30 {isEn ? "days" : "jours"}</td>
                 </tr>
               </tbody>
             </table>

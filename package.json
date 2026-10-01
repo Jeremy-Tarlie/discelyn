@@ -12,6 +12,7 @@
     "test:watch": "node scripts/run-tests.mjs --watch",
     "test:db": "node scripts/run-tests.mjs --db",
     "preflight:prod": "node --env-file=.env scripts/preflight-prod.mjs",
+    "smoke:live": "node --env-file=.env scripts/smoke-live.mjs",
     "backup:db": "node --env-file=.env scripts/backup-postgres.mjs",
     "release:gate": "node --env-file=.env scripts/release-gate.mjs",
     "deploy:prod": "node --env-file=.env scripts/deploy-prod.mjs",

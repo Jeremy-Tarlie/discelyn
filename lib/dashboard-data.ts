@@ -173,6 +173,8 @@ export type DashboardLearner = {
   currency: string | null;
   stripeCustomerId: string | null;
   stripeSubscriptionId: string | null;
+  stripeBillingStatus: string | null;
+  lastPaymentAt: string | null;
   claimUrl: string | null;
   claimReminderCount: number;
   grantedAt: string | null;
@@ -195,9 +197,47 @@ export async function listLearnersForOrg(
     productId?: string | null;
     q?: string | null;
     source?: string | null;
+    /** Filtre santé paiement Stripe : past_due | ok | all (défaut). */
+    billing?: string | null;
     take?: number;
   } = {}
 ): Promise<DashboardLearner[]> {
+  const billing = filters.billing?.trim().toLowerCase() ?? "";
+  const andFilters: Array<{
+    stripeBillingStatus?: string | null | { not: string };
+    OR?: Array<
+      | { customerEmail: { contains: string; mode: "insensitive" } }
+      | { discordUserId: { contains: string } }
+      | { stripeBillingStatus: null }
+      | { stripeBillingStatus: { not: string } }
+    >;
+  }> = [];
+
+  if (billing === "past_due") {
+    andFilters.push({ stripeBillingStatus: "past_due" });
+  } else if (billing === "ok") {
+    andFilters.push({
+      OR: [
+        { stripeBillingStatus: null },
+        { stripeBillingStatus: { not: "past_due" } },
+      ],
+    });
+  }
+
+  if (filters.q) {
+    andFilters.push({
+      OR: [
+        {
+          customerEmail: {
+            contains: filters.q,
+            mode: "insensitive",
+          },
+        },
+        { discordUserId: { contains: filters.q } },
+      ],
+    });
+  }
+
   const where = {
     bot: { organizationId },
     ...(filters.status
@@ -207,19 +247,7 @@ export async function listLearnersForOrg(
     ...(filters.source
       ? { source: filters.source as LearnerAccessSource }
       : {}),
-    ...(filters.q
-      ? {
-          OR: [
-            {
-              customerEmail: {
-                contains: filters.q,
-                mode: "insensitive" as const,
-              },
-            },
-            { discordUserId: { contains: filters.q } },
-          ],
-        }
-      : {}),
+    ...(andFilters.length > 0 ? { AND: andFilters } : {}),
   };
 
   const rows = await prisma.learnerAccess.findMany({
@@ -249,6 +277,8 @@ export async function listLearnersForOrg(
     currency: row.currency,
     stripeCustomerId: row.stripeCustomerId,
     stripeSubscriptionId: row.stripeSubscriptionId,
+    stripeBillingStatus: row.stripeBillingStatus,
+    lastPaymentAt: row.lastPaymentAt?.toISOString() ?? null,
     claimUrl: row.claimToken ? claimUrl(row.claimToken) : null,
     claimReminderCount: row.claimReminderCount,
     grantedAt: row.grantedAt?.toISOString() ?? null,

@@ -171,6 +171,7 @@ export async function POST(request: NextRequest) {
         await trackEvent({
           name: "checkout_completed",
           userId: metaUserId,
+          bypassConsent: true,
           meta: {
             mode: session.mode,
             planId: session.metadata?.planId ?? null,

@@ -1,0 +1,8 @@
+-- MFA TOTP (Authenticator) + flag de vérification par session.
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "totpEnabled" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "totpSecret" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "totpPendingSecret" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "totpRecoveryHashes" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "totpEnabledAt" TIMESTAMP(3);
+
+ALTER TABLE "Session" ADD COLUMN IF NOT EXISTS "mfaVerifiedAt" TIMESTAMP(3);

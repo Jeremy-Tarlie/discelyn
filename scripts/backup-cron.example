@@ -1,0 +1,6 @@
+# Exemple cron host — backup Postgres hors machine
+# Copier vers /etc/cron.d/discelyn-backup (adapter USER / paths).
+#
+# 0 3 * * * discelyn cd /opt/discelyn && /usr/bin/npm run backup:db && /usr/bin/rsync -a backups/ backup-host:/backups/discelyn/
+#
+# Puis vérifier 1×/mois : gunzip -c backups/….sql.gz | psql "$DATABASE_URL_RESTORE_TEST"

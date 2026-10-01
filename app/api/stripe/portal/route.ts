@@ -6,6 +6,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { trackEvent } from "@/lib/analytics";
 import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
+import { ownerHasMfaEnabled } from "@/lib/mfa-guards";
 
 export async function POST(request: NextRequest) {
   const locale = getRequestLocale(request);
@@ -19,6 +20,13 @@ export async function POST(request: NextRequest) {
   const org = await requireOrg({ minRole: "OWNER" });
   if (!org) {
     return NextResponse.json({ error: tApi(locale, "unauthenticated") }, { status: 401 });
+  }
+
+  if (!(await ownerHasMfaEnabled(org.userId))) {
+    return NextResponse.json(
+      { error: tApi(locale, "mfaRequiredForOwner") },
+      { status: 403 }
+    );
   }
 
   const subscription = await getOrgSubscription(org.organizationId);

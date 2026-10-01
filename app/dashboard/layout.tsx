@@ -6,6 +6,9 @@ import { getPlan, type PlanId } from "@/lib/plans";
 import { DashboardNav } from "@/components/dashboard/DashboardNav";
 import { isLeadsAdmin } from "@/lib/leads-admin";
 import { prisma } from "@/lib/prisma";
+import { userNeedsMfaChallenge } from "@/lib/mfa-session";
+import { PastDueBanner } from "@/components/dashboard/PastDueBanner";
+import { OwnerMfaBanner } from "@/components/dashboard/OwnerMfaBanner";
 
 export default async function DashboardLayout({
   children,
@@ -17,9 +20,13 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
+  if (await userNeedsMfaChallenge(session.user.id)) {
+    redirect("/login/mfa");
+  }
+
   const dbUser = await prisma.user.findFirst({
     where: { id: session.user.id, deletedAt: null },
-    select: { discordId: true },
+    select: { discordId: true, totpEnabled: true },
   });
   if (!dbUser) {
     redirect("/login");
@@ -32,6 +39,7 @@ export default async function DashboardLayout({
 
   const subscription = await getOrgSubscription(organizationId);
   const plan = getPlan(subscription.plan as PlanId);
+  const isOwner = session.user.orgRole === "OWNER";
 
   return (
     <div className="min-h-screen md:flex">
@@ -39,10 +47,14 @@ export default async function DashboardLayout({
         planName={plan.name}
         showLeads={isLeadsAdmin({
           email: session.user.email,
-          discordId: dbUser?.discordId,
+          discordId: dbUser.discordId,
         })}
       />
-      <div className="flex-1 px-6 py-8 md:px-10">{children}</div>
+      <div className="flex-1 px-6 py-8 md:px-10">
+        <PastDueBanner status={subscription.status} />
+        <OwnerMfaBanner isOwner={isOwner} mfaEnabled={dbUser.totpEnabled} />
+        {children}
+      </div>
     </div>
   );
 }

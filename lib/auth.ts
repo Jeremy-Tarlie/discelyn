@@ -122,6 +122,12 @@ export const authOptions: NextAuthOptions = {
       });
       await trackEvent({ name: "signup", userId: user.id });
     },
+    async signIn({ user }) {
+      if (user.id) {
+        const { logUserActivity } = await import("@/lib/activity-log");
+        await logUserActivity({ userId: user.id, action: "login" });
+      }
+    },
     async linkAccount({ account, user }) {
       if (account.provider === "discord") {
         await prisma.user.update({

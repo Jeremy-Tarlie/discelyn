@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import {
+  AFFILIATE_COOKIE,
+  AFFILIATE_COOKIE_MAX_AGE,
+} from "@/i18n/config";
+import { hasOptionalConsentFromCookieHeader } from "@/lib/consent";
 import { prisma } from "@/lib/prisma";
 import { affiliateRefUrl } from "@/lib/learner-access";
 
@@ -65,11 +70,13 @@ export async function GET(request: NextRequest, context: RouteContext) {
   }
 
   const response = NextResponse.redirect(redirectUrl);
-  response.cookies.set("discelyn_aff", affiliate.code, {
-    httpOnly: true,
-    sameSite: "lax",
-    maxAge: 30 * 24 * 60 * 60,
-    path: "/",
-  });
+  if (hasOptionalConsentFromCookieHeader(request.headers.get("cookie"))) {
+    response.cookies.set(AFFILIATE_COOKIE, affiliate.code, {
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: AFFILIATE_COOKIE_MAX_AGE,
+      path: "/",
+    });
+  }
   return response;
 }

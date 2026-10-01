@@ -5,6 +5,8 @@ import {
 } from "@/lib/learner-access-parse";
 import {
   decideGrantOutcome,
+  isLearnerPaymentAtRisk,
+  isLearnerPaymentPastDue,
   shouldOpenAccessFromCheckout,
   shouldRevokeOnRefund,
   shouldRevokeOnSubscriptionStatus,
@@ -90,12 +92,36 @@ describe("boucle checkout → accès", () => {
     expect(shouldRevokeOnSubscriptionStatus("active")).toBe(false);
   });
 
-  it("révoque sur refund si produit configuré", () => {
+  it("détecte past_due / at risk pour l’UI", () => {
+    expect(isLearnerPaymentPastDue("past_due")).toBe(true);
+    expect(isLearnerPaymentPastDue("active")).toBe(false);
+    expect(isLearnerPaymentAtRisk("past_due")).toBe(true);
+    expect(isLearnerPaymentAtRisk("unpaid")).toBe(true);
+    expect(isLearnerPaymentAtRisk("active")).toBe(false);
+  });
+
+  it("révoque sur refund total seulement", () => {
     expect(
       shouldRevokeOnRefund({ revokeOnRefund: true, refunded: true })
     ).toBe(true);
     expect(
       shouldRevokeOnRefund({ revokeOnRefund: false, refunded: true })
+    ).toBe(false);
+    expect(
+      shouldRevokeOnRefund({
+        revokeOnRefund: true,
+        refunded: true,
+        amount: 4900,
+        amountRefunded: 4900,
+      })
+    ).toBe(true);
+    expect(
+      shouldRevokeOnRefund({
+        revokeOnRefund: true,
+        refunded: true,
+        amount: 4900,
+        amountRefunded: 1000,
+      })
     ).toBe(false);
   });
 });

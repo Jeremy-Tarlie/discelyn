@@ -39,6 +39,19 @@ export default async function AccessStatsPage() {
           {t("body", { days: stats.periodDays })}
         </p>
       </div>
+
+      {stats.pending > 0 ? (
+        <div className="rounded-xl border border-warn/40 bg-warn/5 px-4 py-3 text-sm text-page-fg">
+          <p className="font-medium">{t("pendingHintTitle", { count: stats.pending })}</p>
+          <p className="mt-1 text-soft">{t("pendingHintBody")}</p>
+          <a
+            href="/dashboard/learners?status=AWAITING_JOIN"
+            className="mt-2 inline-flex text-sm font-semibold text-[#5865F2]"
+          >
+            {t("pendingHintCta")}
+          </a>
+        </div>
+      ) : null}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((c) => (
           <div

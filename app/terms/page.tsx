@@ -89,7 +89,9 @@ export default async function TermsPage() {
                 from the customer portal. On non-payment, configs may be paused.
                 Diagnostic and Setup do not grant a recurring subscription until
                 Ops/Scale is purchased. Diagnostic credit on Setup is applied
-                manually (promo code or invoice adjustment).
+                manually (promo code or invoice adjustment). Scale plans may
+                include a data processing agreement (DPA) on request — template
+                provided then adapted contractually.
               </p>
             </section>
             <section className="space-y-3">
@@ -182,6 +184,8 @@ export default async function TermsPage() {
                 ne confèrent pas d&apos;abonnement récurrent tant qu&apos;Ops/Scale
                 n&apos;est pas souscrit. Le crédit diagnostic sur le Setup est
                 appliqué manuellement (code promo ou ajustement facture).
+                Le plan Scale peut inclure un accord de sous-traitance (DPA) sur
+                demande — modèle fourni puis adapté contractuellement.
               </p>
             </section>
             <section className="space-y-3">
