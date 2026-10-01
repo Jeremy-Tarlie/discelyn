@@ -62,7 +62,7 @@ export default async function AccountPage() {
   if (!user || !org) redirect("/login");
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
+    <div className="mx-auto max-w-4xl space-y-8">
       <div>
         <h1 className="font-display text-3xl text-page-fg">{t("accountTitle")}</h1>
         <p className="mt-2 text-soft">{t("accountIntro")}</p>

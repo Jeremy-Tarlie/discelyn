@@ -17,7 +17,7 @@ export default async function BillingPage({ searchParams }: PageProps) {
   const t = await getTranslations("dashboard");
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
+    <div className="mx-auto space-y-8">
       <div>
         <h1 className="font-display text-3xl text-page-fg">
           {t("billingTitle")}

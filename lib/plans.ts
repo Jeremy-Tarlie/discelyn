@@ -248,6 +248,15 @@ export function planDisplayPriceEur(
   return interval === "year" ? plan.priceYearlyEur : plan.priceMonthlyEur;
 }
 
+/** Économie vs 12 × mensuel (2 mois offerts). 0 pour FREE. */
+export function planYearlySavingsEur(planId: PlanId): number {
+  const plan = PLANS[planId];
+  if (plan.priceMonthlyEur <= 0) return 0;
+  return (
+    Math.round((plan.priceMonthlyEur * 12 - plan.priceYearlyEur) * 100) / 100
+  );
+}
+
 export function getSetupStripePriceId(): string | null {
   const value = process.env[SETUP_OFFER.stripePriceEnvKey];
   return value && value.length > 0 ? value : null;

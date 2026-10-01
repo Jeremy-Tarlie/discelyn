@@ -8,7 +8,7 @@ import { isLeadsAdmin } from "@/lib/leads-admin";
 import { prisma } from "@/lib/prisma";
 import { userNeedsMfaChallenge } from "@/lib/mfa-session";
 import { PastDueBanner } from "@/components/dashboard/PastDueBanner";
-import { OwnerMfaBanner } from "@/components/dashboard/OwnerMfaBanner";
+import { OwnerMfaSignupModal } from "@/components/dashboard/OwnerMfaSignupModal";
 
 export default async function DashboardLayout({
   children,
@@ -52,7 +52,11 @@ export default async function DashboardLayout({
       />
       <div className="flex-1 px-6 py-8 md:px-10">
         <PastDueBanner status={subscription.status} />
-        <OwnerMfaBanner isOwner={isOwner} mfaEnabled={dbUser.totpEnabled} />
+        <OwnerMfaSignupModal
+          userId={session.user.id}
+          isOwner={isOwner}
+          mfaEnabled={dbUser.totpEnabled}
+        />
         {children}
       </div>
     </div>

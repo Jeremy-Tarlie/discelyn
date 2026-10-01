@@ -7,6 +7,7 @@ import {
   getPlan,
   OPS_CORE_MODULES,
   planAllowsModule,
+  planYearlySavingsEur,
   PLANS,
   SETUP_OFFER,
   type PlanId,
@@ -34,6 +35,13 @@ describe("PLANS", () => {
     expect(SETUP_OFFER.priceEur).toBe(290);
     expect(DIAGNOSTIC_OFFER.priceEur).toBe(49);
     expect(DIAGNOSTIC_OFFER.setupCreditEur).toBe(49);
+  });
+
+  it("calcule l’économie annuelle (2 mois offerts)", () => {
+    expect(planYearlySavingsEur("FREE")).toBe(0);
+    expect(planYearlySavingsEur("STARTER")).toBe(39.98);
+    expect(planYearlySavingsEur("OPS")).toBe(98);
+    expect(planYearlySavingsEur("SCALE")).toBe(198);
   });
 
   it("expose les env keys mensuel et annuel pour les plans payants", () => {
