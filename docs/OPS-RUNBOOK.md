@@ -53,6 +53,19 @@ Suppression compte / bot = soft-delete (`deletedAt`) + revoke Discord + anonymis
 
 Webhook formation après purge : `200 ignored` (orga/produit/bot morts) ou `404` — pas de retry 500 infini.
 
+## Discord « Used disallowed intents » (4014)
+
+Le runtime demande des intents **privilégiés**. Sans eux Discord coupe le gateway → crash / restart loop.
+
+1. [Discord Developer Portal](https://discord.com/developers/applications) → ton app → **Bot**
+2. **Privileged Gateway Intents** → active :
+   - **SERVER MEMBERS INTENT**
+   - **MESSAGE CONTENT INTENT**
+3. Save → sur le VPS : `docker compose … restart runtime`
+
+Sans Message Content : préfixe / automod / mods texte cassés.  
+Sans Server Members : joins / grants rôle incomplets.
+
 ## Redis / runtime « failed to start »
 
 Compose affiche souvent `Error dependency redis/runtime failed to start` :

@@ -521,8 +521,27 @@ try {
     });
   }, 30_000);
 } catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
   console.error("[platform] bootstrap failed", error);
   Sentry.captureException(error);
-  await Sentry.close(2000);
-  process.exit(1);
+
+  // 4014 Used disallowed intents : ne pas crash-loop Docker.
+  // Le /health reste UP (ready=false) pour que web démarre ; corriger le portail Discord.
+  if (/disallowed intents/i.test(message)) {
+    console.error(`
+[platform] INTENT DISCORD MANQUANT (gateway 4014)
+Active dans https://discord.com/developers/applications → Bot → Privileged Gateway Intents :
+  • SERVER MEMBERS INTENT  (GuildMembers)
+  • MESSAGE CONTENT INTENT (MessageContent)
+Puis : docker compose restart runtime
+`);
+    setInterval(() => {
+      console.error(
+        "[platform] toujours hors ligne — active Server Members + Message Content intents, puis restart runtime"
+      );
+    }, 120_000);
+  } else {
+    await Sentry.close(2000);
+    process.exit(1);
+  }
 }
