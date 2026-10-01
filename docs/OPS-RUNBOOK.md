@@ -53,7 +53,61 @@ Suppression compte / bot = soft-delete (`deletedAt`) + revoke Discord + anonymis
 
 Webhook formation après purge : `200 ignored` (orga/produit/bot morts) ou `404` — pas de retry 500 infini.
 
+## Redis / runtime « failed to start »
+
+Compose affiche souvent `Error dependency redis/runtime failed to start` :
+ce n’est **pas** une dépendance circulaire. En pratique :
+
+1. **redis** ou **runtime** n’est pas devenu `healthy` (exit / crash / healthcheck).
+2. **web** (et donc caddy qui attend web) ne démarre pas à cause de `depends_on: condition: service_healthy`.
+
+### Diagnostiquer (sur le VPS)
+
+```bash
+cd /opt/discelyn   # ou REMOTE_DIR
+docker compose -f docker-compose.yml -f docker-compose.tls.yml ps -a
+docker compose -f docker-compose.yml -f docker-compose.tls.yml logs redis --tail 80
+docker compose -f docker-compose.yml -f docker-compose.tls.yml logs runtime --tail 80
+```
+
+### Causes fréquentes
+
+| Service | Symptôme logs | Fix |
+|---------|---------------|-----|
+| **redis** | `Bad file format` / `Fatal error loading the DB` | AOF/RDB corrompu après arrêt brutal — voir ci-dessous |
+| **redis** | `Permission denied` sur `/data` | droits volume ; recreating volume si vide OK |
+| **redis** | OOM / exit immédiat | RAM VPS trop juste |
+| **runtime** | `DISCORD_BOT_TOKEN manquant` / `BOT_RUNTIME_SECRET manquant` | `.env` incomplet |
+| **runtime** | login Discord fail | token révoqué / invalide |
+| **runtime** | healthcheck timeout | rebuild avec le fix « /health avant login » (`--build`) — un build en **2 s** = cache, pas forcément le nouveau code |
+
+### Réparer Redis (AOF corrompu)
+
+```bash
+# 1) Arrêt redis
+docker compose stop redis
+
+# 2a) Réparer l’AOF (conserve les données si possible)
+docker compose run --rm --entrypoint sh redis -c \
+  "redis-check-aof --fix /data/appendonlydir/appendonly.aof.manifest || redis-check-aof --fix /data/appendonly.aof || true"
+
+# 2b) Si irrécupérable (DEV / staging OK — PERTE du rate-limit store uniquement) :
+# docker volume rm discelyn_redis   # nom exact : docker volume ls | grep redis
+
+docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d redis
+docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d --build runtime web
+```
+
+### Rebuild forcé runtime (après fix health)
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.tls.yml build --no-cache runtime
+docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d runtime
+docker compose -f docker-compose.yml -f docker-compose.tls.yml logs -f runtime
+```
+
 ## Backup
+
 
 ```bash
 npm run backup:db
