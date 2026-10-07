@@ -25,3 +25,12 @@ docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d --build
 
 - **runtime** : plus de `npm ci` du monorepo Next ; seulement deps `bot-runtime` + Prisma CLI isolé.
 - **web** : runner = Next `standalone` (plus de copie du `node_modules` complet).
+
+## Runtime unhealthy
+
+```bash
+docker logs discelyn-runtime-1 --tail 100
+docker inspect discelyn-runtime-1 --format '{{json .State.Health}}'
+```
+
+Cause fréquente après le slim : `prisma migrate deploy` ne trouvait plus `prisma/config` — corrigé via `NODE_PATH=/opt/prisma-cli/node_modules` dans les entrypoints.

@@ -455,8 +455,8 @@ process.on("unhandledRejection", (reason) => {
 
 // Health HTTP d’abord : Docker healthcheck ne doit pas attendre Discord login.
 await new Promise<void>((resolve) => {
-  server.listen(port, () => {
-    console.log(`discelyn-runtime (platform) listening on :${port}`);
+  server.listen(port, "0.0.0.0", () => {
+    console.log(`discelyn-runtime (platform) listening on 0.0.0.0:${port}`);
     resolve();
   });
 });
