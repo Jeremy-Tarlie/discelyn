@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { DiscordIcon } from "@/components/landing/DiscordIcon";
+import { DiscelynMark } from "@/components/landing/DiscelynMark";
 import { LocaleSwitcher } from "@/components/i18n/LocaleSwitcher";
 import { ThemeSwitcher } from "@/components/theme/ThemeSwitcher";
 import { SiteHeaderMobileNav } from "@/components/landing/SiteHeaderMobileNav";
@@ -32,9 +33,7 @@ export async function SiteHeader({
           href="/"
           className="flex items-center gap-2.5 font-display text-lg font-bold tracking-tight text-[color:var(--page-fg)]"
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-signal text-sm font-bold text-ink-950">
-            B
-          </span>
+          <DiscelynMark size="md" />
           Discelyn
         </Link>
 

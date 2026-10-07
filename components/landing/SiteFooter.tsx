@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { CookiePrefsButton } from "@/components/cookies/CookieBanner";
+import { DiscelynMark } from "@/components/landing/DiscelynMark";
 
 export async function SiteFooter() {
   const t = await getTranslations("nav");
@@ -9,9 +10,7 @@ export async function SiteFooter() {
     <footer className="border-t border-[color:var(--border)] bg-[color:var(--footer-bg)]">
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-12 text-sm text-[color:var(--muted)] md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-2.5">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-signal text-xs font-bold text-ink-950">
-            B
-          </span>
+          <DiscelynMark size="sm" />
           <p className="font-display font-semibold text-[color:var(--page-fg)]">
             Discelyn
           </p>

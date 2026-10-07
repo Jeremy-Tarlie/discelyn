@@ -9,6 +9,7 @@ import { userNeedsMfaChallenge } from "@/lib/mfa-session";
 import { SiteHeader } from "@/components/landing/SiteHeader";
 import { SiteFooter } from "@/components/landing/SiteFooter";
 import { LoginButton } from "@/components/landing/LoginButton";
+import { DiscelynMark } from "@/components/landing/DiscelynMark";
 
 type PageProps = {
   searchParams: Promise<{ callbackUrl?: string }>;
@@ -39,9 +40,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
       <SiteHeader />
       <main className="relative mx-auto flex min-h-[calc(100vh-12rem)] max-w-md flex-col items-center justify-center px-6 py-20">
         <div className="animate-scale-in w-full rounded-2xl bg-[#2b2d31] p-8 shadow-[0_40px_100px_rgba(0,0,0,0.5)] sm:p-10">
-          <div className="mx-auto mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-signal font-display text-lg font-bold text-ink-950">
-            B
-          </div>
+          <DiscelynMark size="xl" className="mx-auto mb-6" />
           <h1 className="text-center font-display text-3xl font-bold text-white">
             {t("title")}
           </h1>

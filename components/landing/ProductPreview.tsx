@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
+import { DiscelynMark } from "@/components/landing/DiscelynMark";
 
 type Stage = "typing" | "welcome" | "ticket" | "warn" | "pause";
 
@@ -24,9 +25,7 @@ const STAGE_MS: Record<Stage, number> = {
 function TypingDots() {
   return (
     <div className="flex items-center gap-2 px-1 py-1">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-signal/20 text-[10px] font-bold text-signal">
-        B
-      </div>
+      <DiscelynMark size="md" shape="circle" tone="soft" />
       <div className="flex items-center gap-1.5 rounded-md bg-[#2b2d31] px-3 py-2">
         <span className="typing-dot h-1.5 w-1.5 rounded-full bg-[#b5bac1]" />
         <span className="typing-dot h-1.5 w-1.5 rounded-full bg-[#b5bac1]" />
@@ -96,9 +95,10 @@ export function ProductPreview() {
       <div className="relative animate-float-tilt overflow-hidden rounded-2xl border border-white/20 bg-[#1e1f22] shadow-[0_40px_100px_rgba(0,0,0,0.75),0_0_0_1px_rgba(88,101,242,0.15)]">
         <div className="flex h-[22rem] sm:h-[24rem]">
           <div className="flex w-14 shrink-0 flex-col items-center gap-2 bg-[#1e1f22] py-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-signal text-sm font-bold text-ink-950 transition hover:rounded-xl">
-              B
-            </div>
+            <DiscelynMark
+              size="lg"
+              className="transition hover:rounded-xl"
+            />
             <div className="h-0.5 w-8 rounded-full bg-white/10" />
             <div className="h-10 w-10 rounded-full bg-[#313338]" />
             <div className="h-10 w-10 rounded-full bg-[#313338]" />
@@ -159,9 +159,7 @@ export function ProductPreview() {
 
               {showWelcome ? (
                 <div key="welcome" className="animate-message-in flex gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-signal text-[10px] font-bold text-ink-950">
-                    B
-                  </div>
+                  <DiscelynMark size="md" shape="circle" />
                   <div className="min-w-0">
                     <p className="text-sm">
                       <span className="font-medium text-signal">Discelyn</span>
