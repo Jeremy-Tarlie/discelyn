@@ -1,8 +1,48 @@
+# Dépendances / build locaux
 node_modules
-.dockerignore
-Dockerfile
-.git
+bot-runtime/node_modules
 .next
+out
+dist
+bot-runtime/dist
+coverage
+*.tsbuildinfo
+
+# Secrets & VCS
+.git
+.gitignore
 .env
 .env.*
 !.env.example
+
+# Docker / CI locaux (inutiles dans le contexte de build)
+Dockerfile
+bot-runtime/Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Docs & tests (non nécessaires au runtime)
+docs
+**/*.md
+!README.md
+**/*.test.ts
+**/*.db.test.ts
+**/vitest*.ts
+scripts/run-tests.mjs
+scripts/preflight-prod.mjs
+scripts/smoke-live.mjs
+scripts/backup-postgres.mjs
+scripts/release-gate.mjs
+scripts/deploy-prod.mjs
+scripts/provision-remote.mjs
+scripts/diagnostic-collect.mjs
+scripts/seal-*.mjs
+
+# IDE / OS
+.cursor
+.vscode
+.idea
+*.log
+.DS_Store
+Thumbs.db
+agent-transcripts
