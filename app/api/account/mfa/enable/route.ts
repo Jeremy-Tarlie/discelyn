@@ -13,6 +13,7 @@ import {
   verifyTotpCode,
 } from "@/lib/totp";
 import { markCurrentSessionMfaVerified } from "@/lib/mfa-session";
+import { deniedAuthResponse } from "@/lib/http-auth";
 
 const bodySchema = z.object({
   code: z.string().trim().min(6).max(12),
@@ -29,10 +30,7 @@ export async function POST(request: NextRequest) {
 
   const user = await requireUser();
   if (!user) {
-    return NextResponse.json(
-      { error: tApi(locale, "unauthenticated") },
-      { status: 401 }
-    );
+    return deniedAuthResponse(locale);
   }
 
   let body: unknown;

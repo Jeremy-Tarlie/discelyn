@@ -19,23 +19,12 @@ type CheckoutSubscriptionSnapshot = {
 };
 
 /**
- * MFA requise pour checkout sauf premier abonnement (org FREE sans abo Stripe bloquant).
- * One-shot (SETUP / DIAGNOSTIC) : toujours MFA.
+ * MFA OWNER obligatoire pour tout checkout SaaS (abo + one-shot).
+ * `input` conservé pour compat signatures / tests.
  */
-export function requiresMfaForCheckout(input: {
+export function requiresMfaForCheckout(_input: {
   oneShot: boolean;
   subscription: CheckoutSubscriptionSnapshot;
 }): boolean {
-  if (input.oneShot) return true;
-
-  const blockingStatuses = new Set(["ACTIVE", "TRIALING", "PAST_DUE"]);
-  const hasBlockingSub =
-    Boolean(input.subscription.stripeSubscriptionId) &&
-    blockingStatuses.has(input.subscription.status);
-
-  if (input.subscription.plan === "FREE" && !hasBlockingSub) {
-    return false;
-  }
-
   return true;
 }

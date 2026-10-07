@@ -12,6 +12,7 @@ import { ensurePrimaryGrant } from "@/lib/learner-access";
 import { rateLimit } from "@/lib/rate-limit";
 import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
+import { deniedAuthResponse } from "@/lib/http-auth";
 
 export const runtime = "nodejs";
 
@@ -30,10 +31,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
   const org = await requireOrg({ minRole: "ADMIN" });
   if (!org) {
-    return NextResponse.json(
-      { error: tApi(locale, "unauthenticated") },
-      { status: 401 }
-    );
+    return deniedAuthResponse(locale);
   }
 
   const subscription = await getOrgSubscription(org.organizationId);
@@ -144,10 +142,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
   const locale = getRequestLocale(request);
   const org = await requireOrg({ minRole: "ADMIN" });
   if (!org) {
-    return NextResponse.json(
-      { error: tApi(locale, "unauthenticated") },
-      { status: 401 }
-    );
+    return deniedAuthResponse(locale);
   }
 
   const { id: botId, productId } = await context.params;

@@ -147,7 +147,7 @@ export default async function AccountPage() {
 
       <BillingPanels organizationId={organizationId} showHeading />
 
-      <GdprActions />
+      <GdprActions mfaEnabled={user.totpEnabled} />
     </div>
   );
 }

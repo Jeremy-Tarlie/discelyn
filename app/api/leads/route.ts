@@ -8,6 +8,7 @@ import { requireUser } from "@/lib/access";
 import { isLeadsAdmin } from "@/lib/leads-admin";
 import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
+import { deniedAuthResponse } from "@/lib/http-auth";
 
 export async function GET(request: NextRequest) {
   const locale = getRequestLocale(request);
@@ -20,10 +21,7 @@ export async function GET(request: NextRequest) {
 
   const user = await requireUser();
   if (!user) {
-    return NextResponse.json(
-      { error: tApi(locale, "unauthorized") },
-      { status: 403 }
-    );
+    return deniedAuthResponse(locale, "unauthorized");
   }
 
   const dbUser = await prisma.user.findUnique({

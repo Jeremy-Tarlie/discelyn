@@ -13,6 +13,7 @@ import { OwnerMfaSignupModal } from "@/components/dashboard/OwnerMfaSignupModal"
 import { VISITOR_COOKIE } from "@/i18n/config";
 import { isValidVisitorId } from "@/lib/consent";
 import { linkVisitorConsentsToUser } from "@/lib/cookie-consent-log";
+import { listUserOrganizations } from "@/lib/org-access";
 
 export default async function DashboardLayout({
   children,
@@ -50,6 +51,7 @@ export default async function DashboardLayout({
   const subscription = await getOrgSubscription(organizationId);
   const plan = getPlan(subscription.plan as PlanId);
   const isOwner = session.user.orgRole === "OWNER";
+  const organizations = await listUserOrganizations(session.user.id);
 
   return (
     <div className="min-h-screen md:flex">
@@ -59,6 +61,8 @@ export default async function DashboardLayout({
           email: session.user.email,
           discordId: dbUser.discordId,
         })}
+        organizations={organizations}
+        activeOrganizationId={organizationId}
       />
       <div className="flex-1 px-6 py-8 md:px-10">
         <PastDueBanner status={subscription.status} />

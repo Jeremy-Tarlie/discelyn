@@ -16,6 +16,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { trackEvent } from "@/lib/analytics";
 import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
+import { deniedAuthResponse } from "@/lib/http-auth";
 import {
   ownerHasMfaEnabled,
   requiresMfaForCheckout,
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
 
   const org = await requireOrg({ minRole: "OWNER" });
   if (!org) {
-    return NextResponse.json({ error: tApi(locale, "unauthenticated") }, { status: 401 });
+    return deniedAuthResponse(locale);
   }
 
   let body: unknown;

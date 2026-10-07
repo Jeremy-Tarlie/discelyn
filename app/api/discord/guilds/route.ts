@@ -5,6 +5,7 @@ import { listManageableGuilds } from "@/lib/discord";
 import { rateLimit } from "@/lib/rate-limit";
 import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
+import { deniedAuthResponse } from "@/lib/http-auth";
 
 /** Liste les serveurs Discord administrables par l'utilisateur connecté. */
 export async function GET(request: NextRequest) {
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
 
   const user = await requireUser();
   if (!user) {
-    return NextResponse.json({ error: tApi(locale, "unauthenticated") }, { status: 401 });
+    return deniedAuthResponse(locale);
   }
 
   const result = await listManageableGuilds(user.id);

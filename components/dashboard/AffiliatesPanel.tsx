@@ -13,6 +13,7 @@ import {
   dashBtnPrimaryClass,
   dashFieldClass,
 } from "@/components/dashboard/ui";
+import { redirectIfMfaRequired } from "@/lib/api-client-auth";
 
 export function AffiliatesPanel({
   initialRows,
@@ -41,8 +42,9 @@ export function AffiliatesPanel({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code, label, commissionBps: bps }),
     });
+    const data = (await res.json()) as { error?: string; code?: string };
+    if (redirectIfMfaRequired(data)) return;
     if (!res.ok) {
-      const data = (await res.json()) as { error?: string };
       setError(data.error ?? t("saveFailed"));
       return;
     }

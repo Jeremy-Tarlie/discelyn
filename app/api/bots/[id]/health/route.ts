@@ -11,6 +11,7 @@ import { getPlatformInviteUrl } from "@/lib/invite";
 import { rateLimit } from "@/lib/rate-limit";
 import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
+import { deniedAuthResponse } from "@/lib/http-auth";
 
 export const runtime = "nodejs";
 
@@ -29,10 +30,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   const org = await requireOrg({ minRole: "MEMBER" });
   if (!org) {
-    return NextResponse.json(
-      { error: tApi(locale, "unauthenticated") },
-      { status: 401 }
-    );
+    return deniedAuthResponse(locale);
   }
 
   const subscription = await getOrgSubscription(org.organizationId);

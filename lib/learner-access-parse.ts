@@ -1,5 +1,10 @@
 import type Stripe from "stripe";
 
+/**
+ * Résout le price ID depuis metadata / line items.
+ * Canonique : `discelyn_price_id`. Alias `botly_price_id` conservé pour
+ * Payment Links / Checkouts créés avant le rename — ne plus écrire botly_*.
+ */
 export function extractPriceIdFromSession(
   session: Stripe.Checkout.Session,
   lineItems?: Stripe.LineItem[] | null

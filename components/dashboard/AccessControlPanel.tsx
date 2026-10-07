@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { redirectIfMfaRequired } from "@/lib/api-client-auth";
 
 type AccessProduct = {
   id: string;
@@ -152,7 +153,8 @@ export function AccessControlPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ stripeSecretKey }),
       });
-      const data = (await response.json()) as { error?: string };
+      const data = (await response.json()) as { error?: string; code?: string };
+      if (redirectIfMfaRequired(data)) return;
       if (!response.ok) {
         setError(data.error ?? t("saveFailed"));
         return;
@@ -196,8 +198,10 @@ export function AccessControlPanel({
       });
       const data = (await response.json()) as {
         error?: string;
+        code?: string;
         product?: AccessProduct;
       };
+      if (redirectIfMfaRequired(data)) return;
       if (!response.ok) {
         setError(data.error ?? t("saveFailed"));
         return;
@@ -231,7 +235,8 @@ export function AccessControlPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ channelId: shopChannelId }),
       });
-      const data = (await response.json()) as { error?: string };
+      const data = (await response.json()) as { error?: string; code?: string };
+      if (redirectIfMfaRequired(data)) return;
       if (!response.ok) {
         setError(data.error ?? t("saveFailed"));
         return;

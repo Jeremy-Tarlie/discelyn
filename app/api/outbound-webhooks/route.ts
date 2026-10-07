@@ -14,6 +14,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
 import { requireSealToken, unsealToken } from "@/lib/token-crypto";
+import { deniedAuthResponse } from "@/lib/http-auth";
 
 export const runtime = "nodejs";
 
@@ -21,10 +22,7 @@ export async function GET(request: NextRequest) {
   const locale = getRequestLocale(request);
   const org = await requireOrg({ minRole: "MEMBER" });
   if (!org) {
-    return NextResponse.json(
-      { error: tApi(locale, "unauthenticated") },
-      { status: 401 }
-    );
+    return deniedAuthResponse(locale);
   }
 
   const webhooks = await listOutboundWebhooksForOrg(org.organizationId);
@@ -42,10 +40,7 @@ export async function POST(request: NextRequest) {
 
   const org = await requireOrg({ minRole: "ADMIN" });
   if (!org) {
-    return NextResponse.json(
-      { error: tApi(locale, "unauthenticated") },
-      { status: 401 }
-    );
+    return deniedAuthResponse(locale);
   }
 
   const subscription = await getOrgSubscription(org.organizationId);
@@ -118,10 +113,7 @@ export async function DELETE(request: NextRequest) {
   const locale = getRequestLocale(request);
   const org = await requireOrg({ minRole: "ADMIN" });
   if (!org) {
-    return NextResponse.json(
-      { error: tApi(locale, "unauthenticated") },
-      { status: 401 }
-    );
+    return deniedAuthResponse(locale);
   }
 
   const id = request.nextUrl.searchParams.get("id");

@@ -29,6 +29,7 @@ import {
 import { getOrgStripeClient } from "@/lib/org-stripe";
 import { isEmailConfigured, sendEmail } from "@/lib/email";
 import { captureMoneyPathError } from "@/lib/money-path-sentry";
+import { claimUrl } from "@/lib/access-urls";
 
 export {
   extractDiscordUserIdFromSession,
@@ -43,6 +44,13 @@ export {
   newAccessCodePlain,
 } from "@/lib/access-seats";
 
+export {
+  affiliateRefUrl,
+  appBaseUrl,
+  claimUrl,
+  orgWebhookUrl,
+} from "@/lib/access-urls";
+
 const CLAIM_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 
 export function newClaimToken(): string {
@@ -51,27 +59,6 @@ export function newClaimToken(): string {
 
 export function newWebhookPathToken(): string {
   return randomBytes(24).toString("base64url");
-}
-
-export function appBaseUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
-    process.env.NEXTAUTH_URL?.replace(/\/$/, "") ||
-    "http://localhost:3000"
-  );
-}
-
-export function orgWebhookUrl(pathToken: string): string {
-  return `${appBaseUrl()}/api/access/webhook/${pathToken}`;
-}
-
-export function claimUrl(claimToken: string): string {
-  return `${appBaseUrl()}/claim/${claimToken}`;
-}
-
-export function affiliateRefUrl(code: string, productId?: string): string {
-  const base = `${appBaseUrl()}/r/${encodeURIComponent(code)}`;
-  return productId ? `${base}?product=${encodeURIComponent(productId)}` : base;
 }
 
 export function maxAccessProductsForPlan(planId: PlanId): number {
@@ -311,9 +298,73 @@ export async function openLearnerAccessFromCheckout(input: {
         accessId: txResult.accessId,
       });
     }
+  } else if (input.customerEmail && txResult.claimToken) {
+    await sendImmediateClaimInvite({
+      organizationId: input.organizationId,
+      accessId: txResult.accessId,
+      productId: input.productId,
+      customerEmail: input.customerEmail,
+      claimToken: txResult.claimToken,
+    });
+  } else if (!input.customerEmail && !input.discordUserIdFromMetadata) {
+    console.warn(
+      `[access] checkout sans email ni discord_user_id access=${txResult.accessId} — claim uniquement via session Stripe / lien manuel`
+    );
   }
 
   return { accessId: txResult.accessId, claimToken: txResult.claimToken };
+}
+
+/** Email claim immédiat + webhook orga (best-effort, ne bloque pas le webhook Stripe). */
+async function sendImmediateClaimInvite(input: {
+  organizationId: string;
+  accessId: string;
+  productId: string;
+  customerEmail: string;
+  claimToken: string;
+}): Promise<void> {
+  const product = await prisma.accessProduct.findUnique({
+    where: { id: input.productId },
+    select: { name: true },
+  });
+  const productName = product?.name ?? "formation";
+  const url = claimUrl(input.claimToken);
+
+  if (isEmailConfigured()) {
+    const mail = await sendEmail({
+      to: input.customerEmail,
+      subject: `Finalise ton accès « ${productName} »`,
+      text: `Bonjour,\n\nTon paiement est confirmé. Finalise ton accès Discord « ${productName} » :\n${url}\n\n— Discelyn`,
+      html: `<p>Bonjour,</p><p>Ton paiement est confirmé. Finalise ton accès Discord <strong>${productName}</strong> :</p><p><a href="${url}">${url}</a></p><p>— Discelyn</p>`,
+    });
+    if (!mail.ok) {
+      console.warn("[access] claim invite email failed", mail.error);
+    }
+  } else {
+    console.warn(
+      `[access] claim invite: RESEND_API_KEY/EMAIL_FROM absents — email non envoyé access=${input.accessId}`
+    );
+  }
+
+  try {
+    await notifyOutbound(input.organizationId, "claim_reminder", {
+      accessId: input.accessId,
+      productId: input.productId,
+      email: input.customerEmail,
+      claimUrl: url,
+      productName,
+      reminderCount: 0,
+    });
+  } catch (err) {
+    captureMoneyPathError(err, {
+      area: "access.claim_invite_outbound",
+      accessId: input.accessId,
+    });
+  }
+
+  await recordEvent(input.accessId, "claim_invite_sent", {
+    channel: isEmailConfigured() ? "email" : "outbound_only",
+  });
 }
 
 async function attemptOversoldRefund(input: {

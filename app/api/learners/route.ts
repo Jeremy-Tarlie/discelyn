@@ -18,6 +18,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
 import { z } from "zod";
+import { deniedAuthResponse } from "@/lib/http-auth";
 
 export const runtime = "nodejs";
 
@@ -46,10 +47,7 @@ export async function GET(request: NextRequest) {
 
   const org = await requireOrg({ minRole: "MEMBER" });
   if (!org) {
-    return NextResponse.json(
-      { error: tApi(locale, "unauthenticated") },
-      { status: 401 }
-    );
+    return deniedAuthResponse(locale);
   }
 
   const status = request.nextUrl.searchParams.get("status");
@@ -140,10 +138,7 @@ export async function POST(request: NextRequest) {
 
   const org = await requireOrg({ minRole: "ADMIN" });
   if (!org) {
-    return NextResponse.json(
-      { error: tApi(locale, "unauthenticated") },
-      { status: 401 }
-    );
+    return deniedAuthResponse(locale);
   }
 
   const subscription = await getOrgSubscription(org.organizationId);

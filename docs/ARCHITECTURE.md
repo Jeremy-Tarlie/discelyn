@@ -11,7 +11,7 @@ Trois processus applicatifs + deux stores :
 | **web** (Next.js) | OAuth, dashboard, API, **double Stripe** (SaaS Discelyn + formation orga), claim, crons |
 | **bot-runtime** | Un client discord.js (`DISCORD_BOT_TOKEN`), configs par `guildId` en mémoire, join → grant |
 | **PostgreSQL** | Source de vérité (users, **organizations**, memberships, bots, accès apprenants, org Stripe, leads…) |
-| **Redis** | Rate-limit distribué uniquement (fallback mémoire si absent) |
+| **Redis** | Rate-limit distribué (obligatoire en prod). Absent → mémoire process ; erreur Redis en staging/prod → **fail-closed 429** |
 
 Cœur produit : **paiement formation (Stripe client) → claim Discord → rôle(s) → revoke**.  
 Le socle ops (welcome, tickets, mod) est secondaire.  
@@ -57,7 +57,7 @@ On ne passe **pas** `ACTIVE` dès qu’un seul serveur a réussi.
 
 - Remboursement / unpaid / canceled / fin de cohorte → `revokeLearnerAccess` (tous les grants).
 - Cron `POST /api/cron/access` (~15 min) : expiry, relances claim (DM ou webhook `claim_reminder`), J-N, onboarding, retry grants, retry refunds oversold, reconcile `seatsUsed`.
-- Cron `POST /api/cron/retention` (1 h) : purge analytics / leads RGPD uniquement.
+- Cron `POST /api/cron/retention` (1 h) : purge analytics / leads / consentements cookies expirés + anonymisation PII apprenants révoqués (365 j).
 
 ### Codes manuels
 
@@ -125,11 +125,11 @@ User-as-org remplacé par `Organization` + `OrganizationMembership` (`2026092810
 
 ## Limites assumées
 
-- Un seul bot plateforme (SPOF).
+- Un seul bot plateforme (SPOF) — procédure : `docs/OPS-RUNBOOK.md` + `docs/KEY-ROTATION.md`.
 - Message Content Intent encore requis pour préfixes / automod texte.
 - Affiliés = tracking / attribution, **pas de payout**.
-- Pas de switcher multi-org UI ni invites email (v1 memberships = Discord ID d’un compte existant).
-- Preuve money path : `npm run test:db` (Postgres + Discord mock) — **pas** d’E2E Stripe/Discord live.
+- Multi-org : cookie `discelyn_active_org` + switcher dashboard ; pas d’invites email (memberships = Discord ID d’un compte existant).
+- Preuve money path : `npm run test:db` + tests HTTP webhooks (`*.http.test.ts`) — **pas** d’E2E Stripe/Discord live (`npm run smoke:live`).
 - Secrets Stripe formation : toujours `enc:v1:` ; migration legacy : `npm run seal-org-stripe`.
 - Release / ops : `docs/RELEASE.md`, `docs/OPS-RUNBOOK.md`, `npm run preflight:prod`.
 

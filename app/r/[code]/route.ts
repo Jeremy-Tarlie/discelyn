@@ -26,13 +26,19 @@ export async function GET(request: NextRequest, context: RouteContext) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  await prisma.affiliateClick.create({
-    data: {
-      affiliateId: affiliate.id,
-      accessProductId: productId,
-      meta: { ua: request.headers.get("user-agent")?.slice(0, 200) ?? null },
-    },
-  });
+  const hasAffiliateConsent = hasOptionalConsentFromCookieHeader(
+    request.headers.get("cookie")
+  );
+
+  if (hasAffiliateConsent) {
+    await prisma.affiliateClick.create({
+      data: {
+        affiliateId: affiliate.id,
+        accessProductId: productId,
+        meta: { ua: request.headers.get("user-agent")?.slice(0, 200) ?? null },
+      },
+    });
+  }
 
   let redirectUrl = affiliateRefUrl(affiliate.code);
   if (productId) {
@@ -70,7 +76,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
   }
 
   const response = NextResponse.redirect(redirectUrl);
-  if (hasOptionalConsentFromCookieHeader(request.headers.get("cookie"))) {
+  if (hasAffiliateConsent) {
     response.cookies.set(AFFILIATE_COOKIE, affiliate.code, {
       httpOnly: true,
       sameSite: "lax",

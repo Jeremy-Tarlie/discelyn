@@ -3,7 +3,10 @@ import type { NextRequest } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { requireUnsealSecret } from "@/lib/token-crypto";
-import { extractDiscordUserIdFromSession } from "@/lib/learner-access-parse";
+import {
+  extractDiscordUserIdFromSession,
+  extractPriceIdFromSession,
+} from "@/lib/learner-access-parse";
 import {
   shouldOpenAccessFromCheckout,
   shouldRevokeOnSubscriptionStatus,
@@ -45,12 +48,9 @@ async function resolvePriceId(input: {
   session: Stripe.Checkout.Session;
   apiKey: string | null;
 }): Promise<string | null> {
-  const meta =
-    input.session.metadata?.discelyn_price_id ??
-    input.session.metadata?.botly_price_id ??
-    input.session.metadata?.stripe_price_id ??
-    input.session.metadata?.priceId;
-  if (meta && meta.startsWith("price_")) return meta;
+  // discelyn_* canonique ; botly_* encore accepté (Payment Links legacy).
+  const fromMeta = extractPriceIdFromSession(input.session);
+  if (fromMeta && fromMeta.startsWith("price_")) return fromMeta;
 
   if (!input.apiKey) return null;
 
@@ -61,10 +61,11 @@ async function resolvePriceId(input: {
   const full = await stripe.checkout.sessions.retrieve(input.session.id, {
     expand: ["line_items.data.price"],
   });
-  const price = full.line_items?.data[0]?.price;
-  if (price && typeof price === "object" && "id" in price) {
-    return price.id;
-  }
+  const fromLines = extractPriceIdFromSession(
+    input.session,
+    full.line_items?.data ?? null
+  );
+  if (fromLines && fromLines.startsWith("price_")) return fromLines;
   return null;
 }
 
@@ -141,6 +142,7 @@ async function handleCheckoutCompleted(
       ? session.payment_intent
       : session.payment_intent?.id ?? null;
 
+  // discelyn_affiliate canonique ; botly_affiliate = Payment Links legacy.
   const affiliateCode =
     session.metadata?.discelyn_affiliate ??
     session.metadata?.botly_affiliate ??

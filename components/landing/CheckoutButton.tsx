@@ -7,6 +7,7 @@ import {
   loginWithSubscribeIntent,
   type SubscribePlanId,
 } from "@/lib/auth-callback";
+import { redirectIfMfaRequired } from "@/lib/api-client-auth";
 
 type CheckoutOfferId = PlanId | "SETUP" | "DIAGNOSTIC";
 
@@ -50,7 +51,11 @@ export function CheckoutButton({
           isSubscription ? { planId, interval } : { planId }
         ),
       });
-      const data = (await response.json()) as { url?: string; error?: string };
+      const data = (await response.json()) as {
+        url?: string;
+        error?: string;
+        code?: string;
+      };
 
       if (!response.ok || !data.url) {
         if (response.status === 401) {
@@ -61,6 +66,13 @@ export function CheckoutButton({
           } else {
             window.location.assign("/login");
           }
+          return;
+        }
+        if (redirectIfMfaRequired(data)) {
+          return;
+        }
+        if (response.status === 403) {
+          window.location.assign("/dashboard/account");
           return;
         }
         setError(data.error ?? t("checkoutFailed"));

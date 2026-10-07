@@ -8,6 +8,7 @@ import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
 import { isAppTimezone, TIMEZONE_OPTIONS } from "@/lib/timezones";
 import { logUserActivity } from "@/lib/activity-log";
+import { deniedAuthResponse } from "@/lib/http-auth";
 
 const prefsSchema = z.object({
   timezone: z
@@ -23,10 +24,7 @@ export async function GET(request: NextRequest) {
   const locale = getRequestLocale(request);
   const user = await requireUser();
   if (!user) {
-    return NextResponse.json(
-      { error: tApi(locale, "unauthenticated") },
-      { status: 401 }
-    );
+    return deniedAuthResponse(locale);
   }
 
   const row = await prisma.user.findFirst({
@@ -62,10 +60,7 @@ export async function PATCH(request: NextRequest) {
 
   const user = await requireUser();
   if (!user) {
-    return NextResponse.json(
-      { error: tApi(locale, "unauthenticated") },
-      { status: 401 }
-    );
+    return deniedAuthResponse(locale);
   }
 
   let body: unknown;

@@ -20,6 +20,7 @@ import {
 } from "@/lib/stripe-plans";
 import { prisma } from "@/lib/prisma";
 import { ownerHasMfaEnabled } from "@/lib/mfa-guards";
+import { deniedAuthResponse } from "@/lib/http-auth";
 
 async function assertPriceMatchesInterval(
   stripe: Stripe,
@@ -81,10 +82,7 @@ export async function POST(request: NextRequest) {
 
   const org = await requireOrg({ minRole: "OWNER" });
   if (!org) {
-    return NextResponse.json(
-      { error: tApi(locale, "unauthenticated") },
-      { status: 401 }
-    );
+    return deniedAuthResponse(locale);
   }
 
   if (!(await ownerHasMfaEnabled(org.userId))) {

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { SubscribeIntent } from "@/lib/auth-callback";
 import { loginWithSubscribeIntent } from "@/lib/auth-callback";
+import { redirectIfMfaRequired } from "@/lib/api-client-auth";
 
 export function SubscribeCheckout({ intent }: { intent: SubscribeIntent }) {
   const t = useTranslations("subscribe");
@@ -39,12 +40,20 @@ export function SubscribeCheckout({ intent }: { intent: SubscribeIntent }) {
         const data = (await response.json()) as {
           url?: string;
           error?: string;
+          code?: string;
         };
 
         if (response.status === 401) {
           router.replace(
             loginWithSubscribeIntent(intent.plan, intent.interval)
           );
+          return;
+        }
+
+        if (redirectIfMfaRequired(data)) return;
+
+        if (response.status === 403) {
+          router.replace("/dashboard/account");
           return;
         }
 

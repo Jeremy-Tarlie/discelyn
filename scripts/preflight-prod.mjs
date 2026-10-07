@@ -161,6 +161,14 @@ if (present("RESEND_API_KEY") && !present("EMAIL_FROM")) {
 if (present("EMAIL_FROM") && !present("RESEND_API_KEY")) {
   warnings.push("EMAIL_FROM sans RESEND_API_KEY — emails claim non envoyés");
 }
+if (
+  appEnv === "production" &&
+  (!present("RESEND_API_KEY") || !present("EMAIL_FROM"))
+) {
+  warnings.push(
+    "prod sans RESEND_API_KEY+EMAIL_FROM — claims email-only non livrés (DM Discord / webhook orga seulement)"
+  );
+}
 
 for (const name of recommendedStripePrices) {
   if (!present(name)) {

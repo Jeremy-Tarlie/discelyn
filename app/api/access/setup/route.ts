@@ -12,6 +12,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
 import { prisma } from "@/lib/prisma";
+import { deniedAuthResponse } from "@/lib/http-auth";
 
 export const runtime = "nodejs";
 
@@ -38,10 +39,7 @@ export async function POST(request: NextRequest) {
 
   const org = await requireOrg({ minRole: "ADMIN" });
   if (!org) {
-    return NextResponse.json(
-      { error: tApi(locale, "unauthenticated") },
-      { status: 401 }
-    );
+    return deniedAuthResponse(locale);
   }
 
   const mfaUser = await prisma.user.findFirst({

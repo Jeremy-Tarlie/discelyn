@@ -6,6 +6,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
 import { sealToken } from "@/lib/token-crypto";
+import { deniedAuthResponse } from "@/lib/http-auth";
 import {
   buildOtpAuthUrl,
   generateTotpSecret,
@@ -22,10 +23,7 @@ export async function POST(request: NextRequest) {
 
   const user = await requireUser();
   if (!user) {
-    return NextResponse.json(
-      { error: tApi(locale, "unauthenticated") },
-      { status: 401 }
-    );
+    return deniedAuthResponse(locale);
   }
 
   const dbUser = await prisma.user.findFirst({

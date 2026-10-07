@@ -4,7 +4,10 @@ Définition de done pragmatique : **A + B + C14** + smoke live OK + 1–2 pilote
 
 ## A. Stabiliser & shipper
 
-- [ ] WIP MFA / compte / billing / migrations `20261001*` mergé et déployé
+- [x] MFA session sur API (`requireOrg` / `requireUser`) + step-up delete compte + migrations `20261001*`
+- [x] `deniedAuthResponse` + redirect client `mfa_required` (dashboard fetch)
+- [x] Switcher multi-org (`discelyn_active_org`) + claim email immédiat si Resend configuré
+- [x] Tests HTTP webhooks SaaS + access (`lib/*-webhook.http.test.ts`)
 - [ ] `npm run db:migrate:deploy` (inclut `learner_billing_health`)
 - [ ] `npm run release:gate` vert
 - [ ] Cutover : `APP_ENV=production`, `TRUST_PROXY=1`, `sk_live_`, Redis, TLS
@@ -25,7 +28,7 @@ Définition de done pragmatique : **A + B + C14** + smoke live OK + 1–2 pilote
 
 - [x] Filtre / badge / dernier paiement `past_due` (Apprenants)
 - [x] Preflight durci : prices SaaS + `BOT_RUNTIME_URL` + `WEB_INTERNAL_URL` + `SENTRY_DSN`
-- [x] MFA obligatoire OWNER (checkout, change-plan, portal, équipe, sk_ formation)
+- [x] MFA obligatoire OWNER (checkout y compris Free, change-plan, portal, équipe, sk_ formation) + challenge session sur toutes les API auth
 - [ ] DPA signé ou process « sur demande » documenté (`docs/DPA.md`)
 - [ ] Privacy / CGU relues (2FA, rétention, Stripe orga)
 

@@ -2,16 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 
-const storageKey = (userId: string) => `discelyn:mfa-signup-prompt:${userId}`;
-
 /**
- * Popup unique à l’inscription (OWNER sans 2FA).
- * Une seule fois — dismiss stocké en localStorage. Pas de bannière persistante.
+ * Popup bloquante OWNER sans 2FA — pas de dismiss « plus tard ».
+ * Masquée sur /dashboard/account pour permettre le setup.
  */
 export function OwnerMfaSignupModal({
-  userId,
   isOwner,
   mfaEnabled,
 }: {
@@ -20,26 +18,13 @@ export function OwnerMfaSignupModal({
   mfaEnabled: boolean;
 }) {
   const t = useTranslations("dashboard");
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (!isOwner || mfaEnabled) return;
-    try {
-      if (window.localStorage.getItem(storageKey(userId)) === "1") return;
-    } catch {
-      // private mode — montrer quand même une fois par session
-    }
-    setOpen(true);
-  }, [isOwner, mfaEnabled, userId]);
-
-  function dismiss() {
-    try {
-      window.localStorage.setItem(storageKey(userId), "1");
-    } catch {
-      /* ignore */
-    }
-    setOpen(false);
-  }
+    const onAccount = pathname === "/dashboard/account";
+    setOpen(Boolean(isOwner && !mfaEnabled && !onAccount));
+  }, [isOwner, mfaEnabled, pathname]);
 
   if (!open) return null;
 
@@ -61,16 +46,8 @@ export function OwnerMfaSignupModal({
           {t("ownerMfaPopupBody")}
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
-          <button
-            type="button"
-            onClick={dismiss}
-            className="rounded-full px-4 py-2 text-sm font-medium text-soft hover:text-page-fg"
-          >
-            {t("ownerMfaPopupLater")}
-          </button>
           <Link
             href="/dashboard/account"
-            onClick={dismiss}
             className="rounded-full bg-signal px-5 py-2.5 text-sm font-semibold text-white hover:brightness-110"
           >
             {t("ownerMfaPopupCta")}

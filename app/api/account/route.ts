@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { z } from "zod";
 import { requireUser } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
@@ -8,6 +9,13 @@ import { getStripe } from "@/lib/stripe";
 import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
 import type { Locale } from "@/i18n/config";
+import { deniedAuthResponse } from "@/lib/http-auth";
+import { verifyUserMfaCode } from "@/lib/mfa-verify-user";
+
+const deleteBodySchema = z.object({
+  confirm: z.literal("DELETE"),
+  code: z.string().trim().min(6).max(32).optional(),
+});
 
 /** Export RGPD — portable JSON des données personnelles (sans données tiers détaillées). */
 export async function GET(request: NextRequest) {
@@ -21,7 +29,7 @@ export async function GET(request: NextRequest) {
 
   const user = await requireUser();
   if (!user) {
-    return NextResponse.json({ error: tApi(locale, "unauthenticated") }, { status: 401 });
+    return deniedAuthResponse(locale);
   }
 
   const full = await prisma.user.findFirst({
@@ -179,6 +187,7 @@ async function deleteStripeCustomer(stripeCustomerId: string | null): Promise<vo
 /**
  * Soft-delete compte : cancel Stripe SaaS des orgs où l’user est seul OWNER
  * → revoke Discord → purge secrets formation → anonymisation.
+ * Step-up : confirm "DELETE" + code TOTP si 2FA activée.
  */
 export async function DELETE(request: NextRequest) {
   const locale = getRequestLocale(request);
@@ -191,15 +200,46 @@ export async function DELETE(request: NextRequest) {
 
   const user = await requireUser();
   if (!user) {
-    return NextResponse.json({ error: tApi(locale, "unauthenticated") }, { status: 401 });
+    return deniedAuthResponse(locale);
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: tApi(locale, "invalidJson") }, { status: 400 });
+  }
+
+  const parsed = deleteBodySchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: tApi(locale, "accountDeleteConfirmRequired") },
+      { status: 400 }
+    );
   }
 
   const account = await prisma.user.findFirst({
     where: { id: user.id, deletedAt: null },
-    select: { email: true },
+    select: { email: true, totpEnabled: true },
   });
   if (!account) {
     return NextResponse.json({ error: tApi(locale, "accountNotFound") }, { status: 404 });
+  }
+
+  if (account.totpEnabled) {
+    if (!parsed.data.code) {
+      return NextResponse.json(
+        { error: tApi(locale, "mfaCodeRequired") },
+        { status: 403 }
+      );
+    }
+    const mfa = await verifyUserMfaCode(user.id, parsed.data.code);
+    if (!mfa.ok) {
+      return NextResponse.json(
+        { error: tApi(locale, "mfaInvalidCode") },
+        { status: 403 }
+      );
+    }
   }
 
   const ownerMemberships = await prisma.organizationMembership.findMany({

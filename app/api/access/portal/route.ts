@@ -12,6 +12,7 @@ import { appBaseUrl, claimUrl } from "@/lib/learner-access";
 import { rateLimit } from "@/lib/rate-limit";
 import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
+import { deniedAuthResponse } from "@/lib/http-auth";
 
 export const runtime = "nodejs";
 
@@ -69,11 +70,8 @@ export async function POST(request: NextRequest) {
   if (parsed.data.accessId) {
     const org = await requireOrg({ minRole: "ADMIN" });
     if (!org) {
-      return NextResponse.json(
-        { error: tApi(locale, "unauthenticated") },
-        { status: 401 }
-      );
-    }
+    return deniedAuthResponse(locale);
+  }
     const subscription = await getOrgSubscription(org.organizationId);
     const usable = canUseProduct(subscription);
     if (!usable.ok) {

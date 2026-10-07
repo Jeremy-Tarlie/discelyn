@@ -14,6 +14,7 @@ import {
   dashBtnGhostClass,
   dashFieldClass,
 } from "@/components/dashboard/ui";
+import { redirectIfMfaRequired } from "@/lib/api-client-auth";
 
 export function LearnersPanel({
   initialLearners,
@@ -72,7 +73,9 @@ export function LearnersPanel({
       claimUrl?: string;
       url?: string;
       error?: string;
+      code?: string;
     };
+    if (redirectIfMfaRequired(data)) return;
     if (!res.ok) {
       setError(data.error ?? t("actionFailed"));
       return;

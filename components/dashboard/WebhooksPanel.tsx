@@ -14,6 +14,7 @@ import {
   dashBtnPrimaryClass,
   dashFieldClass,
 } from "@/components/dashboard/ui";
+import { redirectIfMfaRequired } from "@/lib/api-client-auth";
 
 const ALL_EVENTS = [
   "payment_received",
@@ -72,8 +73,9 @@ export function WebhooksPanel({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url, events }),
     });
+    const data = (await res.json()) as { error?: string; code?: string };
+    if (redirectIfMfaRequired(data)) return;
     if (!res.ok) {
-      const data = (await res.json()) as { error?: string };
       setError(data.error ?? t("saveFailed"));
       return;
     }
@@ -90,8 +92,9 @@ export function WebhooksPanel({
     const res = await fetch(`/api/outbound-webhooks?id=${id}`, {
       method: "DELETE",
     });
+    const data = (await res.json()) as { error?: string; code?: string };
+    if (redirectIfMfaRequired(data)) return;
     if (!res.ok) {
-      const data = (await res.json()) as { error?: string };
       setError(data.error ?? t("saveFailed"));
       return;
     }

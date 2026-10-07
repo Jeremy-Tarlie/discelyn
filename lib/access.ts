@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { Bot, Subscription } from "@/generated/prisma/client";
 import type { PlanId } from "@/lib/plans";
+import { userNeedsMfaChallenge } from "@/lib/mfa-session";
 
 export {
   canCreateBot,
@@ -14,8 +15,13 @@ export {
 export { requireOrg, orgRoleAtLeast } from "@/lib/org-access";
 export type { OrgContext } from "@/lib/org-access";
 
+export type RequireUserOptions = {
+  /** Autorise l’accès avant challenge TOTP (ex. POST /api/account/mfa/verify). */
+  allowUnverifiedMfa?: boolean;
+};
+
 /** @deprecated Prefer requireOrg — conserve pour routes identité pure (leads admin). */
-export async function requireUser() {
+export async function requireUser(options?: RequireUserOptions) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return null;
@@ -25,6 +31,14 @@ export async function requireUser() {
     select: { id: true },
   });
   if (!active) return null;
+
+  if (
+    !options?.allowUnverifiedMfa &&
+    (await userNeedsMfaChallenge(session.user.id))
+  ) {
+    return null;
+  }
+
   return session.user;
 }
 

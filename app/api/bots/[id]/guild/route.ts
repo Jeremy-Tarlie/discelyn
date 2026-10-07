@@ -14,6 +14,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { trackEvent } from "@/lib/analytics";
 import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
+import { deniedAuthResponse } from "@/lib/http-auth";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
   const org = await requireOrg({ minRole: "ADMIN" });
   if (!org) {
-    return NextResponse.json({ error: tApi(locale, "unauthenticated") }, { status: 401 });
+    return deniedAuthResponse(locale);
   }
 
   const subscription = await getOrgSubscription(org.organizationId);
@@ -166,7 +167,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
 
   const org = await requireOrg({ minRole: "ADMIN" });
   if (!org) {
-    return NextResponse.json({ error: tApi(locale, "unauthenticated") }, { status: 401 });
+    return deniedAuthResponse(locale);
   }
 
   const { id } = await context.params;

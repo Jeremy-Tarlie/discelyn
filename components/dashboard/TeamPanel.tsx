@@ -10,6 +10,7 @@ import {
   dashBtnPrimaryClass,
   dashFieldClass,
 } from "@/components/dashboard/ui";
+import { redirectIfMfaRequired } from "@/lib/api-client-auth";
 
 export type MemberRow = {
   id: string;
@@ -52,12 +53,17 @@ export function TeamPanel({
 
   async function reload() {
     const res = await fetch("/api/org/members");
+    const data = (await res.json().catch(() => null)) as {
+      members?: MemberRow[];
+      code?: string;
+      error?: string;
+    } | null;
+    if (data && redirectIfMfaRequired(data)) return;
     if (!res.ok) {
       setError("Impossible de charger l’équipe.");
       return;
     }
-    const data = (await res.json()) as { members: MemberRow[] };
-    setMembers(data.members);
+    if (data?.members) setMembers(data.members);
   }
 
   async function onAdd(e: React.FormEvent) {
@@ -71,10 +77,12 @@ export function TeamPanel({
       body: JSON.stringify({ discordId: discordId.trim(), role }),
     });
     setBusy(false);
+    const body = (await res.json().catch(() => null)) as {
+      error?: string;
+      code?: string;
+    } | null;
+    if (body && redirectIfMfaRequired(body)) return;
     if (!res.ok) {
-      const body = (await res.json().catch(() => null)) as {
-        error?: string;
-      } | null;
       setError(body?.error ?? "Ajout impossible.");
       return;
     }
@@ -90,10 +98,12 @@ export function TeamPanel({
       method: "DELETE",
     });
     setBusy(false);
+    const body = (await res.json().catch(() => null)) as {
+      error?: string;
+      code?: string;
+    } | null;
+    if (body && redirectIfMfaRequired(body)) return;
     if (!res.ok) {
-      const body = (await res.json().catch(() => null)) as {
-        error?: string;
-      } | null;
       setError(body?.error ?? "Retrait impossible.");
       return;
     }

@@ -5,6 +5,7 @@ import { getAccessStatsForOrg } from "@/lib/dashboard-data";
 import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
 import { rateLimit } from "@/lib/rate-limit";
+import { deniedAuthResponse } from "@/lib/http-auth";
 
 export const runtime = "nodejs";
 
@@ -19,10 +20,7 @@ export async function GET(request: NextRequest) {
 
   const org = await requireOrg({ minRole: "MEMBER" });
   if (!org) {
-    return NextResponse.json(
-      { error: tApi(locale, "unauthenticated") },
-      { status: 401 }
-    );
+    return deniedAuthResponse(locale);
   }
 
   const days = Number(request.nextUrl.searchParams.get("days") ?? "30");

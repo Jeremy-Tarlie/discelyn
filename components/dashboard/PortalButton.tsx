@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { redirectIfMfaRequired } from "@/lib/api-client-auth";
 
 export function PortalButton() {
   const t = useTranslations("dashboard");
@@ -14,7 +15,12 @@ export function PortalButton() {
     setError(null);
     try {
       const response = await fetch("/api/stripe/portal", { method: "POST" });
-      const data = (await response.json()) as { url?: string; error?: string };
+      const data = (await response.json()) as {
+        url?: string;
+        error?: string;
+        code?: string;
+      };
+      if (redirectIfMfaRequired(data)) return;
       if (!response.ok || !data.url) {
         setError(data.error ?? t("portalFailed"));
         setLoading(false);

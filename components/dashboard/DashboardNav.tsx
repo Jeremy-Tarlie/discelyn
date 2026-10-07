@@ -3,14 +3,22 @@ import { getTranslations } from "next-intl/server";
 import { LocaleSwitcher } from "@/components/i18n/LocaleSwitcher";
 import { ThemeSwitcher } from "@/components/theme/ThemeSwitcher";
 import { DashboardNavLinks } from "@/components/dashboard/DashboardNavLinks";
+import {
+  OrgSwitcher,
+  type OrgSwitcherItem,
+} from "@/components/dashboard/OrgSwitcher";
 import { getRequestTheme } from "@/lib/theme";
 
 export async function DashboardNav({
   planName,
   showLeads = false,
+  organizations = [],
+  activeOrganizationId,
 }: {
   planName: string;
   showLeads?: boolean;
+  organizations?: OrgSwitcherItem[];
+  activeOrganizationId?: string;
 }) {
   const t = await getTranslations("dashboard");
   const theme = await getRequestTheme();
@@ -42,6 +50,14 @@ export async function DashboardNav({
         <p className="mt-1 text-xs uppercase tracking-wider text-signal">
           {t("planLabel", { name: planName })}
         </p>
+        {activeOrganizationId ? (
+          <OrgSwitcher
+            organizations={organizations}
+            activeOrganizationId={activeOrganizationId}
+            label={t("orgSwitcherLabel")}
+            switchingLabel={t("orgSwitcherSwitching")}
+          />
+        ) : null}
         <div className="mt-3 flex flex-wrap gap-2">
           <ThemeSwitcher theme={theme} />
           <LocaleSwitcher />

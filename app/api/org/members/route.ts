@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
 import { ownerHasMfaEnabled } from "@/lib/mfa-guards";
+import { deniedAuthResponse } from "@/lib/http-auth";
 
 export const runtime = "nodejs";
 
@@ -18,10 +19,7 @@ export async function GET(request: NextRequest) {
   const locale = getRequestLocale(request);
   const org = await requireOrg({ minRole: "MEMBER" });
   if (!org) {
-    return NextResponse.json(
-      { error: tApi(locale, "unauthorized") },
-      { status: 401 }
-    );
+    return deniedAuthResponse(locale, "unauthorized");
   }
 
   const members = await prisma.organizationMembership.findMany({
@@ -66,10 +64,7 @@ export async function POST(request: NextRequest) {
   const locale = getRequestLocale(request);
   const org = await requireOrg({ minRole: "OWNER" });
   if (!org) {
-    return NextResponse.json(
-      { error: tApi(locale, "unauthorized") },
-      { status: 401 }
-    );
+    return deniedAuthResponse(locale, "unauthorized");
   }
 
   if (!(await ownerHasMfaEnabled(org.userId))) {
@@ -151,10 +146,7 @@ export async function DELETE(request: NextRequest) {
   const locale = getRequestLocale(request);
   const org = await requireOrg({ minRole: "OWNER" });
   if (!org) {
-    return NextResponse.json(
-      { error: tApi(locale, "unauthorized") },
-      { status: 401 }
-    );
+    return deniedAuthResponse(locale, "unauthorized");
   }
 
   if (!(await ownerHasMfaEnabled(org.userId))) {

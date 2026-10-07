@@ -2,6 +2,10 @@
 
 > **Modèle** à adapter / faire valider par un conseil juridique avant signature Scale.
 > Ne pas présenter ce fichier comme un contrat signé.
+>
+> **Process commercial (Scale)** : le plan Scale affiche « DPA disponible sur demande ».
+> Tant qu’aucun DPA n’est signé avec le client, ce document reste un **template interne**.
+> Checklist : `docs/GO-LIVE.md` §C.
 
 ## Parties
 

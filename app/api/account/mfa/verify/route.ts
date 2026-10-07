@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
   });
   if (!limited.ok) return limited.response;
 
-  const user = await requireUser();
+  const user = await requireUser({ allowUnverifiedMfa: true });
   if (!user) {
     return NextResponse.json(
       { error: tApi(locale, "unauthenticated") },

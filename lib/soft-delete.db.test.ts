@@ -188,6 +188,11 @@ describe("soft-delete purge (DB)", () => {
         email: `softdel2_${suffix}@example.com`,
         name: "SoftDel2",
         discordId: `6${Date.now().toString().padStart(17, "0").slice(-17)}`,
+        totpEnabled: true,
+        totpSecret: "enc:v1:secret",
+        totpPendingSecret: "enc:v1:pending",
+        totpRecoveryHashes: '["hash1"]',
+        totpEnabledAt: new Date(),
       },
     });
     const { organizationId: org2Id } = await bootstrapOrganizationForUser({
@@ -216,6 +221,9 @@ describe("soft-delete purge (DB)", () => {
         stripeSecretKey: "enc:v1:sk2",
       },
     });
+    await prisma.userActivityLog.create({
+      data: { userId: u2.id, action: "test.soft_delete" },
+    });
 
     await softDeleteUserAccount({ userId: u2.id, email: u2.email });
 
@@ -224,6 +232,14 @@ describe("soft-delete purge (DB)", () => {
     expect(gone.email).toBeNull();
     expect(gone.discordId).toBeNull();
     expect(gone.name).toBeNull();
+    expect(gone.totpEnabled).toBe(false);
+    expect(gone.totpSecret).toBeNull();
+    expect(gone.totpPendingSecret).toBeNull();
+    expect(gone.totpRecoveryHashes).toBeNull();
+    expect(gone.totpEnabledAt).toBeNull();
+    expect(
+      await prisma.userActivityLog.count({ where: { userId: u2.id } })
+    ).toBe(0);
 
     const sub = await prisma.subscription.findUniqueOrThrow({
       where: { organizationId: org2Id },

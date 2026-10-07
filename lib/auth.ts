@@ -8,7 +8,9 @@ import type { PlanId } from "@/lib/plans";
 import type { OrgRole, SubscriptionStatus } from "@/generated/prisma/client";
 import { effectivePlan } from "@/lib/billing-guards";
 import { isTokenEncryptionEnabled, requireSealToken } from "@/lib/token-crypto";
+import { cookies } from "next/headers";
 import { bootstrapOrganizationForUser } from "@/lib/org-access";
+import { ACTIVE_ORG_COOKIE, pickActiveMembership } from "@/lib/active-org";
 
 declare module "next-auth" {
   interface Session {
@@ -97,8 +99,15 @@ export const authOptions: NextAuthOptions = {
         },
       });
 
-      const preferred =
-        memberships.find((m) => m.role === "OWNER") ?? memberships[0] ?? null;
+      let preferredOrgId: string | null = null;
+      try {
+        const jar = await cookies();
+        preferredOrgId = jar.get(ACTIVE_ORG_COOKIE)?.value ?? null;
+      } catch {
+        preferredOrgId = null;
+      }
+
+      const preferred = pickActiveMembership(memberships, preferredOrgId);
 
       const subscription = preferred
         ? await prisma.subscription.findUnique({

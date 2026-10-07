@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
 import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
+import { deniedAuthResponse } from "@/lib/http-auth";
 import {
   getCurrentDbSession,
   getSessionTokenFromCookies,
@@ -14,10 +15,7 @@ export async function GET(request: NextRequest) {
   const locale = getRequestLocale(request);
   const user = await requireUser();
   if (!user) {
-    return NextResponse.json(
-      { error: tApi(locale, "unauthenticated") },
-      { status: 401 }
-    );
+    return deniedAuthResponse(locale);
   }
 
   const current = await getCurrentDbSession();
@@ -53,10 +51,7 @@ export async function DELETE(request: NextRequest) {
 
   const user = await requireUser();
   if (!user) {
-    return NextResponse.json(
-      { error: tApi(locale, "unauthenticated") },
-      { status: 401 }
-    );
+    return deniedAuthResponse(locale);
   }
 
   const token = await getSessionTokenFromCookies();

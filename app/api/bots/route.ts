@@ -14,6 +14,7 @@ import { getPlatformInviteUrl } from "@/lib/invite";
 import { trackEvent } from "@/lib/analytics";
 import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
+import { deniedAuthResponse } from "@/lib/http-auth";
 
 export async function GET(request: NextRequest) {
   const locale = getRequestLocale(request);
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
 
   const org = await requireOrg({ minRole: "MEMBER" });
   if (!org) {
-    return NextResponse.json({ error: tApi(locale, "unauthenticated") }, { status: 401 });
+    return deniedAuthResponse(locale);
   }
 
   const bots = await prisma.bot.findMany({
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
 
   const org = await requireOrg({ minRole: "ADMIN" });
   if (!org) {
-    return NextResponse.json({ error: tApi(locale, "unauthenticated") }, { status: 401 });
+    return deniedAuthResponse(locale);
   }
 
   let body: unknown;

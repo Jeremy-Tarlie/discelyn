@@ -11,6 +11,7 @@ import {
   type BillingInterval,
   type PlanId,
 } from "@/lib/plans";
+import { redirectIfMfaRequired } from "@/lib/api-client-auth";
 
 const ORDER: PlanId[] = ["FREE", "STARTER", "OPS", "SCALE"];
 
@@ -81,9 +82,15 @@ export function ChangePlanPanel({
         ok?: boolean;
         plan?: string;
         error?: string;
+        code?: string;
       };
 
       if (!response.ok) {
+        if (redirectIfMfaRequired(data)) return;
+        if (response.status === 403) {
+          window.location.assign("/dashboard/account");
+          return;
+        }
         setError(data.error ?? t("changePlanFailed"));
         setLoadingPlan(null);
         return;

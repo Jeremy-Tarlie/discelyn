@@ -178,6 +178,7 @@ export async function softDeleteUserAccount(input: {
   }
 
   await prisma.analyticsEvent.deleteMany({ where: { userId: input.userId } });
+  await prisma.userActivityLog.deleteMany({ where: { userId: input.userId } });
   await prisma.cookieConsentLog.updateMany({
     where: { userId: input.userId },
     data: { userId: null },
@@ -199,6 +200,11 @@ export async function softDeleteUserAccount(input: {
       image: null,
       discordId: null,
       emailVerified: null,
+      totpEnabled: false,
+      totpSecret: null,
+      totpPendingSecret: null,
+      totpRecoveryHashes: null,
+      totpEnabledAt: null,
     },
   });
 }
