@@ -74,8 +74,11 @@ async function pingRedis(): Promise<"ok" | "error" | "skipped"> {
 }
 
 /**
- * Health read-only — pas de side-effects.
+ * Readiness produit — pas de side-effects.
  * Ne divulgue pas la présence/absence de secrets (encryption, cron).
+ *
+ * Docker / crons : utiliser `/api/health/live` (DB only).
+ * Uptime externe : cet endpoint — 503 si runtime/redis/bot plateforme down.
  */
 export async function GET() {
   try {
@@ -91,7 +94,6 @@ export async function GET() {
     const degraded = runtimeDown || redisDown || botDown;
     const status = degraded ? "degraded" : "ok";
 
-    // 503 si dépendances produit down — Docker/LB ne doivent pas garder un web « healthy ».
     return NextResponse.json(
       {
         status,

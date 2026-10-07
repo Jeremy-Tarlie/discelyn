@@ -8,9 +8,12 @@ Définition de done pragmatique : **A + B + C14** + smoke live OK + 1–2 pilote
 - [x] `deniedAuthResponse` + redirect client `mfa_required` (dashboard fetch)
 - [x] Switcher multi-org (`discelyn_active_org`) + claim email immédiat si Resend configuré
 - [x] Tests HTTP webhooks SaaS + access (`lib/*-webhook.http.test.ts`)
+- [x] Runtime Docker : `shared/` + client Prisma dans l’image ; migrate unique (web only)
+- [x] Secrets webhook sortants : révélés une fois au POST, plus au GET
+- [x] Compose : liveness `/api/health/live`, pas de `:3000` public sans overlay, crons 1er run immédiat
 - [ ] `npm run db:migrate:deploy` (inclut `learner_billing_health`)
 - [ ] `npm run release:gate` vert
-- [ ] Cutover : `APP_ENV=production`, `TRUST_PROXY=1`, `sk_live_`, Redis, TLS
+- [ ] Cutover : `APP_ENV=production`, overlay TLS (`docker-compose.tls.yml` ou host-nginx), `TRUST_PROXY=1`, `sk_live_`, Redis — **jamais** `:3000` public sans proxy
 - [ ] `STRIPE_PRICE_STARTER|OPS|SCALE` (+ yearly / setup / diagnostic recommandés)
 - [ ] Smoke money-path live (ci-dessous ou `npm run smoke:live`)
 - [ ] Tag `v2.x.y` après smoke OK
@@ -18,7 +21,7 @@ Définition de done pragmatique : **A + B + C14** + smoke live OK + 1–2 pilote
 ## B. Ops client payant
 
 - [ ] `SENTRY_DSN` (preflight **bloque** en prod s’il manque)
-- [ ] Uptime HTTP sur `/api/health` (attendre 200 + `"status":"ok"`)
+- [ ] Uptime HTTP sur `/api/health` (readiness : 200 + `"status":"ok"`). Compose utilise `/api/health/live` (DB only).
 - [ ] `RESEND_API_KEY` + `EMAIL_FROM` si claims hors Discord
 - [ ] Backup DB hors machine planifié + 1 restore testé (`docs/OPS-RUNBOOK.md`)
 - [ ] Crons `access-cron` / `retention-cron` → logs HTTP 200

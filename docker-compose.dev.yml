@@ -1,17 +1,22 @@
-# Dev local : expose Postgres + Redis + runtime sur l'hôte.
+# Dev local : expose web + Postgres + Redis + runtime sur l'hôte.
 # Usage : docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 #
 # Port 5434 (pas 5432) : évite le conflit avec un Postgres Windows natif
 # souvent déjà en écoute sur 5432.
+# Redis / Postgres / runtime bind loopback uniquement (pas d’exposition LAN).
 services:
+  web:
+    ports:
+      - "3000:3000"
+
   db:
     ports:
-      - "5434:5432"
+      - "127.0.0.1:5434:5432"
 
   redis:
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
 
   runtime:
     ports:
-      - "4001:4001"
+      - "127.0.0.1:4001:4001"

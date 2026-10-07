@@ -35,6 +35,12 @@ jobs:
       TOKEN_ENCRYPTION_KEY: ci-token-encryption-key-for-tests
       CRON_SECRET: ci-cron-secret-for-tests
       APP_ENV: staging
+      NEXT_PUBLIC_LEGAL_ENTITY_NAME: "CI Legal Entity"
+      NEXT_PUBLIC_LEGAL_ENTITY_ADDRESS: "1 CI Street"
+      NEXT_PUBLIC_LEGAL_ENTITY_COUNTRY: "FR"
+      NEXT_PUBLIC_SUPPORT_EMAIL: "support@ci.example"
+      NEXT_PUBLIC_HOSTING_PROVIDER: "CI Host"
+      NEXT_PUBLIC_HOSTING_REGION: "eu-west"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

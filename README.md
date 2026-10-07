@@ -66,6 +66,9 @@ npm install && npm run db:migrate:deploy && npm run dev
 
 `DATABASE_URL` local = Postgres Docker sur le port **5434** (pas 5432 — souvent pris par un Postgres Windows).
 
+Le compose de base **n’expose pas** le port 3000 (prod = overlay TLS). Pour un full-stack Docker local :  
+`docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d` (publie 3000 + loopback db/redis/runtime).
+
 Second terminal :
 
 ```bash

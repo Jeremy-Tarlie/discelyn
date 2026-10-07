@@ -25,6 +25,19 @@ const ALL_EVENTS = [
   "claim_reminder",
 ] as const;
 
+type CreateWebhookResponse = {
+  error?: string;
+  code?: string;
+  webhook?: {
+    id: string;
+    url: string;
+    events: string[];
+    active: boolean;
+    secret: string;
+    createdAt: string;
+  };
+};
+
 export function WebhooksPanel({
   initialHooks,
 }: {
@@ -46,6 +59,7 @@ export function WebhooksPanel({
   ]);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [revealedSecret, setRevealedSecret] = useState<string | null>(null);
 
   function eventLabel(ev: string): string {
     switch (ev) {
@@ -68,19 +82,26 @@ export function WebhooksPanel({
 
   async function create() {
     setError(null);
+    setRevealedSecret(null);
     const res = await fetch("/api/outbound-webhooks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url, events }),
     });
-    const data = (await res.json()) as { error?: string; code?: string };
+    const data = (await res.json()) as CreateWebhookResponse;
     if (redirectIfMfaRequired(data)) return;
     if (!res.ok) {
       setError(data.error ?? t("saveFailed"));
       return;
     }
+    const plainSecret = data.webhook?.secret;
+    if (plainSecret) {
+      setRevealedSecret(plainSecret);
+      setMessage(t("createdOnce"));
+    } else {
+      setMessage(t("created"));
+    }
     setUrl("");
-    setMessage(t("created"));
     startTransition(() => {
       router.refresh();
     });
@@ -110,6 +131,13 @@ export function WebhooksPanel({
       {pending ? <DashboardAlert tone="muted">{t("loading")}</DashboardAlert> : null}
       {error ? <DashboardAlert tone="error">{error}</DashboardAlert> : null}
       {message ? <DashboardAlert tone="ok">{message}</DashboardAlert> : null}
+      {revealedSecret ? (
+        <DashboardAlert tone="ok">
+          <p className="font-medium">{t("secretOnceTitle")}</p>
+          <p className="mt-1 break-all font-mono text-sm">{revealedSecret}</p>
+          <p className="mt-2 text-sm">{t("secretOnceHint")}</p>
+        </DashboardAlert>
+      ) : null}
 
       <DashboardPanel title={t("formTitle")}>
         <div className="space-y-4">
@@ -188,9 +216,7 @@ export function WebhooksPanel({
                       </DashboardBadge>
                     ))}
                   </div>
-                  <p className="font-mono text-xs text-soft">
-                    {t("secretPrefix")} {h.secret.slice(0, 8)}…
-                  </p>
+                  <p className="text-xs text-soft">{t("secretHidden")}</p>
                 </div>
                 <button
                   type="button"

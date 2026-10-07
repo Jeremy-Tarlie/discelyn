@@ -65,6 +65,17 @@ describe("getClientIp", () => {
     process.env.TRUST_PROXY = previous;
   });
 
+  it("utilise request.ip sans TRUST_PROXY si fourni par la plateforme", () => {
+    const previous = process.env.TRUST_PROXY;
+    delete process.env.TRUST_PROXY;
+    const req = Object.assign(
+      fakeRequest({ headers: { "x-forwarded-for": "1.2.3.4" } }),
+      { ip: "10.0.0.9" }
+    );
+    expect(getClientIp(req)).toBe("10.0.0.9");
+    process.env.TRUST_PROXY = previous;
+  });
+
   it("préfère x-real-ip si TRUST_PROXY=1", () => {
     const previous = process.env.TRUST_PROXY;
     process.env.TRUST_PROXY = "1";

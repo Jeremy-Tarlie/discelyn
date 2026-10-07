@@ -20,6 +20,13 @@ export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   const locale = getRequestLocale(request);
+  const limited = await rateLimit(request, {
+    namespace: "outbound-webhooks",
+    limit: 60,
+    windowMs: 60_000,
+  });
+  if (!limited.ok) return limited.response;
+
   const org = await requireOrg({ minRole: "MEMBER" });
   if (!org) {
     return deniedAuthResponse(locale);

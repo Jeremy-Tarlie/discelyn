@@ -1,10 +1,15 @@
 import type { NextRequest } from "next/server";
 
+/** Certaines plateformes Next injectent `ip` ; absent en self-host classique. */
+type NextRequestWithOptionalIp = NextRequest & { readonly ip?: string };
+
 /**
  * IP client pour rate-limit.
- * - Si TRUST_PROXY=1 (derrière Caddy) : x-real-ip, sinon dernier hop de x-forwarded-for
+ * - Si TRUST_PROXY=1 (derrière Caddy/nginx) : x-real-ip, sinon dernier hop de x-forwarded-for
  *   (Caddy append le client ; le premier hop est spoofable).
- * - Sinon : ignore les headers forwardés (évite spoof en accès direct).
+ * - Sinon : ignore les headers forwardés (évite spoof) ; utilise `ip` plateforme si présent,
+ *   sinon bucket partagé `"direct"`.
+ *   En prod : ne jamais exposer :3000 sans proxy + TRUST_PROXY=1.
  */
 export function getClientIp(request: NextRequest): string {
   const trustProxy = process.env.TRUST_PROXY === "1";
@@ -20,6 +25,9 @@ export function getClientIp(request: NextRequest): string {
       if (last) return last;
     }
   }
+
+  const platformIp = (request as NextRequestWithOptionalIp).ip?.trim();
+  if (platformIp) return platformIp;
 
   return "direct";
 }

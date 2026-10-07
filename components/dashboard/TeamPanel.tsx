@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   DashboardAlert,
   DashboardBadge,
@@ -45,6 +46,7 @@ export function TeamPanel({
   canManage: boolean;
   initialMembers: MemberRow[];
 }) {
+  const t = useTranslations("dashboard.team");
   const [members, setMembers] = useState<MemberRow[]>(initialMembers);
   const [discordId, setDiscordId] = useState("");
   const [role, setRole] = useState<"ADMIN" | "MEMBER">("MEMBER");
@@ -60,7 +62,7 @@ export function TeamPanel({
     } | null;
     if (data && redirectIfMfaRequired(data)) return;
     if (!res.ok) {
-      setError("Impossible de charger l’équipe.");
+      setError(t("loadFailed"));
       return;
     }
     if (data?.members) setMembers(data.members);
@@ -83,7 +85,7 @@ export function TeamPanel({
     } | null;
     if (body && redirectIfMfaRequired(body)) return;
     if (!res.ok) {
-      setError(body?.error ?? "Ajout impossible.");
+      setError(body?.error ?? t("addFailed"));
       return;
     }
     setDiscordId("");
@@ -104,7 +106,7 @@ export function TeamPanel({
     } | null;
     if (body && redirectIfMfaRequired(body)) return;
     if (!res.ok) {
-      setError(body?.error ?? "Retrait impossible.");
+      setError(body?.error ?? t("removeFailed"));
       return;
     }
     await reload();
@@ -112,19 +114,13 @@ export function TeamPanel({
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <DashboardPageHeader
-        title="Équipe"
-        description="Membres de l’organisation. L’ajout nécessite un compte Discelyn existant (ID Discord)."
-      />
+      <DashboardPageHeader title={t("title")} description={t("body")} />
 
       {error ? <DashboardAlert tone="error">{error}</DashboardAlert> : null}
 
-      <DashboardPanel title="Membres">
+      <DashboardPanel title={t("membersTitle")}>
         {members.length === 0 ? (
-          <DashboardEmptyState
-            title="Aucun membre"
-            hint="Ajoute un compte Discelyn via son ID Discord."
-          />
+          <DashboardEmptyState title={t("empty")} hint={t("emptyHint")} />
         ) : (
           <ul className="divide-y divide-line">
             {members.map((m) => {
@@ -168,7 +164,7 @@ export function TeamPanel({
                         onClick={() => void onRemove(m.id)}
                         className="text-sm font-medium text-warn hover:underline disabled:opacity-50"
                       >
-                        Retirer
+                        {t("remove")}
                       </button>
                     ) : null}
                   </div>
@@ -181,15 +177,15 @@ export function TeamPanel({
 
       {canManage ? (
         <DashboardPanel
-          title="Ajouter un membre"
-          description="Le Discord ID doit correspondre à un compte déjà connecté sur Discelyn."
+          title={t("addTitle")}
+          description={t("addDescription")}
         >
           <form
             onSubmit={onAdd}
             className="grid gap-4 sm:grid-cols-[1fr_auto_auto] sm:items-end"
           >
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-soft">ID Discord</span>
+              <span className="font-medium text-soft">{t("discordId")}</span>
               <input
                 value={discordId}
                 onChange={(e) => setDiscordId(e.target.value)}
@@ -199,7 +195,7 @@ export function TeamPanel({
               />
             </label>
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-soft">Rôle</span>
+              <span className="font-medium text-soft">{t("role")}</span>
               <select
                 value={role}
                 onChange={(e) =>
@@ -216,7 +212,7 @@ export function TeamPanel({
               disabled={busy}
               className={dashBtnPrimaryClass}
             >
-              Ajouter
+              {t("add")}
             </button>
           </form>
         </DashboardPanel>

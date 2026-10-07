@@ -7,6 +7,7 @@ import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
 import { ownerHasMfaEnabled } from "@/lib/mfa-guards";
 import { deniedAuthResponse } from "@/lib/http-auth";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -17,6 +18,13 @@ const addMemberSchema = z.object({
 
 export async function GET(request: NextRequest) {
   const locale = getRequestLocale(request);
+  const limited = await rateLimit(request, {
+    namespace: "org-members",
+    limit: 60,
+    windowMs: 60_000,
+  });
+  if (!limited.ok) return limited.response;
+
   const org = await requireOrg({ minRole: "MEMBER" });
   if (!org) {
     return deniedAuthResponse(locale, "unauthorized");
@@ -62,6 +70,13 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const locale = getRequestLocale(request);
+  const limited = await rateLimit(request, {
+    namespace: "org-members-write",
+    limit: 20,
+    windowMs: 60_000,
+  });
+  if (!limited.ok) return limited.response;
+
   const org = await requireOrg({ minRole: "OWNER" });
   if (!org) {
     return deniedAuthResponse(locale, "unauthorized");
@@ -144,6 +159,13 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   const locale = getRequestLocale(request);
+  const limited = await rateLimit(request, {
+    namespace: "org-members-write",
+    limit: 20,
+    windowMs: 60_000,
+  });
+  if (!limited.ok) return limited.response;
+
   const org = await requireOrg({ minRole: "OWNER" });
   if (!org) {
     return deniedAuthResponse(locale, "unauthorized");

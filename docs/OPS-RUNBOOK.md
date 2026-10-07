@@ -4,7 +4,7 @@
 
 | Service | Rôle | Health |
 |---------|------|--------|
-| `web` | Next.js API + dashboard | `GET /api/health` |
+| `web` | Next.js API + dashboard | Compose : `GET /api/health/live` · Uptime : `GET /api/health` |
 | `runtime` | discord.js plateforme | `GET {BOT_RUNTIME_URL}/health` |
 | `db` | Postgres | compose healthcheck |
 | `redis` | rate-limit | ping via `/api/health` |
@@ -13,11 +13,12 @@
 
 ## Alertes minimales
 
-1. `/api/health` → HTTP **503** (`status=degraded|error`) ou `db=error` (page / uptime). Compose exige `"status":"ok"` dans le body.
-2. `platformBot.status=error` ou `runtime.status=error` → bot / join cassés (déjà inclus dans le 503).
-3. `access-cron` HTTP ≠ 200 → plus d’expiry ni relances claim.
-4. Sentry : spikes `learner-join`, `access-webhook`, unseal secrets.
-5. Logs `[access-webhook] handler error (claim released)` en boucle → config price/produit/guild à corriger (Stripe retente).
+1. `/api/health/live` → Compose liveness (DB only). Un blip Discord ne doit **pas** stopper les crons.
+2. `/api/health` → readiness produit : HTTP **503** si `status=degraded|error` (uptime externe).
+3. `platformBot.status=error` ou `runtime.status=error` → bot / join cassés (503 readiness, pas liveness).
+4. `access-cron` HTTP ≠ 200 → plus d’expiry ni relances claim.
+5. Sentry : spikes `learner-join`, `access-webhook`, unseal secrets.
+6. Logs `[access-webhook] handler error (claim released)` en boucle → config price/produit/guild à corriger (Stripe retente).
 
 ## Incidents fréquents
 
@@ -71,8 +72,8 @@ Sans Server Members : joins / grants rôle incomplets.
 Compose affiche souvent `Error dependency redis/runtime failed to start` :
 ce n’est **pas** une dépendance circulaire. En pratique :
 
-1. **redis** ou **runtime** n’est pas devenu `healthy` (exit / crash / healthcheck).
-2. **web** (et donc caddy qui attend web) ne démarre pas à cause de `depends_on: condition: service_healthy`.
+1. **redis** n’est pas devenu `healthy` (exit / crash / healthcheck) → **web** ne démarre pas.
+2. **web** unhealthy (`/api/health/live`) → **runtime**, crons et caddy (TLS overlay) restent bloqués.
 
 ### Diagnostiquer (sur le VPS)
 

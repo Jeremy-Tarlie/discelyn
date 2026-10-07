@@ -4,7 +4,6 @@ import type {
 } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { affiliateRefUrl, claimUrl } from "@/lib/learner-access";
-import { unsealToken } from "@/lib/token-crypto";
 
 export type AccessStatsData = {
   periodDays: number;
@@ -347,7 +346,6 @@ export type DashboardWebhook = {
   url: string;
   events: string[];
   active: boolean;
-  secret: string;
   createdAt: string;
 };
 
@@ -362,7 +360,6 @@ export async function listOutboundWebhooksForOrg(
       url: true,
       events: true,
       active: true,
-      secret: true,
       createdAt: true,
     },
   });
@@ -372,7 +369,6 @@ export async function listOutboundWebhooksForOrg(
     url: w.url,
     events: w.events,
     active: w.active,
-    secret: unsealToken(w.secret) ?? w.secret,
     createdAt: w.createdAt.toISOString(),
   }));
 }

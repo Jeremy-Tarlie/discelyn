@@ -38,8 +38,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      runtime:
-        condition: service_healthy
     env_file:
       - .env
     environment:
@@ -50,18 +48,21 @@ services:
       BOT_RUNTIME_URL: http://runtime:4001
       REDIS_URL: redis://redis:6379
       TRUST_PROXY: "0"
-    ports:
-      - "3000:3000"
+    # Pas de ports publics ici — prod = overlay TLS / host-nginx.
+    # Local full-stack : docker-compose.dev.yml publie 3000.
+    expose:
+      - "3000"
     healthcheck:
-      # BusyBox wget ne fail pas toujours sur 5xx — on exige status ok dans le body.
+      # Liveness DB only — Discord / runtime ne doivent pas tuer les crons.
       test:
         [
           "CMD-SHELL",
-          "wget -qO- http://127.0.0.1:3000/api/health | grep -q '\"status\":\"ok\"'",
+          "wget -qO- http://127.0.0.1:3000/api/health/live | grep -q '\"status\":\"ok\"'",
         ]
       interval: 15s
       timeout: 5s
       retries: 5
+      start_period: 45s
 
   # Purge périodique analytics + leads (RGPD) — horaire.
   # Nécessite CRON_SECRET dans .env (même valeur que web).
@@ -80,13 +81,13 @@ services:
           echo "[retention-cron] CRON_SECRET manquant — arrêt"
           exit 1
         fi
-        echo "[retention-cron] démarré (intervalle 1h)"
+        echo "[retention-cron] démarré (intervalle 1h, 1er run immédiat)"
         while true; do
-          sleep 3600
           code=$$(curl -sS -o /tmp/retention-body -w "%{http_code}" -X POST \
             -H "Authorization: Bearer $$CRON_SECRET" \
             http://web:3000/api/cron/retention || echo "000")
           echo "[retention-cron] HTTP $$code $$(cat /tmp/retention-body 2>/dev/null || true)"
+          sleep 3600
         done
 
   # Relances claim / expiry cohorte / onboarding — toutes les 15 min.
@@ -105,13 +106,13 @@ services:
           echo "[access-cron] CRON_SECRET manquant — arrêt"
           exit 1
         fi
-        echo "[access-cron] démarré (intervalle 15 min)"
+        echo "[access-cron] démarré (intervalle 15 min, 1er run immédiat)"
         while true; do
-          sleep 900
           code=$$(curl -sS -o /tmp/access-body -w "%{http_code}" -X POST \
             -H "Authorization: Bearer $$CRON_SECRET" \
             http://web:3000/api/cron/access || echo "000")
           echo "[access-cron] HTTP $$code $$(cat /tmp/access-body 2>/dev/null || true)"
+          sleep 900
         done
 
   runtime:
@@ -121,6 +122,8 @@ services:
     restart: unless-stopped
     depends_on:
       db:
+        condition: service_healthy
+      web:
         condition: service_healthy
     env_file:
       - .env
@@ -144,7 +147,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 6
-      # migrate + boot Node avant /health (Discord login peut suivre)
+      # boot Node avant /health (Discord login peut suivre)
       start_period: 60s
 
 volumes:
