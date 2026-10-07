@@ -74,12 +74,25 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: tApi(locale, "accountNotFound") }, { status: 404 });
   }
 
-  const leads = full.email
-    ? await prisma.lead.findMany({
-        where: { email: full.email },
-        orderBy: { createdAt: "desc" },
-      })
-    : [];
+  const [leads, cookieConsents] = await Promise.all([
+    full.email
+      ? prisma.lead.findMany({
+          where: { email: full.email },
+          orderBy: { createdAt: "desc" },
+        })
+      : Promise.resolve([]),
+    prisma.cookieConsentLog.findMany({
+      where: { userId: full.id },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        visitorId: true,
+        choice: true,
+        policyVersion: true,
+        createdAt: true,
+      },
+    }),
+  ]);
 
   return NextResponse.json({
     exportedAt: new Date().toISOString(),
@@ -124,6 +137,7 @@ export async function GET(request: NextRequest) {
       },
     })),
     leads,
+    cookieConsents,
   });
 }
 

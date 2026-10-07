@@ -34,6 +34,24 @@ export async function purgeExpiredLeads(now = new Date()): Promise<number> {
   return result.count;
 }
 
+/** Rétention journal consentements cookies : 24 mois. */
+export const COOKIE_CONSENT_RETENTION_DAYS = 730;
+
+export function cookieConsentCutoff(now = new Date()): Date {
+  const d = new Date(now);
+  d.setUTCDate(d.getUTCDate() - COOKIE_CONSENT_RETENTION_DAYS);
+  return d;
+}
+
+export async function purgeExpiredCookieConsents(
+  now = new Date()
+): Promise<number> {
+  const result = await prisma.cookieConsentLog.deleteMany({
+    where: { createdAt: { lt: cookieConsentCutoff(now) } },
+  });
+  return result.count;
+}
+
 /**
  * Anonymisation PII apprenants après révocation / expiration.
  * Soft-delete orga anonymise immédiatement (voir softDeleteOrganization).

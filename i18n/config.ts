@@ -10,11 +10,17 @@ export const LOCALE_COOKIE = "discelyn_locale";
 export const CONSENT_COOKIE = "discelyn_consent";
 export const THEME_COOKIE = "discelyn_theme";
 export const AFFILIATE_COOKIE = "discelyn_aff";
+/** UUID anonyme pour journaliser les consentements cookies (preuve RGPD). */
+export const VISITOR_COOKIE = "discelyn_cid";
 
 export const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 export const CONSENT_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 export const THEME_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 export const AFFILIATE_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
+export const VISITOR_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+
+/** Version de la politique cookies référencée dans CookieConsentLog. */
+export const COOKIE_POLICY_VERSION = "2026-10-07";
 
 export function isLocale(value: string | undefined | null): value is Locale {
   return value === "fr" || value === "en";

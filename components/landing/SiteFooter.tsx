@@ -47,12 +47,6 @@ export async function SiteFooter() {
           >
             {t("terms")}
           </Link>
-          <Link
-            href="/ai-act"
-            className="transition hover:text-[color:var(--page-fg)]"
-          >
-            {t("aiAct")}
-          </Link>
           <CookiePrefsButton className="transition hover:text-[color:var(--page-fg)]" />
         </div>
         <p>© {new Date().getFullYear()} Discelyn</p>

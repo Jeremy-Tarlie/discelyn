@@ -25,7 +25,12 @@ export async function DashboardNav({
     { href: "/dashboard/team", label: t("teamNav") },
     { href: "/dashboard/billing", label: t("billing") },
     { href: "/dashboard/account", label: t("accountNav") },
-    ...(showLeads ? [{ href: "/dashboard/leads", label: t("leads") }] : []),
+    ...(showLeads
+      ? [
+          { href: "/dashboard/leads", label: t("leads") },
+          { href: "/dashboard/consents", label: t("consentsNav") },
+        ]
+      : []),
   ];
 
   return (

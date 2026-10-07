@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -9,6 +10,9 @@ import { prisma } from "@/lib/prisma";
 import { userNeedsMfaChallenge } from "@/lib/mfa-session";
 import { PastDueBanner } from "@/components/dashboard/PastDueBanner";
 import { OwnerMfaSignupModal } from "@/components/dashboard/OwnerMfaSignupModal";
+import { VISITOR_COOKIE } from "@/i18n/config";
+import { isValidVisitorId } from "@/lib/consent";
+import { linkVisitorConsentsToUser } from "@/lib/cookie-consent-log";
 
 export default async function DashboardLayout({
   children,
@@ -22,6 +26,12 @@ export default async function DashboardLayout({
 
   if (await userNeedsMfaChallenge(session.user.id)) {
     redirect("/login/mfa");
+  }
+
+  const jar = await cookies();
+  const visitorId = jar.get(VISITOR_COOKIE)?.value;
+  if (isValidVisitorId(visitorId)) {
+    await linkVisitorConsentsToUser(visitorId!, session.user.id);
   }
 
   const dbUser = await prisma.user.findFirst({

@@ -4,6 +4,7 @@ import { authorizeCron } from "@/lib/cron-auth";
 import {
   anonymizeExpiredLearnerPii,
   purgeExpiredAnalyticsEvents,
+  purgeExpiredCookieConsents,
   purgeExpiredLeads,
 } from "@/lib/data-retention";
 
@@ -11,7 +12,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 /**
- * Job rétention RGPD : analytics, leads, anonymisation PII apprenants.
+ * Job rétention RGPD : analytics, leads, consentements cookies, anonymisation PII apprenants.
  * Les jobs accès (claim / expiry) sont sur POST /api/cron/access.
  */
 export async function POST(request: NextRequest) {
@@ -25,15 +26,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const [analytics, leads, learnerPii] = await Promise.all([
+  const [analytics, leads, cookieConsents, learnerPii] = await Promise.all([
     purgeExpiredAnalyticsEvents(),
     purgeExpiredLeads(),
+    purgeExpiredCookieConsents(),
     anonymizeExpiredLearnerPii(),
   ]);
 
   return NextResponse.json({
     ok: true,
-    purged: { analytics, leads, learnerPii },
+    purged: { analytics, leads, cookieConsents, learnerPii },
     time: new Date().toISOString(),
   });
 }

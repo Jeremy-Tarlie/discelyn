@@ -14,15 +14,18 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import {
   clearAffiliateCookie,
+  EMPTY_CONSENT,
+  ensureVisitorId,
+  FULL_CONSENT,
   readConsentFromDocument,
   writeConsentCookie,
-  type ConsentValue,
+  type ConsentPreferences,
 } from "@/lib/consent";
 
 type ConsentContextValue = {
-  consent: ConsentValue | null;
+  consent: ConsentPreferences | null;
   openPrefs: () => void;
-  setConsent: (value: ConsentValue) => void;
+  setConsent: (value: ConsentPreferences) => void;
 };
 
 const ConsentContext = createContext<ConsentContextValue | null>(null);
@@ -36,15 +39,18 @@ export function useConsentUi(): ConsentContextValue {
 }
 
 export function ConsentProvider({ children }: { children: ReactNode }) {
-  const [consent, setConsentState] = useState<ConsentValue | null>(null);
+  const [consent, setConsentState] = useState<ConsentPreferences | null>(null);
   const [ready, setReady] = useState(false);
   const [prefsOpen, setPrefsOpen] = useState(false);
-  const [optional, setOptional] = useState(false);
+  const [draft, setDraft] = useState<ConsentPreferences>(EMPTY_CONSENT);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
   const titleId = useId();
   const t = useTranslations("cookies");
+  const tc = useTranslations("common");
 
   useEffect(() => {
     let cancelled = false;
@@ -53,7 +59,7 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
       if (cancelled) return;
       const current = readConsentFromDocument();
       setConsentState(current);
-      setOptional(current === "all");
+      setDraft(current ?? EMPTY_CONSENT);
       setReady(true);
     })();
     return () => {
@@ -61,18 +67,42 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const applyConsent = useCallback((value: ConsentValue) => {
-    writeConsentCookie(value);
-    if (value !== "all") {
-      clearAffiliateCookie();
+  const applyConsent = useCallback(async (prefs: ConsentPreferences) => {
+    setSaving(true);
+    setSaveError(null);
+    const visitorId = ensureVisitorId();
+
+    try {
+      const response = await fetch("/api/consent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ preferences: prefs, visitorId }),
+      });
+      if (!response.ok) {
+        const data = (await response.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        setSaveError(data.error ?? t("saveFailed"));
+        setSaving(false);
+        return;
+      }
+
+      writeConsentCookie(prefs);
+      if (!prefs.affiliate) {
+        clearAffiliateCookie();
+      }
+      setConsentState(prefs);
+      setPrefsOpen(false);
+      window.location.reload();
+    } catch {
+      setSaveError(tc("networkError"));
+      setSaving(false);
     }
-    setConsentState(value);
-    setPrefsOpen(false);
-    window.location.reload();
-  }, []);
+  }, [t, tc]);
 
   const openPrefs = useCallback(() => {
-    setOptional(consent === "all");
+    setDraft(consent ?? EMPTY_CONSENT);
+    setSaveError(null);
     setPrefsOpen(true);
   }, [consent]);
 
@@ -125,7 +155,7 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
 
   return (
     <ConsentContext.Provider
-      value={{ consent, openPrefs, setConsent: applyConsent }}
+      value={{ consent, openPrefs, setConsent: (v) => void applyConsent(v) }}
     >
       {children}
       {ready && consent === null ? (
@@ -144,21 +174,34 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
                   {t("privacyLink")}
                 </Link>
               </p>
+              {saveError ? (
+                <p className="mt-2 text-xs text-warn">{saveError}</p>
+              ) : null}
             </div>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => applyConsent("necessary")}
-                className="rounded-full border border-[color:var(--border)] px-4 py-2.5 text-sm font-semibold text-[color:var(--page-fg)] transition hover:bg-[color:var(--surface-muted)]"
+                disabled={saving}
+                onClick={() => void applyConsent(EMPTY_CONSENT)}
+                className="rounded-full border border-[color:var(--border)] px-4 py-2.5 text-sm font-semibold text-[color:var(--page-fg)] transition hover:bg-[color:var(--surface-muted)] disabled:opacity-50"
               >
                 {t("necessary")}
               </button>
               <button
                 type="button"
-                onClick={() => applyConsent("all")}
-                className="rounded-full bg-signal px-4 py-2.5 text-sm font-bold text-ink-950 transition hover:bg-signal-glow"
+                disabled={saving}
+                onClick={openPrefs}
+                className="rounded-full border border-[color:var(--border)] px-4 py-2.5 text-sm font-semibold text-[color:var(--page-fg)] transition hover:bg-[color:var(--surface-muted)] disabled:opacity-50"
               >
-                {t("acceptAll")}
+                {t("customize")}
+              </button>
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => void applyConsent(FULL_CONSENT)}
+                className="rounded-full bg-signal px-4 py-2.5 text-sm font-bold text-ink-950 transition hover:bg-signal-glow disabled:opacity-50"
+              >
+                {saving ? tc("loading") : t("acceptAll")}
               </button>
             </div>
           </div>
@@ -197,42 +240,61 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
                   {t("essentialDesc")}
                 </p>
               </li>
-              <li className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-muted)] p-3">
-                <label className="flex cursor-pointer items-start gap-3">
-                  <input
-                    type="checkbox"
-                    checked={optional}
-                    onChange={(e) => setOptional(e.target.checked)}
-                    className="mt-1"
-                  />
-                  <span>
-                    <span className="block text-sm font-semibold text-[color:var(--page-fg)]">
-                      {t("optionalLabel")}
+              {(
+                [
+                  ["analytics", "analyticsLabel", "analyticsDesc"],
+                  ["sentry", "sentryLabel", "sentryDesc"],
+                  ["affiliate", "affiliateLabel", "affiliateDesc"],
+                ] as const
+              ).map(([key, labelKey, descKey]) => (
+                <li
+                  key={key}
+                  className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-muted)] p-3"
+                >
+                  <label className="flex cursor-pointer items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={draft[key]}
+                      onChange={(e) =>
+                        setDraft((prev) => ({
+                          ...prev,
+                          [key]: e.target.checked,
+                        }))
+                      }
+                      className="mt-1"
+                    />
+                    <span>
+                      <span className="block text-sm font-semibold text-[color:var(--page-fg)]">
+                        {t(labelKey)}
+                      </span>
+                      <span className="mt-1 block text-xs leading-relaxed text-[color:var(--muted)]">
+                        {t(descKey)}
+                      </span>
                     </span>
-                    <span className="mt-1 block text-xs leading-relaxed text-[color:var(--muted)]">
-                      {t("optionalDesc")}
-                    </span>
-                  </span>
-                </label>
-              </li>
+                  </label>
+                </li>
+              ))}
             </ul>
+            {saveError ? (
+              <p className="mt-3 text-sm text-warn">{saveError}</p>
+            ) : null}
             <div className="mt-6 flex flex-wrap justify-end gap-2">
               <button
                 ref={closeButtonRef}
                 type="button"
                 onClick={closePrefs}
+                disabled={saving}
                 className="rounded-full px-4 py-2.5 text-sm text-[color:var(--muted)] hover:text-[color:var(--page-fg)]"
               >
                 {t("close")}
               </button>
               <button
                 type="button"
-                onClick={() =>
-                  applyConsent(optional ? "all" : "necessary")
-                }
-                className="rounded-full bg-signal px-4 py-2.5 text-sm font-bold text-ink-950"
+                disabled={saving}
+                onClick={() => void applyConsent(draft)}
+                className="rounded-full bg-signal px-4 py-2.5 text-sm font-bold text-ink-950 disabled:opacity-50"
               >
-                {t("save")}
+                {saving ? tc("loading") : t("save")}
               </button>
             </div>
           </div>
@@ -261,4 +323,3 @@ export function CookiePrefsButton({
     </button>
   );
 }
-

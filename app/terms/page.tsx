@@ -106,14 +106,19 @@ export default async function TermsPage() {
             </section>
             <section className="space-y-3">
               <h2 className="font-display text-xl text-[color:var(--page-fg)]">
-                7. Data
+                7. Data and cookies
               </h2>
               <p>
                 See the{" "}
                 <a className="text-signal underline" href="/privacy">
                   privacy policy
                 </a>
-                . Export and deletion from the dashboard (Billing).
+                . Export and deletion from the dashboard (Account). Optional
+                cookie categories (analytics, browser Sentry, affiliate) each
+                require consent via the cookie banner; essential cookies keep the
+                service working. Consent choices are logged per category (what and
+                when) for GDPR evidence and are visible in your Account and in a
+                JSON export.
               </p>
             </section>
           </>
@@ -200,14 +205,19 @@ export default async function TermsPage() {
             </section>
             <section className="space-y-3">
               <h2 className="font-display text-xl text-[color:var(--page-fg)]">
-                7. Données
+                7. Données et cookies
               </h2>
               <p>
                 Voir la{" "}
                 <a className="text-signal underline" href="/privacy">
                   politique de confidentialité
                 </a>
-                . Export et suppression depuis le dashboard (Billing).
+                . Export et suppression depuis le dashboard (Compte). Les
+                catégories cookies optionnelles (analytics, Sentry navigateur,
+                affilié) nécessitent chacune ton consentement via la bannière ;
+                les cookies essentiels font fonctionner le service. Les choix sont
+                journalisés par catégorie (quoi et quand) pour preuve RGPD,
+                visibles dans Compte et dans l&apos;export JSON.
               </p>
             </section>
           </>

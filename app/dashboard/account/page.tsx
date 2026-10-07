@@ -15,6 +15,7 @@ import { PreferencesPanel } from "@/components/dashboard/PreferencesPanel";
 import { NotificationPrefsPanel } from "@/components/dashboard/NotificationPrefsPanel";
 import { OrgSummaryPanel } from "@/components/dashboard/OrgSummaryPanel";
 import { ActivityLogPanel } from "@/components/dashboard/ActivityLogPanel";
+import { CookieConsentPanel } from "@/components/dashboard/CookieConsentPanel";
 
 export default async function AccountPage() {
   const session = await getServerSession(authOptions);
@@ -26,8 +27,15 @@ export default async function AccountPage() {
   const t = await getTranslations("dashboard");
   const theme = await getRequestTheme();
 
-  const [user, org, subscription, stripeConfig, botCount, memberCount] =
-    await Promise.all([
+  const [
+    user,
+    org,
+    subscription,
+    stripeConfig,
+    botCount,
+    memberCount,
+    cookieConsents,
+  ] = await Promise.all([
       prisma.user.findFirst({
         where: { id: session.user.id, deletedAt: null },
         select: {
@@ -56,6 +64,17 @@ export default async function AccountPage() {
       }),
       prisma.organizationMembership.count({
         where: { organizationId },
+      }),
+      prisma.cookieConsentLog.findMany({
+        where: { userId: session.user.id },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        select: {
+          id: true,
+          choice: true,
+          policyVersion: true,
+          createdAt: true,
+        },
       }),
     ]);
 
@@ -123,6 +142,8 @@ export default async function AccountPage() {
       <MfaSettingsPanel enabled={user.totpEnabled} />
       <SessionsPanel />
       <ActivityLogPanel />
+
+      <CookieConsentPanel logs={cookieConsents} />
 
       <BillingPanels organizationId={organizationId} showHeading />
 

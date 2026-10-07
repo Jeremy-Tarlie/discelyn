@@ -8,6 +8,7 @@ vi.mock("@/lib/prisma", () => ({
 vi.mock("@/lib/data-retention", () => ({
   purgeExpiredAnalyticsEvents: vi.fn().mockResolvedValue(0),
   purgeExpiredLeads: vi.fn().mockResolvedValue(0),
+  purgeExpiredCookieConsents: vi.fn().mockResolvedValue(0),
   anonymizeExpiredLearnerPii: vi.fn().mockResolvedValue(0),
 }));
 

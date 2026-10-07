@@ -70,9 +70,27 @@ model User {
   memberships        OrganizationMembership[]
   accessCodesCreated AccessCode[]
   activityLogs       UserActivityLog[]
+  cookieConsents     CookieConsentLog[]
 
   @@index([discordId])
   @@index([deletedAt])
+}
+
+/// Journal des consentements cookies (preuve RGPD — choix + horodatage).
+model CookieConsentLog {
+  id            String   @id @default(cuid())
+  /// UUID anonyme cookie discelyn_cid
+  visitorId     String
+  userId        String?
+  choice        String
+  policyVersion String
+  createdAt     DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([visitorId, createdAt])
+  @@index([createdAt])
 }
 
 /// Journal d’activité compte (sécurité / billing / prefs).

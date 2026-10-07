@@ -1,6 +1,9 @@
 import { cookies } from "next/headers";
 import { CONSENT_COOKIE } from "@/i18n/config";
-import { parseConsent } from "@/lib/consent";
+import {
+  allowsAnalytics,
+  parseConsentPreferences,
+} from "@/lib/consent";
 import { prisma } from "@/lib/prisma";
 
 export type AnalyticsEventName =
@@ -26,10 +29,12 @@ type TrackEventInput = {
   bypassConsent?: boolean;
 };
 
-async function hasOptionalConsentInRequest(): Promise<boolean> {
+async function hasAnalyticsConsentInRequest(): Promise<boolean> {
   try {
     const jar = await cookies();
-    return parseConsent(jar.get(CONSENT_COOKIE)?.value) === "all";
+    return allowsAnalytics(
+      parseConsentPreferences(jar.get(CONSENT_COOKIE)?.value)
+    );
   } catch {
     return false;
   }
@@ -37,7 +42,7 @@ async function hasOptionalConsentInRequest(): Promise<boolean> {
 
 export async function trackEvent(input: TrackEventInput): Promise<void> {
   if (!input.bypassConsent) {
-    const allowed = await hasOptionalConsentInRequest();
+    const allowed = await hasAnalyticsConsentInRequest();
     if (!allowed) return;
   }
 

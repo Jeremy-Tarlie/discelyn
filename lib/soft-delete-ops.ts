@@ -178,6 +178,10 @@ export async function softDeleteUserAccount(input: {
   }
 
   await prisma.analyticsEvent.deleteMany({ where: { userId: input.userId } });
+  await prisma.cookieConsentLog.updateMany({
+    where: { userId: input.userId },
+    data: { userId: null },
+  });
   if (input.email) {
     await prisma.lead.deleteMany({ where: { email: input.email } });
   }
