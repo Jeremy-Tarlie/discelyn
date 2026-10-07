@@ -20,7 +20,8 @@
 
 ## DPA Scale
 
-- Modèle dans `docs/DPA.md` — à adapter et signer contractuellement avant activation Scale si sous-traitance pour le client.
+- Modèle + **process « sur demande »** (SLA, étapes, conservation hors git) : `docs/DPA.md`.
+- À adapter et signer contractuellement ; le plan Scale reste techniquement utilisable sans DPA signé, mais l’engagement commercial « DPA » n’est tenu qu’après signature.
 
 ## Cookies
 

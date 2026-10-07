@@ -29,7 +29,8 @@ Définition de done pragmatique : **A + B + C14** + smoke live OK + 1–2 pilote
 - [x] Filtre / badge / dernier paiement `past_due` (Apprenants)
 - [x] Preflight durci : prices SaaS + `BOT_RUNTIME_URL` + `WEB_INTERNAL_URL` + `SENTRY_DSN`
 - [x] MFA obligatoire OWNER (checkout y compris Free, change-plan, portal, équipe, sk_ formation) + challenge session sur toutes les API auth
-- [ ] DPA signé ou process « sur demande » documenté (`docs/DPA.md`)
+- [x] Process « DPA sur demande » documenté (`docs/DPA.md` — table SLA + conservation hors git)
+- [ ] DPA signé avec chaque client Scale concerné (ops commercial, hors repo)
 - [ ] Privacy / CGU relues (2FA, rétention, Stripe orga)
 
 ## D. Risques structurels (fini « sérieux »)

@@ -1,4 +1,10 @@
-export type PlanId = "FREE" | "STARTER" | "OPS" | "SCALE";
+import {
+  RUNTIME_PLAN_LIMITS,
+  type RuntimeBotModuleId,
+  type RuntimePlanId,
+} from "@/shared/runtime-plan-limits";
+
+export type PlanId = RuntimePlanId;
 
 /** Intervalle d’abonnement SaaS (jamais un Price ID client). */
 export type BillingInterval = "month" | "year";
@@ -6,23 +12,11 @@ export type BillingInterval = "month" | "year";
 /** 2 mois offerts à l’année (= 10 × mensuel). */
 export const YEARLY_BILLED_MONTHS = 10;
 
-export type BotModuleId =
-  | "welcome"
-  | "roles"
-  | "moderation"
-  | "logs"
-  | "tickets"
-  | "automod"
-  | "custom_commands";
+export type BotModuleId = RuntimeBotModuleId;
 
 /** Socle ops formation — visible dès l’essai (sauf automod Scale). */
 export const OPS_CORE_MODULES: BotModuleId[] = [
-  "welcome",
-  "roles",
-  "moderation",
-  "logs",
-  "tickets",
-  "custom_commands",
+  ...RUNTIME_PLAN_LIMITS.FREE.modules,
 ];
 
 export type PlanDefinition = {
@@ -61,6 +55,18 @@ function yearlyFromMonthly(monthly: number): number {
  * Freemium : l’essai livre le socle ops + 1 mapping paiement→rôle.
  * Paywall : export audit (Starter+), volume produits accès / commandes, multi-serveurs.
  */
+function runtimeSlice(planId: PlanId): Pick<
+  PlanDefinition,
+  "maxGuilds" | "maxCustomCommands" | "modules"
+> {
+  const limits = RUNTIME_PLAN_LIMITS[planId];
+  return {
+    maxGuilds: limits.maxGuilds,
+    maxCustomCommands: limits.maxCustomCommands,
+    modules: [...limits.modules],
+  };
+}
+
 export const PLANS: Record<PlanId, PlanDefinition> = {
   FREE: {
     id: "FREE",
@@ -69,9 +75,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     priceYearlyEur: 0,
     description:
       "Socle ops + contrôle d’accès : 1 produit Stripe→rôle Discord. Preview warns — export = Starter.",
-    maxGuilds: 1,
-    maxCustomCommands: 5,
-    modules: [...OPS_CORE_MODULES],
+    ...runtimeSlice("FREE"),
     prioritySupport: false,
     auditExport: false,
     maxAccessProducts: 1,
@@ -88,9 +92,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     priceYearlyEur: yearlyFromMonthly(19.99),
     description:
       "Jusqu’à 5 produits accès, export audit, 15 commandes FAQ.",
-    maxGuilds: 1,
-    maxCustomCommands: 15,
-    modules: [...OPS_CORE_MODULES],
+    ...runtimeSlice("STARTER"),
     prioritySupport: false,
     auditExport: true,
     maxAccessProducts: 5,
@@ -107,9 +109,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     priceYearlyEur: yearlyFromMonthly(49),
     description:
       "Jusqu’à 20 produits accès, export audit, 40 commandes — pack ops formation.",
-    maxGuilds: 1,
-    maxCustomCommands: 40,
-    modules: [...OPS_CORE_MODULES],
+    ...runtimeSlice("OPS"),
     prioritySupport: false,
     auditExport: true,
     maxAccessProducts: 20,
@@ -127,9 +127,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     priceYearlyEur: yearlyFromMonthly(99),
     description:
       "Jusqu’à 5 serveurs, 100 produits accès, automod, DPA sur demande, support prioritaire.",
-    maxGuilds: 5,
-    maxCustomCommands: 100,
-    modules: [...OPS_CORE_MODULES, "automod"],
+    ...runtimeSlice("SCALE"),
     prioritySupport: true,
     auditExport: true,
     maxAccessProducts: 100,
@@ -206,6 +204,10 @@ export const MODULE_CATALOG: Record<
 export function formatPriceEur(amount: number): string {
   if (Number.isInteger(amount)) return `${amount}`;
   return amount.toFixed(2).replace(".", ",");
+}
+
+export function maxAccessProductsForPlan(planId: PlanId): number {
+  return getPlan(planId).maxAccessProducts;
 }
 
 export function getPlan(planId: PlanId): PlanDefinition {

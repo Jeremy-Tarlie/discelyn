@@ -1,10 +1,7 @@
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
-import {
-  appBaseUrl,
-  newWebhookPathToken,
-  orgWebhookUrl,
-} from "@/lib/learner-access";
+import { appBaseUrl, orgWebhookUrl } from "@/lib/access-urls";
+import { newWebhookPathToken } from "@/lib/access-tokens";
 import {
   isTokenEncryptionEnabled,
   requireSealToken,

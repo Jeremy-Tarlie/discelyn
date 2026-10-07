@@ -3,9 +3,32 @@
 > **Modèle** à adapter / faire valider par un conseil juridique avant signature Scale.
 > Ne pas présenter ce fichier comme un contrat signé.
 >
-> **Process commercial (Scale)** : le plan Scale affiche « DPA disponible sur demande ».
-> Tant qu’aucun DPA n’est signé avec le client, ce document reste un **template interne**.
-> Checklist : `docs/GO-LIVE.md` §C.
+> Checklist go-live : `docs/GO-LIVE.md` §C.
+
+## Process commercial « DPA sur demande » (Scale)
+
+Le plan Scale affiche **« DPA disponible sur demande »**. Ce n’est pas un PDF auto-généré in-app.
+
+| Étape | Qui | Action | SLA interne |
+|-------|-----|--------|-------------|
+| 1. Demande | Client Scale (OWNER) ou prospect en closing | Email support (`NEXT_PUBLIC_SUPPORT_EMAIL`) ou ticket : objet « Demande DPA », raison sociale, SIREN/équivalent, contact signataire, plan Scale actif ou devis |
+| 2. Accusé | Support Discelyn | Confirmer réception + rappeler que le modèle doit être adapté / validé juridiquement côté client | **2 jours ouvrés** |
+| 3. Préparation | Ops / juridique éditeur | Dupliquer ce modèle, compléter partie « Sous-traitant », annexes sous-traitants ultérieurs à jour, version datée | **5 jours ouvrés** |
+| 4. Envoi | Support | Envoyer le projet de DPA (PDF/DOCX) + lien privacy / CGU | Même fenêtre que §3 |
+| 5. Négociation | Éditeur + client | Marques / SCC / listes sous-traitants — escalade conseil si besoin | Au cas par cas |
+| 6. Signature | Les deux parties | Signature électronique ou manuscente ; conserver l’exemplaire signé hors repo (coffre / dossier client) | — |
+| 7. Activation commerciale | Support | Noter dans le CRM / fiche orga « DPA signé le YYYY-MM-DD » — **le produit n’active pas de flag technique** ; Scale reste utilisable sans DPA signé, le DPA est une obligation contractuelle Scale | — |
+
+**Règles :**
+
+- Tant qu’aucun DPA n’est signé, ce fichier reste un **template interne**.
+- Ne jamais coller un DPA signé (données client) dans le dépôt git.
+- Changement matériel de sous-traitants ultérieurs → notifier les clients Scale avec DPA signé dans un délai raisonnable (privacy + ce DPA).
+- Si le client refuse de signer : Scale peut rester actif, mais l’engagement « DPA » du plan n’est pas tenu — escalade commerciale / juridique avant renouvellement.
+
+Voir aussi `docs/RGPD-PROCEDURES.md` § DPA Scale.
+
+---
 
 ## Parties
 

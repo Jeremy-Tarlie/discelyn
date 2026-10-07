@@ -119,7 +119,9 @@ export const authOptions: NextAuthOptions = {
       session.user.organizationId = preferred?.organizationId ?? null;
       session.user.orgRole = preferred?.role ?? null;
       session.user.plan = effectivePlan(subscription);
-      session.user.subscriptionStatus = subscription?.status ?? "ACTIVE";
+      // Pas de row subscription (pas d’orga / race bootstrap) ≠ abo actif.
+      // FREE freemium a toujours une row `ACTIVE` via getOrgSubscription.
+      session.user.subscriptionStatus = subscription?.status ?? "CANCELED";
       return session;
     },
   },

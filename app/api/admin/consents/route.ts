@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/access";
 import { isLeadsAdmin } from "@/lib/leads-admin";
 import { rateLimit } from "@/lib/rate-limit";
 import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
+import { deniedAuthResponse } from "@/lib/http-auth";
 
 export async function GET(request: NextRequest) {
   const locale = getRequestLocale(request);
@@ -17,21 +17,18 @@ export async function GET(request: NextRequest) {
   });
   if (!limited.ok) return limited.response;
 
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json(
-      { error: tApi(locale, "unauthenticated") },
-      { status: 401 }
-    );
+  const user = await requireUser();
+  if (!user) {
+    return deniedAuthResponse(locale);
   }
 
   const dbUser = await prisma.user.findFirst({
-    where: { id: session.user.id, deletedAt: null },
+    where: { id: user.id, deletedAt: null },
     select: { discordId: true, email: true },
   });
   if (
     !isLeadsAdmin({
-      email: session.user.email ?? dbUser?.email,
+      email: user.email ?? dbUser?.email,
       discordId: dbUser?.discordId,
     })
   ) {

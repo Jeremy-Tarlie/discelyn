@@ -57,12 +57,12 @@ describe("extractPriceIdFromSession", () => {
     ).toBe("price_abc");
   });
 
-  it("accepte encore botly_price_id (legacy)", () => {
+  it("ignore les metadata hors canon discelyn_/stripe_/priceId", () => {
     expect(
       extractPriceIdFromSession(
         session({ metadata: { botly_price_id: "price_legacy" } })
       )
-    ).toBe("price_legacy");
+    ).toBeNull();
   });
 });
 

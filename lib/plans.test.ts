@@ -12,7 +12,7 @@ import {
   SETUP_OFFER,
   type PlanId,
 } from "@/lib/plans";
-import { RUNTIME_PLAN_LIMITS } from "../bot-runtime/src/plan-limits";
+import { RUNTIME_PLAN_LIMITS } from "@/shared/runtime-plan-limits";
 
 describe("PLANS", () => {
   it("expose Essai / Starter / Ops / Scale", () => {

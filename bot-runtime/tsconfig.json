@@ -11,6 +11,6 @@
     "resolveJsonModule": true,
     "types": ["node"]
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "../shared/runtime-plan-limits.ts"],
   "exclude": ["src/**/*.test.ts", "dist"]
 }

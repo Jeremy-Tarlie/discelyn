@@ -81,7 +81,7 @@ Création : clair renvoyé **une fois** ; stocké en `codeHash` (SHA-256) + `cod
 
 1. `POST /api/stripe/checkout` / portal / `POST /api/stripe/webhook` (metadata `organizationId`).
 2. `syncSubscription` → `enforcePlanLimits(organizationId)` → reload runtime.
-3. Plans : `lib/plans.ts` (web) + `bot-runtime/src/plan-limits.ts` (parity testée).
+3. Plans : limites runtime dans `shared/runtime-plan-limits.ts` (source unique) → `lib/plans.ts` (offres web) + `bot-runtime/src/plan-limits.ts` (helpers runtime).
 
 Hors `APP_ENV=production`, `sk_live_` refusée.
 

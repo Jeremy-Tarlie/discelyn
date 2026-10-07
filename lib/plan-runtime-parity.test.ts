@@ -7,7 +7,7 @@ import {
 import {
   RUNTIME_PLAN_LIMITS,
   type RuntimePlanId,
-} from "../bot-runtime/src/plan-limits";
+} from "@/shared/runtime-plan-limits";
 import {
   MODERATION_WARNING_RETENTION_DAYS as RUNTIME_RETENTION,
   moderationWarningCutoff as runtimeCutoff,

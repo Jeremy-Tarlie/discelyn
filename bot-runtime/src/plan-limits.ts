@@ -1,43 +1,17 @@
-/** Miroir de lib/plans — parité testée. */
-export type RuntimePlanId = "FREE" | "STARTER" | "OPS" | "SCALE";
+/**
+ * Limites plan côté runtime — données dans `shared/runtime-plan-limits.ts`.
+ */
+export {
+  RUNTIME_PLAN_LIMITS,
+  type RuntimePlanId,
+  type RuntimePlanLimits,
+} from "../../shared/runtime-plan-limits.js";
 
-export type RuntimePlanLimits = {
-  maxGuilds: number;
-  maxCustomCommands: number;
-  modules: readonly string[];
-};
-
-const OPS_CORE = [
-  "welcome",
-  "roles",
-  "moderation",
-  "logs",
-  "tickets",
-  "custom_commands",
-] as const;
-
-export const RUNTIME_PLAN_LIMITS: Record<RuntimePlanId, RuntimePlanLimits> = {
-  FREE: {
-    maxGuilds: 1,
-    maxCustomCommands: 5,
-    modules: [...OPS_CORE],
-  },
-  STARTER: {
-    maxGuilds: 1,
-    maxCustomCommands: 15,
-    modules: [...OPS_CORE],
-  },
-  OPS: {
-    maxGuilds: 1,
-    maxCustomCommands: 40,
-    modules: [...OPS_CORE],
-  },
-  SCALE: {
-    maxGuilds: 5,
-    maxCustomCommands: 100,
-    modules: [...OPS_CORE, "automod"],
-  },
-};
+import {
+  RUNTIME_PLAN_LIMITS,
+  type RuntimePlanId,
+  type RuntimePlanLimits,
+} from "../../shared/runtime-plan-limits.js";
 
 export function resolvePlanLimits(
   plan: string | null | undefined
@@ -52,7 +26,7 @@ export function filterModulesForLimits(
   limits: RuntimePlanLimits,
   enabledModules: string[]
 ): string[] {
-  const allowed = new Set(limits.modules);
+  const allowed = new Set<string>(limits.modules);
   return enabledModules.filter((moduleId) => allowed.has(moduleId));
 }
 
@@ -60,7 +34,10 @@ export function trimCustomCommands(
   limits: RuntimePlanLimits,
   commands: Array<{ name: string; response: string }>
 ): Array<{ name: string; response: string }> {
-  if (!limits.modules.includes("custom_commands")) return [];
+  const hasCustomCommands = limits.modules.some(
+    (moduleId) => moduleId === "custom_commands"
+  );
+  if (!hasCustomCommands) return [];
   if (commands.length <= limits.maxCustomCommands) return commands;
   return commands.slice(0, limits.maxCustomCommands);
 }

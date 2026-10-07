@@ -48,7 +48,6 @@ async function resolvePriceId(input: {
   session: Stripe.Checkout.Session;
   apiKey: string | null;
 }): Promise<string | null> {
-  // discelyn_* canonique ; botly_* encore accepté (Payment Links legacy).
   const fromMeta = extractPriceIdFromSession(input.session);
   if (fromMeta && fromMeta.startsWith("price_")) return fromMeta;
 
@@ -142,10 +141,8 @@ async function handleCheckoutCompleted(
       ? session.payment_intent
       : session.payment_intent?.id ?? null;
 
-  // discelyn_affiliate canonique ; botly_affiliate = Payment Links legacy.
   const affiliateCode =
     session.metadata?.discelyn_affiliate ??
-    session.metadata?.botly_affiliate ??
     session.client_reference_id ??
     null;
   let affiliateId: string | null = null;
