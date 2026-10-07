@@ -273,6 +273,14 @@
     "continueDiscord": "Continue with Discord",
     "legal": "By continuing, you agree to the <terms>Terms</terms> and the <privacy>privacy policy</privacy>."
   },
+  "subscribe": {
+    "title": "Complete subscription",
+    "subtitle": "Redirecting to Stripe for the {plan} plan…",
+    "invalidIntent": "Invalid or missing offer. Pick a plan on the pricing page.",
+    "checkoutFailed": "Could not start Stripe checkout.",
+    "backPricing": "See pricing",
+    "openBilling": "Open billing"
+  },
   "mfa": {
     "title": "2FA verification",
     "subtitle": "Enter the code from your Authenticator app (or a recovery code).",

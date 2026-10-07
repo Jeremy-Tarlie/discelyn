@@ -4,23 +4,31 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { authOptions } from "@/lib/auth";
+import { safeAuthCallbackUrl } from "@/lib/auth-callback";
 import { userNeedsMfaChallenge } from "@/lib/mfa-session";
 import { SiteHeader } from "@/components/landing/SiteHeader";
 import { SiteFooter } from "@/components/landing/SiteFooter";
 import { LoginButton } from "@/components/landing/LoginButton";
+
+type PageProps = {
+  searchParams: Promise<{ callbackUrl?: string }>;
+};
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("meta");
   return { title: t("loginTitle") };
 }
 
-export default async function LoginPage() {
+export default async function LoginPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const callbackUrl = safeAuthCallbackUrl(params.callbackUrl);
+
   const session = await getServerSession(authOptions);
   if (session?.user?.id) {
     if (await userNeedsMfaChallenge(session.user.id)) {
       redirect("/login/mfa");
     }
-    redirect("/dashboard");
+    redirect(callbackUrl);
   }
 
   const t = await getTranslations("login");
@@ -41,7 +49,7 @@ export default async function LoginPage() {
             {t("subtitle")}
           </p>
           <div className="mt-8">
-            <LoginButton />
+            <LoginButton callbackUrl={callbackUrl} />
           </div>
           <p className="mt-6 text-center text-xs text-[#6d737e]">
             {t.rich("legal", {

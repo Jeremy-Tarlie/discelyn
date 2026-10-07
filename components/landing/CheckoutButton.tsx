@@ -3,8 +3,16 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { BillingInterval, PlanId } from "@/lib/plans";
+import {
+  loginWithSubscribeIntent,
+  type SubscribePlanId,
+} from "@/lib/auth-callback";
 
 type CheckoutOfferId = PlanId | "SETUP" | "DIAGNOSTIC";
+
+function isSubscribePlan(planId: CheckoutOfferId): planId is SubscribePlanId {
+  return planId === "STARTER" || planId === "OPS" || planId === "SCALE";
+}
 
 export function CheckoutButton({
   planId,
@@ -32,8 +40,7 @@ export function CheckoutButton({
     setLoading(true);
     setError(null);
 
-    const isSubscription =
-      planId === "STARTER" || planId === "OPS" || planId === "SCALE";
+    const isSubscription = isSubscribePlan(planId);
 
     try {
       const response = await fetch("/api/stripe/checkout", {
@@ -47,7 +54,13 @@ export function CheckoutButton({
 
       if (!response.ok || !data.url) {
         if (response.status === 401) {
-          window.location.assign("/login");
+          if (isSubscription) {
+            window.location.assign(
+              loginWithSubscribeIntent(planId, interval)
+            );
+          } else {
+            window.location.assign("/login");
+          }
           return;
         }
         setError(data.error ?? t("checkoutFailed"));

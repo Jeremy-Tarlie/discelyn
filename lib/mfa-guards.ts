@@ -11,3 +11,31 @@ export async function ownerHasMfaEnabled(userId: string): Promise<boolean> {
   });
   return Boolean(user?.totpEnabled);
 }
+
+type CheckoutSubscriptionSnapshot = {
+  plan: string;
+  status: string;
+  stripeSubscriptionId: string | null;
+};
+
+/**
+ * MFA requise pour checkout sauf premier abonnement (org FREE sans abo Stripe bloquant).
+ * One-shot (SETUP / DIAGNOSTIC) : toujours MFA.
+ */
+export function requiresMfaForCheckout(input: {
+  oneShot: boolean;
+  subscription: CheckoutSubscriptionSnapshot;
+}): boolean {
+  if (input.oneShot) return true;
+
+  const blockingStatuses = new Set(["ACTIVE", "TRIALING", "PAST_DUE"]);
+  const hasBlockingSub =
+    Boolean(input.subscription.stripeSubscriptionId) &&
+    blockingStatuses.has(input.subscription.status);
+
+  if (input.subscription.plan === "FREE" && !hasBlockingSub) {
+    return false;
+  }
+
+  return true;
+}

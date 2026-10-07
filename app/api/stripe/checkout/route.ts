@@ -16,7 +16,10 @@ import { rateLimit } from "@/lib/rate-limit";
 import { trackEvent } from "@/lib/analytics";
 import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
-import { ownerHasMfaEnabled } from "@/lib/mfa-guards";
+import {
+  ownerHasMfaEnabled,
+  requiresMfaForCheckout,
+} from "@/lib/mfa-guards";
 
 function isOneShotOffer(offerId: string): offerId is OneShotOfferId {
   return offerId === "SETUP" || offerId === "DIAGNOSTIC";
@@ -50,13 +53,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: tApi(locale, "unauthenticated") }, { status: 401 });
   }
 
-  if (!(await ownerHasMfaEnabled(org.userId))) {
-    return NextResponse.json(
-      { error: tApi(locale, "mfaRequiredForOwner") },
-      { status: 403 }
-    );
-  }
-
   let body: unknown;
   try {
     body = await request.json();
@@ -87,6 +83,16 @@ export async function POST(request: NextRequest) {
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const subscription = await getOrgSubscription(org.organizationId);
+
+  if (
+    requiresMfaForCheckout({ oneShot, subscription }) &&
+    !(await ownerHasMfaEnabled(org.userId))
+  ) {
+    return NextResponse.json(
+      { error: tApi(locale, "mfaRequiredForOwner") },
+      { status: 403 }
+    );
+  }
 
   if (!oneShot) {
     const blockingStatuses = new Set(["ACTIVE", "TRIALING", "PAST_DUE"]);
