@@ -1,8 +1,10 @@
-# Procédures RGPD opérationnelles (modèle)
+# Procédures RGPD opérationnelles
+
+**Contact** : contact@tarlie.fr (également `NEXT_PUBLIC_SUPPORT_EMAIL` en prod).
 
 ## Demandes des personnes (accès, effacement, portabilité)
 
-1. Réception via `NEXT_PUBLIC_SUPPORT_EMAIL` ou ticket support.
+1. Réception via contact@tarlie.fr ou ticket support.
 2. Vérifier l’identité (email compte / Discord ID).
 3. **Accès / portabilité** : orienter vers Dashboard → Compte → Export JSON (inclut consentements cookies). Admin : `/dashboard/consents` si besoin de preuve.
 4. **Effacement** : Dashboard → Compte → supprimer le compte (soft-delete + anonymisation consentements).

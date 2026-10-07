@@ -25,4 +25,4 @@
 - **Impact** : IDs Discord déjà liés au serveur client.
 - **Équilibre** : durée courte (warns ≤ 90 j).
 
-Date de revue : _à renseigner_
+Date de revue : 2026-10-07 — responsable : Tarlié Jérémy (contact@tarlie.fr)

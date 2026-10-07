@@ -36,6 +36,12 @@ export async function SiteFooter() {
             {t("pricing")}
           </Link>
           <Link
+            href="/mentions-legales"
+            className="transition hover:text-[color:var(--page-fg)]"
+          >
+            {t("legalNotice")}
+          </Link>
+          <Link
             href="/privacy"
             className="transition hover:text-[color:var(--page-fg)]"
           >

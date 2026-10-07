@@ -1,6 +1,9 @@
-# Registre des traitements (modèle Art. 30 RGPD)
+# Registre des traitements (Art. 30 RGPD)
 
-À compléter par le responsable de traitement. Ce fichier est un **modèle interne**, pas un substitut à un avis juridique.
+Document interne Discelyn (instance discelyn.fr). Pas un substitut à un avis juridique.
+
+**Responsable du traitement** : Tarlié Jérémy — 4 résidence les Vergons, 76370 Dieppe, FR — contact@tarlie.fr  
+**Hébergeur** : OVHcloud (région UE)
 
 | Traitement | Finalité | Catégories de données | Personnes concernées | Base légale | Destinataires / sous-traitants | Transfert hors UE | Durée | Mesures de sécurité |
 |---|---|---|---|---|---|---|---|---|
@@ -18,5 +21,5 @@
 
 ## Mise à jour
 
-- Date de dernière revue : _à renseigner_
-- Contact DPO / référent : _à renseigner_ (ou `NEXT_PUBLIC_SUPPORT_EMAIL`)
+- Date de dernière revue : 2026-10-07
+- Contact référent RGPD : contact@tarlie.fr (pas de DPO désigné — non requis pour cette structure)

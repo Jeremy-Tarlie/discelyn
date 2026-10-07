@@ -25,6 +25,7 @@
     "features": "Fonctionnalités",
     "pricing": "Tarifs",
     "howItWorks": "Comment ça marche",
+    "legalNotice": "Mentions légales",
     "privacy": "Confidentialité",
     "terms": "CGU",
     "cookies": "Cookies"
@@ -895,9 +896,11 @@
     "privacyUpdated": "Dernière mise à jour : octobre 2026",
     "termsTitle": "Conditions générales d’utilisation",
     "termsUpdated": "Dernière mise à jour : octobre 2026",
+    "legalNoticeTitle": "Mentions légales",
+    "legalNoticeUpdated": "Dernière mise à jour : octobre 2026",
     "controllerTitle": "Responsable du traitement",
     "controllerBody": "L’exploitant de l’instance Discelyn{email}.",
-    "controllerMissing": "Identité légale non configurée : renseigne NEXT_PUBLIC_LEGAL_ENTITY_NAME et NEXT_PUBLIC_LEGAL_ENTITY_ADDRESS (voir .env.example).",
+    "controllerMissing": "Identité légale incomplète : renseigne NEXT_PUBLIC_LEGAL_ENTITY_*, NEXT_PUBLIC_SUPPORT_EMAIL et NEXT_PUBLIC_HOSTING_* (voir .env.example).",
     "transfersTitle": "Transferts hors UE / EEE",
     "dataTitle": "Données collectées",
     "legalBasesTitle": "Bases légales",
@@ -1023,6 +1026,7 @@
     "pricingDescription": "Essai : 1 produit accès. Starter / Ops / Scale pour scaler. Pas un MEE6.",
     "loginTitle": "Connexion",
     "privacyTitle": "Confidentialité",
-    "termsTitle": "CGU"
+    "termsTitle": "CGU",
+    "legalNoticeTitle": "Mentions légales"
   }
 }

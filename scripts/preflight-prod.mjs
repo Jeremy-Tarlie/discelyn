@@ -39,6 +39,16 @@ const requiredProd = [
   "SENTRY_DSN",
 ];
 
+/** Identité légale obligatoire (privacy / mentions légales / RGPD). */
+const requiredLegal = [
+  "NEXT_PUBLIC_LEGAL_ENTITY_NAME",
+  "NEXT_PUBLIC_LEGAL_ENTITY_ADDRESS",
+  "NEXT_PUBLIC_LEGAL_ENTITY_COUNTRY",
+  "NEXT_PUBLIC_SUPPORT_EMAIL",
+  "NEXT_PUBLIC_HOSTING_PROVIDER",
+  "NEXT_PUBLIC_HOSTING_REGION",
+];
+
 /** Prices SaaS mensuels — sans eux checkout / change-plan cassent. */
 const requiredStripePricesProd = [
   "STRIPE_PRICE_STARTER",
@@ -80,6 +90,11 @@ for (const name of requiredAlways) {
 if (appEnv === "staging" || appEnv === "production") {
   for (const name of requiredStagingProd) {
     if (!present(name)) errors.push(`manquant (${appEnv}): ${name}`);
+  }
+  for (const name of requiredLegal) {
+    if (!present(name)) {
+      errors.push(`manquant (${appEnv}, RGPD/LCEN): ${name}`);
+    }
   }
   if (present("TOKEN_ENCRYPTION_KEY") && !checkLength("TOKEN_ENCRYPTION_KEY", 16)) {
     errors.push("TOKEN_ENCRYPTION_KEY trop court (min 16)");

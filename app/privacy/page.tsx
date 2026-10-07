@@ -2,10 +2,7 @@ import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { SiteHeader } from "@/components/landing/SiteHeader";
 import { SiteFooter } from "@/components/landing/SiteFooter";
-import {
-  getLegalEntity,
-  legalEntityConfigured,
-} from "@/lib/legal-entity";
+import { getConfiguredLegalEntity } from "@/lib/legal-entity";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("meta");
@@ -16,8 +13,7 @@ export default async function PrivacyPage() {
   const locale = await getLocale();
   const t = await getTranslations("legal");
   const isEn = locale === "en";
-  const entity = getLegalEntity();
-  const hasEntity = legalEntityConfigured(entity);
+  const entity = getConfiguredLegalEntity();
 
   return (
     <div className="min-h-screen bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
@@ -34,24 +30,27 @@ export default async function PrivacyPage() {
           <h2 className="font-display text-xl text-[color:var(--page-fg)]">
             {t("controllerTitle")}
           </h2>
-          {hasEntity ? (
+          {entity ? (
             <div className="space-y-1 text-sm leading-relaxed">
               <p className="font-medium text-[color:var(--page-fg)]">
                 {entity.name}
               </p>
               <p>{entity.address}</p>
-              {entity.country ? <p>{entity.country}</p> : null}
-              {entity.supportEmail ? (
+              <p>{entity.country}</p>
+              {entity.siret ? (
                 <p>
-                  {isEn ? "Contact" : "Contact"} :{" "}
-                  <a
-                    className="text-signal underline"
-                    href={`mailto:${entity.supportEmail}`}
-                  >
-                    {entity.supportEmail}
-                  </a>
+                  {isEn ? "Registration / SIRET" : "SIRET"} : {entity.siret}
                 </p>
               ) : null}
+              <p>
+                {isEn ? "Contact" : "Contact"} :{" "}
+                <a
+                  className="text-signal underline"
+                  href={`mailto:${entity.supportEmail}`}
+                >
+                  {entity.supportEmail}
+                </a>
+              </p>
             </div>
           ) : (
             <p className="text-warn">{t("controllerMissing")}</p>
@@ -182,13 +181,13 @@ export default async function PrivacyPage() {
             <li>Discord — OAuth and platform bot API</li>
             <li>Stripe — payments (Stripe DPA)</li>
             <li>
-              {entity.hostingProvider
+              {entity
                 ? isEn
-                  ? `Hosting: ${entity.hostingProvider}${entity.hostingRegion ? ` (${entity.hostingRegion})` : ""}`
-                  : `Hébergeur : ${entity.hostingProvider}${entity.hostingRegion ? ` (${entity.hostingRegion})` : ""}`
+                  ? `Hosting: ${entity.hostingProvider} (${entity.hostingRegion})`
+                  : `Hébergeur : ${entity.hostingProvider} (${entity.hostingRegion})`
                 : isEn
-                  ? "Hosting provider of the instance (configure NEXT_PUBLIC_HOSTING_PROVIDER)"
-                  : "Hébergeur de l’instance (configurer NEXT_PUBLIC_HOSTING_PROVIDER)"}
+                  ? "Hosting provider of the instance (configure NEXT_PUBLIC_HOSTING_PROVIDER / REGION)"
+                  : "Hébergeur de l’instance (configurer NEXT_PUBLIC_HOSTING_PROVIDER / REGION)"}
             </li>
             <li>Sentry (optional) — application errors</li>
             <li>Redis (optional) — distributed rate-limiting</li>
@@ -206,10 +205,9 @@ export default async function PrivacyPage() {
               (for example Sentry or a non-EU host), transfers rely on an adequacy
               decision where applicable, or on Standard Contractual Clauses (SCCs)
               / equivalent safeguards required by the GDPR, plus the processor’s
-              DPA. Prefer EU region hosting when available (
-              {entity.hostingRegion ?? "set NEXT_PUBLIC_HOSTING_REGION"}
-              ). Stripe and Discord publish their own transfer mechanisms in their
-              DPAs.
+              DPA.               Prefer EU region hosting when available
+              {entity ? ` (${entity.hostingRegion})` : ""}. Stripe and Discord
+              publish their own transfer mechanisms in their DPAs.
             </p>
           ) : (
             <p>
@@ -218,10 +216,9 @@ export default async function PrivacyPage() {
               une décision d’adéquation le cas échéant, ou sur les clauses
               contractuelles types (CCT / SCC) et garanties équivalentes exigées
               par le RGPD, ainsi que le DPA du sous-traitant. Préférer un
-              hébergement en région UE (
-              {entity.hostingRegion ?? "renseigner NEXT_PUBLIC_HOSTING_REGION"}
-              ). Stripe et Discord documentent leurs mécanismes de transfert dans
-              leurs DPA.
+              hébergement en région UE
+              {entity ? ` (${entity.hostingRegion})` : ""}. Stripe et Discord
+              documentent leurs mécanismes de transfert dans leurs DPA.
             </p>
           )}
         </section>
@@ -243,8 +240,17 @@ export default async function PrivacyPage() {
           </h2>
           <p>
             {isEn
-              ? "Access, rectification, erasure, portability, restriction, objection. From the dashboard → Account: cookie-consent history, JSON export and account deletion. Change cookie preferences anytime via the footer Cookies link. You may lodge a complaint with your supervisory authority (e.g. CNIL in France)."
-              : "Accès, rectification, effacement, portabilité, limitation, opposition. Depuis le dashboard → Compte : historique des consentements cookies, export JSON et suppression de compte. Modifie tes préférences cookies à tout moment via le lien Cookies du footer. Réclamation possible auprès de la CNIL."}
+              ? "Access, rectification, erasure, portability, restriction, objection. From the dashboard → Account: cookie-consent history, JSON export and account deletion. Change cookie preferences anytime via the footer Cookies link. You may lodge a complaint with your supervisory authority (e.g. CNIL in France: "
+              : "Accès, rectification, effacement, portabilité, limitation, opposition. Depuis le dashboard → Compte : historique des consentements cookies, export JSON et suppression de compte. Modifie tes préférences cookies à tout moment via le lien Cookies du footer. Réclamation possible auprès de la "}
+            <a
+              className="text-signal underline"
+              href="https://www.cnil.fr/fr/plaintes"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              CNIL
+            </a>
+            {isEn ? ")." : "."}
           </p>
         </section>
 

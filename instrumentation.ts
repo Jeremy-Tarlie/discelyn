@@ -1,6 +1,7 @@
 import * as Sentry from "@sentry/nextjs";
 import { assertAuthEnv } from "@/lib/auth";
 import { getAppEnvironment } from "@/lib/demo";
+import { assertLegalEnv, missingLegalEnvVars } from "@/lib/legal-entity";
 
 export async function register() {
   // Sentry Node est initialisé via sentry.server.config.ts (éviter double init).
@@ -29,6 +30,7 @@ export async function register() {
       if (!process.env.BOT_RUNTIME_SECRET) {
         missing.push("BOT_RUNTIME_SECRET");
       }
+      missing.push(...missingLegalEnvVars());
     }
 
     if (appEnv === "production" && !process.env.REDIS_URL) {
@@ -44,12 +46,15 @@ export async function register() {
     // Fail-fast hors development local (production + staging).
     if (missing.length > 0 && appEnv !== "development") {
       throw new Error(
-        `Variables d'environnement manquantes: ${missing.join(", ")}`
+        `Variables d'environnement manquantes: ${[...new Set(missing)].join(", ")}`
       );
     }
 
     try {
       assertAuthEnv();
+      if (appEnv === "production" || appEnv === "staging") {
+        assertLegalEnv();
+      }
     } catch (error) {
       if (appEnv !== "development") throw error;
       console.warn(

@@ -25,6 +25,7 @@
     "features": "Features",
     "pricing": "Pricing",
     "howItWorks": "How it works",
+    "legalNotice": "Legal notice",
     "privacy": "Privacy",
     "terms": "Terms",
     "cookies": "Cookies"
@@ -895,9 +896,11 @@
     "privacyUpdated": "Last updated: October 2026",
     "termsTitle": "Terms of use",
     "termsUpdated": "Last updated: October 2026",
+    "legalNoticeTitle": "Legal notice",
+    "legalNoticeUpdated": "Last updated: October 2026",
     "controllerTitle": "Data controller",
     "controllerBody": "The operator of this Discelyn instance{email}.",
-    "controllerMissing": "Legal identity not configured: set NEXT_PUBLIC_LEGAL_ENTITY_NAME and NEXT_PUBLIC_LEGAL_ENTITY_ADDRESS (see .env.example).",
+    "controllerMissing": "Legal identity incomplete: set NEXT_PUBLIC_LEGAL_ENTITY_*, NEXT_PUBLIC_SUPPORT_EMAIL and NEXT_PUBLIC_HOSTING_* (see .env.example).",
     "transfersTitle": "Transfers outside the EU / EEA",
     "dataTitle": "Data we collect",
     "legalBasesTitle": "Legal bases",
@@ -1023,6 +1026,7 @@
     "pricingDescription": "Free trial · Starter €19.99/mo · Ops €49/mo · Scale €99/mo. Discord bot for training organisations.",
     "loginTitle": "Log in",
     "privacyTitle": "Privacy",
-    "termsTitle": "Terms"
+    "termsTitle": "Terms",
+    "legalNoticeTitle": "Legal notice"
   }
 }
