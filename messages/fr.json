@@ -413,7 +413,7 @@
     "ownerMfaBody": "Checkout, changement de plan, portail Stripe, équipe et clé formation Stripe exigent la 2FA.",
     "ownerMfaCta": "Configurer la 2FA →",
     "ownerMfaPopupTitle": "Sécurise ton compte (2FA)",
-    "ownerMfaPopupBody": "En tant qu’OWNER, la 2FA est obligatoire pour le billing, l’équipe et la clé Stripe formation. Configure-la dans Compte pour continuer.",
+    "ownerMfaPopupBody": "En tant qu’OWNER, la 2FA est obligatoire pour le billing, l’équipe et la clé Stripe formation. Tu peux naviguer sans, mais ces actions resteront bloquées jusqu’à activation.",
     "ownerMfaPopupCta": "Configurer la 2FA",
     "ownerMfaPopupLater": "Plus tard",
     "statusLabel": "Statut :",

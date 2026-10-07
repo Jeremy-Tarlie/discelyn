@@ -413,7 +413,7 @@
     "ownerMfaBody": "Checkout, plan changes, Stripe portal, team and training Stripe keys require 2FA.",
     "ownerMfaCta": "Set up 2FA →",
     "ownerMfaPopupTitle": "Secure your account (2FA)",
-    "ownerMfaPopupBody": "As OWNER, 2FA is required for billing, team, and the training Stripe key. Set it up in Account to continue.",
+    "ownerMfaPopupBody": "As OWNER, 2FA is required for billing, team, and the training Stripe key. You can browse without it, but those actions stay blocked until you enable 2FA.",
     "ownerMfaPopupCta": "Set up 2FA",
     "ownerMfaPopupLater": "Later",
     "statusLabel": "Status:",
