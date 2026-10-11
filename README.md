@@ -1,5 +1,9 @@
 # Discelyn
 
+**Site :** [https://discelyn.fr/](https://discelyn.fr/)
+
+[![Capture de la landing Discelyn — Paiement formation → Discord](docs/assets/discelyn-landing.png)](https://discelyn.fr/)
+
 ## Description
 
 **Discelyn** est un SaaS Discord pour les **organismes de formation et infopreneurs FR/UE** dont la communauté vit déjà sur Discord.
@@ -40,7 +44,7 @@ Modèle : **Organization** (plan, bots, Stripe formation) + **Memberships** (OWN
 | Ops | 49 €/mois | Jusqu’à **20** produits accès, 40 cmds |
 | Scale | 99 €/mois | Jusqu’à 5 serveurs, **100** produits, automod, DPA, support |
 | Diagnostic | 49 € one-shot | Cadrage 90 min ; déduit du Setup si enchaînement |
-| Setup Pilot | 290 € one-shot | Livraison sous 10 jours ouvrés + 1 h formation |
+| Setup | 290 € one-shot | Config Ops livrée sous 10 jours ouvrés + 1 h formation |
 
 ## Différence vs les autres
 
