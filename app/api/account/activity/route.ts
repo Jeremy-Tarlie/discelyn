@@ -3,7 +3,6 @@ import type { NextRequest } from "next/server";
 import { requireUser } from "@/lib/access";
 import { listUserActivity } from "@/lib/activity-log";
 import { getRequestLocale } from "@/lib/locale";
-import { tApi } from "@/lib/i18n-api";
 import { prisma } from "@/lib/prisma";
 import { formatInTimezone } from "@/lib/timezones";
 import { deniedAuthResponse } from "@/lib/http-auth";

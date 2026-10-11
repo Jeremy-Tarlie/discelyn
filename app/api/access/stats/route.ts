@@ -3,7 +3,6 @@ import type { NextRequest } from "next/server";
 import { requireOrg } from "@/lib/access";
 import { getAccessStatsForOrg } from "@/lib/dashboard-data";
 import { getRequestLocale } from "@/lib/locale";
-import { tApi } from "@/lib/i18n-api";
 import { rateLimit } from "@/lib/rate-limit";
 import { deniedAuthResponse } from "@/lib/http-auth";
 

@@ -17,6 +17,7 @@ export async function deniedAuthResponse(
   locale: Locale,
   _fallback: "unauthenticated" | "unauthorized" = "unauthenticated"
 ): Promise<NextResponse> {
+  void _fallback;
   const session = await getServerSession(authOptions);
   if (session?.user?.id && (await userNeedsMfaChallenge(session.user.id))) {
     return NextResponse.json(

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { BillingInterval, PlanId } from "@/lib/plans";
 import {
@@ -29,12 +30,13 @@ export function CheckoutButton({
 }) {
   const t = useTranslations("pricing");
   const tc = useTranslations("common");
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleClick() {
     if (planId === "FREE") {
-      window.location.assign("/login");
+      router.push("/login");
       return;
     }
 
@@ -60,11 +62,9 @@ export function CheckoutButton({
       if (!response.ok || !data.url) {
         if (response.status === 401) {
           if (isSubscription) {
-            window.location.assign(
-              loginWithSubscribeIntent(planId, interval)
-            );
+            router.push(loginWithSubscribeIntent(planId, interval));
           } else {
-            window.location.assign("/login");
+            router.push("/login");
           }
           return;
         }
@@ -72,7 +72,7 @@ export function CheckoutButton({
           return;
         }
         if (response.status === 403) {
-          window.location.assign("/dashboard/account");
+          router.push("/dashboard/account");
           return;
         }
         setError(data.error ?? t("checkoutFailed"));

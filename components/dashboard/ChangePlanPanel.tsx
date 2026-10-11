@@ -88,7 +88,7 @@ export function ChangePlanPanel({
       if (!response.ok) {
         if (redirectIfMfaRequired(data)) return;
         if (response.status === 403) {
-          window.location.assign("/dashboard/account");
+          router.push("/dashboard/account");
           return;
         }
         setError(data.error ?? t("changePlanFailed"));

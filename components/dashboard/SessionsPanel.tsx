@@ -10,6 +10,11 @@ type SessionRow = {
   current: boolean;
 };
 
+type SessionsResponse = {
+  sessions?: SessionRow[];
+  error?: string;
+};
+
 export function SessionsPanel() {
   const t = useTranslations("dashboard");
   const tc = useTranslations("common");
@@ -22,10 +27,7 @@ export function SessionsPanel() {
     setError(null);
     try {
       const response = await fetch("/api/account/sessions");
-      const data = (await response.json()) as {
-        sessions?: SessionRow[];
-        error?: string;
-      };
+      const data = (await response.json()) as SessionsResponse;
       if (!response.ok) {
         setError(data.error ?? t("sessionsLoadFailed"));
         return;
@@ -37,8 +39,28 @@ export function SessionsPanel() {
   }
 
   useEffect(() => {
-    void load();
-  }, []);
+    let cancelled = false;
+
+    async function loadOnMount() {
+      try {
+        const response = await fetch("/api/account/sessions");
+        const data = (await response.json()) as SessionsResponse;
+        if (cancelled) return;
+        if (!response.ok) {
+          setError(data.error ?? t("sessionsLoadFailed"));
+          return;
+        }
+        setSessions(data.sessions ?? []);
+      } catch {
+        if (!cancelled) setError(tc("networkError"));
+      }
+    }
+
+    void loadOnMount();
+    return () => {
+      cancelled = true;
+    };
+  }, [t, tc]);
 
   async function revokeOthers() {
     if (!window.confirm(t("sessionsRevokeConfirm"))) return;

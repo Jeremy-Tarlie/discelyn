@@ -22,9 +22,10 @@ type CheckoutSubscriptionSnapshot = {
  * MFA OWNER obligatoire pour tout checkout SaaS (abo + one-shot).
  * `input` conservé pour compat signatures / tests.
  */
-export function requiresMfaForCheckout(_input: {
+export function requiresMfaForCheckout(input: {
   oneShot: boolean;
   subscription: CheckoutSubscriptionSnapshot;
 }): boolean {
+  void input;
   return true;
 }

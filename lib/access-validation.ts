@@ -78,6 +78,7 @@ export function guildGrantSchemaFor(locale: Locale) {
 export const guildGrantSchema = guildGrantSchemaFor("fr");
 
 export function accessCodeCreateSchemaFor(locale: Locale) {
+  void locale;
   return z.object({
     accessProductId: z.string().trim().min(1),
     maxRedemptions: z.number().int().min(1).max(10_000).optional().default(1),
@@ -99,7 +100,8 @@ export function accessCodeCreateSchemaFor(locale: Locale) {
 
 export const accessCodeCreateSchema = accessCodeCreateSchemaFor("fr");
 
-export function accessCodeRedeemSchemaFor(_locale: Locale) {
+export function accessCodeRedeemSchemaFor(locale: Locale) {
+  void locale;
   return z.object({
     code: z.string().trim().min(4).max(32),
   });
@@ -107,7 +109,8 @@ export function accessCodeRedeemSchemaFor(_locale: Locale) {
 
 export const accessCodeRedeemSchema = accessCodeRedeemSchemaFor("fr");
 
-export function affiliateCreateSchemaFor(_locale: Locale) {
+export function affiliateCreateSchemaFor(locale: Locale) {
+  void locale;
   return z.object({
     code: z
       .string()
@@ -122,7 +125,8 @@ export function affiliateCreateSchemaFor(_locale: Locale) {
 
 export const affiliateCreateSchema = affiliateCreateSchemaFor("fr");
 
-export function outboundWebhookSchemaFor(_locale: Locale) {
+export function outboundWebhookSchemaFor(locale: Locale) {
+  void locale;
   return z.object({
     url: z.string().trim().url().max(500),
     events: z

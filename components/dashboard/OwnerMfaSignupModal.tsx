@@ -1,11 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 const DISMISS_KEY = "discelyn_owner_mfa_nudge_dismissed";
+
+function subscribeDismiss(): () => void {
+  return () => {};
+}
+
+function getDismissSnapshot(): boolean {
+  try {
+    return sessionStorage.getItem(DISMISS_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function getDismissServerSnapshot(): boolean {
+  return true;
+}
 
 /**
  * Nudge OWNER sans 2FA. Dismissible pour la session (sessionStorage) —
@@ -23,26 +39,18 @@ export function OwnerMfaSignupModal({
 }) {
   const t = useTranslations("dashboard");
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  const storageDismissed = useSyncExternalStore(
+    subscribeDismiss,
+    getDismissSnapshot,
+    getDismissServerSnapshot
+  );
+  const [localDismissed, setLocalDismissed] = useState(false);
 
-  useEffect(() => {
-    const onAccount =
-      pathname === "/dashboard/account" ||
-      pathname.endsWith("/dashboard/account");
-    if (!isOwner || mfaEnabled || onAccount) {
-      setOpen(false);
-      return;
-    }
-    try {
-      if (sessionStorage.getItem(DISMISS_KEY) === "1") {
-        setOpen(false);
-        return;
-      }
-    } catch {
-      /* private mode / SSR — on affiche le nudge */
-    }
-    setOpen(true);
-  }, [isOwner, mfaEnabled, pathname]);
+  const onAccount =
+    pathname === "/dashboard/account" ||
+    pathname.endsWith("/dashboard/account");
+  const open =
+    isOwner && !mfaEnabled && !onAccount && !storageDismissed && !localDismissed;
 
   function dismiss() {
     try {
@@ -50,7 +58,7 @@ export function OwnerMfaSignupModal({
     } catch {
       /* ignore */
     }
-    setOpen(false);
+    setLocalDismissed(true);
   }
 
   if (!open) return null;
