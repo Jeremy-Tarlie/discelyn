@@ -4,7 +4,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: discelyn
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-discelyn}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: discelyn
     volumes:
       - discelyn_pg:/var/lib/postgresql/data
@@ -44,7 +44,8 @@ services:
       # Next.js lit HOSTNAME (défini par Docker = ID conteneur) et bind
       # uniquement sur cette IP → healthcheck 127.0.0.1 échoue.
       HOSTNAME: "0.0.0.0"
-      DATABASE_URL: postgresql://discelyn:${POSTGRES_PASSWORD:-discelyn}@db:5432/discelyn?schema=public
+      # Host Docker `db` — le DATABASE_URL du .env (souvent localhost) est écrasé ici.
+      DATABASE_URL: postgresql://discelyn:${POSTGRES_PASSWORD}@db:5432/discelyn?schema=public
       BOT_RUNTIME_URL: http://runtime:4001
       REDIS_URL: redis://redis:6379
       TRUST_PROXY: "0"
@@ -128,7 +129,7 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql://discelyn:${POSTGRES_PASSWORD:-discelyn}@db:5432/discelyn?schema=public
+      DATABASE_URL: postgresql://discelyn:${POSTGRES_PASSWORD}@db:5432/discelyn?schema=public
       BOT_RUNTIME_PORT: "4001"
       # Grant-on-join délégué au web (source unique fulfillDiscordAccess)
       WEB_INTERNAL_URL: http://web:3000

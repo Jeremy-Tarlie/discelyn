@@ -10,10 +10,23 @@
  */
 import { spawn, spawnSync } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
+import { config as loadDotenv } from "dotenv";
 
-const TEST_DATABASE_URL =
-  process.env.DISCELYN_TEST_DATABASE_URL ??
-  "postgresql://discelyn:discelyn@127.0.0.1:5433/discelyn?schema=public";
+loadDotenv({ path: ".env", quiet: true });
+
+function resolveLocalTestDatabaseUrl() {
+  if (process.env.DISCELYN_TEST_DATABASE_URL) {
+    return process.env.DISCELYN_TEST_DATABASE_URL;
+  }
+  const password = process.env.POSTGRES_PASSWORD;
+  if (!password) {
+    throw new Error(
+      "POSTGRES_PASSWORD manquant dans l’environnement / .env " +
+        "(ou définis DISCELYN_TEST_DATABASE_URL)."
+    );
+  }
+  return `postgresql://discelyn:${encodeURIComponent(password)}@127.0.0.1:5433/discelyn?schema=public`;
+}
 
 const TEST_TOKEN_KEY =
   process.env.TOKEN_ENCRYPTION_KEY ??
@@ -88,23 +101,25 @@ async function ensureDatabase() {
     return process.env.DISCELYN_TEST_DATABASE_URL;
   }
 
-  if (await canConnect(TEST_DATABASE_URL)) {
-    log(`Postgres test déjà up (${TEST_DATABASE_URL.replace(/:[^:@]+@/, ":***@")})`);
+  const testDatabaseUrl = resolveLocalTestDatabaseUrl();
+
+  if (await canConnect(testDatabaseUrl)) {
+    log(`Postgres test déjà up (${testDatabaseUrl.replace(/:[^:@]+@/, ":***@")})`);
   } else {
     log("démarrage docker-compose.test.yml (port 5433)…");
     dockerComposeUp();
     for (let i = 0; i < 40; i++) {
-      if (await canConnect(TEST_DATABASE_URL)) break;
+      if (await canConnect(testDatabaseUrl)) break;
       await delay(500);
     }
-    if (!(await canConnect(TEST_DATABASE_URL))) {
+    if (!(await canConnect(testDatabaseUrl))) {
       throw new Error("Postgres test (5433) toujours injoignable après démarrage");
     }
   }
 
   log("migrate deploy…");
-  migrate(TEST_DATABASE_URL);
-  return TEST_DATABASE_URL;
+  migrate(testDatabaseUrl);
+  return testDatabaseUrl;
 }
 
 const databaseUrl = await ensureDatabase();

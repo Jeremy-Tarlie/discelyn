@@ -8,7 +8,7 @@ services:
       - "127.0.0.1:5433:5432"
     environment:
       POSTGRES_USER: discelyn
-      POSTGRES_PASSWORD: discelyn
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: discelyn
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U discelyn -d discelyn"]
