@@ -36,10 +36,7 @@ export async function DashboardNav({
     { href: "/dashboard/billing", label: t("billing") },
     { href: "/dashboard/account", label: t("accountNav") },
     ...(showLeads
-      ? [
-          { href: "/dashboard/leads", label: t("leads") },
-          { href: "/dashboard/consents", label: t("consentsNav") },
-        ]
+      ? [{ href: "/admin", label: t("platformAdminNav") }]
       : []),
   ];
 

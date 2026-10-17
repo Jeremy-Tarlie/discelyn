@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       message: parsed.data.message,
       offer: parsed.data.offer,
       source: parsed.data.source ?? "landing",
-      marketingConsentAt: new Date(),
+      marketingConsentAt: parsed.data.marketingConsent ? new Date() : null,
     },
   });
 

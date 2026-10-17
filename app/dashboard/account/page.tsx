@@ -1,7 +1,7 @@
 import Image from "next/image";
-import { getServerSession } from "next-auth";
 import { getTranslations } from "next-intl/server";
 import { redirect } from "next/navigation";
+import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getRequestTheme } from "@/lib/theme";
@@ -49,6 +49,7 @@ export default async function AccountPage() {
           notifyBillingEmail: true,
           notifySecurityEmail: true,
           notifyProductEmail: true,
+          marketingConsentAt: true,
         },
       }),
       prisma.organization.findFirst({
@@ -142,6 +143,7 @@ export default async function AccountPage() {
           notifyBillingEmail: user.notifyBillingEmail,
           notifySecurityEmail: user.notifySecurityEmail,
           notifyProductEmail: user.notifyProductEmail,
+          marketingConsent: user.marketingConsentAt != null,
         }}
       />
 

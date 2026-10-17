@@ -18,4 +18,14 @@ describe("AuthPageShell client boundary", () => {
     expect(src).not.toMatch(/getRequestTheme/);
     expect(src).not.toMatch(/@\/lib\/theme/);
   });
+
+  it("expose variant status et size lg sans casser le rendu titre par défaut", () => {
+    const src = readFileSync(
+      join(process.cwd(), "components/auth/AuthPageShell.tsx"),
+      "utf8",
+    );
+    expect(src).toMatch(/variant\?: "default" \| "status"/);
+    expect(src).toMatch(/size\?: "md" \| "lg"/);
+    expect(src).toMatch(/!isStatus && title/);
+  });
 });

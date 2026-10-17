@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { safeAuthCallbackUrl } from "@/lib/auth-callback";
 import { userNeedsMfaChallenge } from "@/lib/mfa-session";
@@ -60,7 +60,6 @@ export default async function LoginPage({ searchParams }: PageProps) {
         })}
       >
         <CredentialsAuthForm
-          mode="login"
           callbackUrl={callbackUrl}
           oauthError={oauthError}
         />

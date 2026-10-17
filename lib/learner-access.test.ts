@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  checkoutPriceMatchesProduct,
+  extractAccessProductIdFromSession,
   extractDiscordUserIdFromSession,
+  extractPaidPriceIdFromLineItems,
   extractPriceIdFromSession,
 } from "@/lib/learner-access-parse";
 import {
@@ -48,8 +51,27 @@ describe("extractDiscordUserIdFromSession", () => {
   });
 });
 
-describe("extractPriceIdFromSession", () => {
-  it("préfère discelyn_price_id", () => {
+describe("extractPaidPriceIdFromLineItems", () => {
+  it("lit price expandé (objet)", () => {
+    expect(
+      extractPaidPriceIdFromLineItems([{ price: { id: "price_paid" } }])
+    ).toBe("price_paid");
+  });
+
+  it("lit price non expandé (string)", () => {
+    expect(extractPaidPriceIdFromLineItems([{ price: "price_string" }])).toBe(
+      "price_string"
+    );
+  });
+
+  it("ignore metadata — sans line items = null (fail-closed)", () => {
+    expect(extractPaidPriceIdFromLineItems(null)).toBeNull();
+    expect(extractPaidPriceIdFromLineItems([])).toBeNull();
+  });
+});
+
+describe("extractPriceIdFromSession (hint metadata, pas d’authz)", () => {
+  it("lit discelyn_price_id", () => {
     expect(
       extractPriceIdFromSession(
         session({ metadata: { discelyn_price_id: "price_abc" } })
@@ -63,6 +85,47 @@ describe("extractPriceIdFromSession", () => {
         session({ metadata: { botly_price_id: "price_legacy" } })
       )
     ).toBeNull();
+  });
+});
+
+describe("checkoutPriceMatchesProduct", () => {
+  it("ok si price payé = price produit", () => {
+    expect(
+      checkoutPriceMatchesProduct({
+        paidPriceId: "price_1",
+        productStripePriceId: "price_1",
+      })
+    ).toBe("ok");
+  });
+
+  it("mismatch si metadata product pointe un autre price", () => {
+    expect(
+      checkoutPriceMatchesProduct({
+        paidPriceId: "price_cheap",
+        productStripePriceId: "price_premium",
+      })
+    ).toBe("mismatch");
+  });
+
+  it("missing si price payé absent", () => {
+    expect(
+      checkoutPriceMatchesProduct({
+        paidPriceId: null,
+        productStripePriceId: "price_1",
+      })
+    ).toBe("missing_paid_price");
+  });
+});
+
+describe("extractAccessProductIdFromSession", () => {
+  it("lit discelyn_access_product_id", () => {
+    expect(
+      extractAccessProductIdFromSession(
+        session({
+          metadata: { discelyn_access_product_id: "cmproduct12345" },
+        })
+      )
+    ).toBe("cmproduct12345");
   });
 });
 

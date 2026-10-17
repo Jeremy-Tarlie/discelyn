@@ -102,3 +102,21 @@ export async function anonymizeExpiredLearnerPii(
   });
   return result.count;
 }
+
+/** Rétention événements email marketing (opens/clicks) : 13 mois. */
+export const EMAIL_EVENT_RETENTION_DAYS = 396;
+
+export function emailEventCutoff(now = new Date()): Date {
+  const d = new Date(now);
+  d.setUTCDate(d.getUTCDate() - EMAIL_EVENT_RETENTION_DAYS);
+  return d;
+}
+
+export async function purgeExpiredEmailEvents(
+  now = new Date(),
+): Promise<number> {
+  const result = await prisma.emailEvent.deleteMany({
+    where: { createdAt: { lt: emailEventCutoff(now) } },
+  });
+  return result.count;
+}

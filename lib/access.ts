@@ -1,5 +1,3 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { Bot, Subscription } from "@/generated/prisma/client";
 import type { PlanId } from "@/lib/plans";
@@ -22,6 +20,8 @@ export type RequireUserOptions = {
 
 /** @deprecated Prefer requireOrg — conserve pour routes identité pure (leads admin). */
 export async function requireUser(options?: RequireUserOptions) {
+  const { getServerSession } = await import("next-auth");
+  const { authOptions } = await import("@/lib/auth");
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return null;

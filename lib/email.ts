@@ -14,6 +14,7 @@ export async function sendEmail(input: {
   subject: string;
   text: string;
   html?: string;
+  headers?: Record<string, string>;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const from = process.env.EMAIL_FROM?.trim();
@@ -34,6 +35,7 @@ export async function sendEmail(input: {
         subject: input.subject,
         text: input.text,
         html: input.html ?? undefined,
+        headers: input.headers ?? undefined,
       }),
       signal: AbortSignal.timeout(10_000),
     });

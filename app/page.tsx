@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { getServerSession } from "next-auth";
 import { getTranslations } from "next-intl/server";
+import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { SiteHeader } from "@/components/landing/SiteHeader";
 import { SiteFooter } from "@/components/landing/SiteFooter";

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { userNeedsMfaChallenge } from "@/lib/mfa-session";
 import { AuthPageChrome } from "@/components/auth/AuthPageChrome";

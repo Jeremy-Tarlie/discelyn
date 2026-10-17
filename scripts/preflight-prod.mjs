@@ -15,8 +15,6 @@ const appEnv = (process.env.APP_ENV || "").toLowerCase() || "development";
 
 const requiredAlways = [
   "DATABASE_URL",
-  "NEXTAUTH_SECRET",
-  "NEXTAUTH_URL",
   "NEXT_PUBLIC_APP_URL",
   "DISCORD_CLIENT_ID",
   "DISCORD_CLIENT_SECRET",
@@ -64,11 +62,7 @@ const recommendedStripePrices = [
   "STRIPE_PRICE_DIAGNOSTIC",
 ];
 
-const recommended = [
-  "NEXT_PUBLIC_APP_ENV",
-  "RESEND_API_KEY",
-  "EMAIL_FROM",
-];
+const recommended = ["NEXT_PUBLIC_APP_ENV"];
 
 function present(name) {
   const v = process.env[name];
@@ -102,8 +96,10 @@ if (appEnv === "staging" || appEnv === "production") {
   if (present("CRON_SECRET") && !checkLength("CRON_SECRET", 16)) {
     errors.push("CRON_SECRET trop court (min 16)");
   }
-  if (present("NEXTAUTH_SECRET") && !checkLength("NEXTAUTH_SECRET", 32)) {
-    errors.push("NEXTAUTH_SECRET trop court (min 32)");
+  const secret =
+    process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "";
+  if (secret && secret.length < 32) {
+    errors.push("AUTH_SECRET / NEXTAUTH_SECRET trop court (min 32)");
   }
 }
 
@@ -155,40 +151,38 @@ if (appEnv === "production") {
   );
 }
 
-const requiredSmtpProd = [
-  "SMTP_HOST",
-  "SMTP_USER",
-  "SMTP_PASS",
-  "SMTP_FROM",
-];
-if (appEnv === "production") {
-  for (const name of requiredSmtpProd) {
-    if (!present(name)) {
-      errors.push(
-        `manquant (production): ${name} — auth email/mdp (vérif + reset)`
-      );
-    }
-  }
-} else if (appEnv === "staging") {
-  for (const name of requiredSmtpProd) {
-    if (!present(name)) {
-      warnings.push(`recommandé (staging): ${name} — auth email/mdp`);
-    }
-  }
+const hasAuthSecret = present("AUTH_SECRET") || present("NEXTAUTH_SECRET");
+const hasAuthUrl = present("AUTH_URL") || present("NEXTAUTH_URL");
+if (!hasAuthSecret) {
+  errors.push(
+    "manquant: AUTH_SECRET (ou alias NEXTAUTH_SECRET) — sessions Auth.js"
+  );
+}
+if (!hasAuthUrl) {
+  errors.push(
+    "manquant: AUTH_URL (ou alias NEXTAUTH_URL) — callbacks OAuth / mails"
+  );
 }
 
 if (present("RESEND_API_KEY") && !present("EMAIL_FROM")) {
   errors.push("EMAIL_FROM requis si RESEND_API_KEY est défini");
 }
 if (present("EMAIL_FROM") && !present("RESEND_API_KEY")) {
-  warnings.push("EMAIL_FROM sans RESEND_API_KEY — emails claim non envoyés");
+  warnings.push("EMAIL_FROM sans RESEND_API_KEY — emails non envoyés");
 }
 if (
   appEnv === "production" &&
   (!present("RESEND_API_KEY") || !present("EMAIL_FROM"))
 ) {
+  errors.push(
+    "manquant (production): RESEND_API_KEY + EMAIL_FROM — auth email/mdp + claims"
+  );
+} else if (
+  appEnv === "staging" &&
+  (!present("RESEND_API_KEY") || !present("EMAIL_FROM"))
+) {
   warnings.push(
-    "prod sans RESEND_API_KEY+EMAIL_FROM — claims email-only non livrés (DM Discord / webhook orga seulement)"
+    "recommandé (staging): RESEND_API_KEY + EMAIL_FROM — auth email/mdp + claims"
   );
 }
 

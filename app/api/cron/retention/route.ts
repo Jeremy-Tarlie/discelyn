@@ -5,6 +5,7 @@ import {
   anonymizeExpiredLearnerPii,
   purgeExpiredAnalyticsEvents,
   purgeExpiredCookieConsents,
+  purgeExpiredEmailEvents,
   purgeExpiredLeads,
 } from "@/lib/data-retention";
 
@@ -26,16 +27,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const [analytics, leads, cookieConsents, learnerPii] = await Promise.all([
-    purgeExpiredAnalyticsEvents(),
-    purgeExpiredLeads(),
-    purgeExpiredCookieConsents(),
-    anonymizeExpiredLearnerPii(),
-  ]);
+  const [analytics, leads, cookieConsents, learnerPii, emailEvents] =
+    await Promise.all([
+      purgeExpiredAnalyticsEvents(),
+      purgeExpiredLeads(),
+      purgeExpiredCookieConsents(),
+      anonymizeExpiredLearnerPii(),
+      purgeExpiredEmailEvents(),
+    ]);
 
   return NextResponse.json({
     ok: true,
-    purged: { analytics, leads, cookieConsents, learnerPii },
+    purged: { analytics, leads, cookieConsents, learnerPii, emailEvents },
     time: new Date().toISOString(),
   });
 }

@@ -7,6 +7,7 @@ import {
   formatPriceEur,
   planDisplayPriceEur,
   planYearlySavingsEur,
+  maxPlanYearlySavingsPercent,
   PLANS,
   type BillingInterval,
   type PlanId,
@@ -143,8 +144,10 @@ export function ChangePlanPanel({
           </button>
         </div>
         {interval === "year" ? (
-          <span className="rounded-full bg-signal/15 px-3 py-1 text-xs font-semibold text-signal">
-            {tPricing("yearlyDiscount")}
+          <span className="rounded-full bg-signal/15 px-3 py-1 text-xs font-semibold text-signal-dim">
+            {tPricing("yearlyDiscountUpTo", {
+              percent: maxPlanYearlySavingsPercent(),
+            })}
           </span>
         ) : null}
       </div>

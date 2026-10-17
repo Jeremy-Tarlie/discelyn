@@ -9,7 +9,6 @@ import type { OrgRole, SubscriptionStatus } from "@/generated/prisma/client";
 import { effectivePlan } from "@/lib/billing-guards";
 import { isTokenEncryptionEnabled, requireSealToken } from "@/lib/token-crypto";
 import { cookies } from "next/headers";
-import { bootstrapOrganizationForUser } from "@/lib/org-access";
 import { ACTIVE_ORG_COOKIE, pickActiveMembership } from "@/lib/active-org";
 
 declare module "next-auth" {
@@ -43,14 +42,33 @@ function requireEnv(name: string): string {
   return value;
 }
 
+/** AUTH_* prioritaire ; NEXTAUTH_* accepté en alias. */
+export function authSecret(): string | undefined {
+  return (
+    process.env.AUTH_SECRET?.trim() ||
+    process.env.NEXTAUTH_SECRET?.trim() ||
+    undefined
+  );
+}
+
+export function authUrl(): string | undefined {
+  return (
+    process.env.AUTH_URL?.trim() ||
+    process.env.NEXTAUTH_URL?.trim() ||
+    undefined
+  );
+}
+
 export function assertAuthEnv(): void {
-  requireEnv("NEXTAUTH_SECRET");
+  if (!authSecret()) {
+    throw new Error("AUTH_SECRET (ou NEXTAUTH_SECRET) manquant");
+  }
   requireEnv("DISCORD_CLIENT_ID");
   requireEnv("DISCORD_CLIENT_SECRET");
 }
 
 export const authOptions: NextAuthOptions = {
-  // @auth/prisma-adapter types target Prisma 6 @prisma/client; Prisma 7 generated client is API-compatible.
+  // @auth/prisma-adapter types target Prisma 6; Prisma 7 client is API-compatible.
   adapter: PrismaAdapter(prisma as never) as Adapter,
   // Auth email/mdp : sessions DB créées hors CredentialsProvider
   // (lib/credentials-session) — compatible MFA + strategy database.
@@ -59,6 +77,9 @@ export const authOptions: NextAuthOptions = {
     DiscordProvider({
       clientId: process.env.DISCORD_CLIENT_ID ?? "",
       clientSecret: process.env.DISCORD_CLIENT_SECRET ?? "",
+      // Discord renvoie `iss=https://discord.com` (RFC 9207). Sans issuer,
+      // openid-client lève « issuer must be configured on the issuer ».
+      issuer: "https://discord.com",
       authorization: {
         params: {
           scope: "identify email guilds",
@@ -92,7 +113,7 @@ export const authOptions: NextAuthOptions = {
         typeof profile === "object" &&
         profile &&
         "email" in profile &&
-        typeof (profile as { email?: unknown }).email === "string"
+        typeof (profile as { email?: string }).email === "string"
           ? (profile as { email: string }).email
           : null;
       const email = user.email ?? profileEmail;
@@ -105,7 +126,6 @@ export const authOptions: NextAuthOptions = {
       const blocked = await credentialsUserBlocksDiscordOAuth(email);
       if (!blocked) return true;
 
-      // Liaison Discord depuis un compte déjà connecté (même user) : autoriser.
       const { getSessionTokenFromCookies } = await import("@/lib/mfa-session");
       const token = await getSessionTokenFromCookies();
       if (token) {
@@ -114,8 +134,6 @@ export const authOptions: NextAuthOptions = {
           select: { userId: true, expires: true, mfaVerifiedAt: true },
         });
         if (sessionRow && sessionRow.expires.getTime() >= Date.now()) {
-          // Uniquement si la session appartient au compte credentials
-          // de CET email Discord (pas sessionRow.userId === user.id — ATO).
           const cred = await prisma.user.findFirst({
             where: {
               email: {
@@ -128,8 +146,7 @@ export const authOptions: NextAuthOptions = {
             select: { id: true, totpEnabled: true },
           });
 
-          const isLinking =
-            cred !== null && sessionRow.userId === cred.id;
+          const isLinking = cred !== null && sessionRow.userId === cred.id;
 
           if (isLinking) {
             if (cred.totpEnabled && !sessionRow.mfaVerifiedAt) {
@@ -137,7 +154,6 @@ export const authOptions: NextAuthOptions = {
             }
             return true;
           }
-
         }
       }
 
@@ -150,7 +166,6 @@ export const authOptions: NextAuthOptions = {
       });
       if (!active) {
         await prisma.session.deleteMany({ where: { userId: user.id } });
-        // Force unauthenticated côté clients qui lisent session.user.id.
         session.user.id = "";
         session.user.plan = "FREE";
         session.user.subscriptionStatus = "CANCELED";
@@ -191,15 +206,12 @@ export const authOptions: NextAuthOptions = {
       session.user.organizationId = preferred?.organizationId ?? null;
       session.user.orgRole = preferred?.role ?? null;
       session.user.plan = effectivePlan(subscription);
-      // Pas de row subscription (pas d’orga / race bootstrap) ≠ abo actif.
-      // FREE freemium a toujours une row `ACTIVE` via getOrgSubscription.
       session.user.subscriptionStatus = subscription?.status ?? "CANCELED";
       return session;
     },
   },
   events: {
     async createUser({ user }) {
-      // Normaliser l’email Discord à l’écriture (unicité case-insensitive).
       if (user.id && user.email) {
         const { normalizeEmail } = await import("@/lib/disposable-email");
         const normalized = normalizeEmail(user.email);
@@ -210,7 +222,6 @@ export const authOptions: NextAuthOptions = {
               data: { email: normalized },
             });
           } catch (err) {
-            // Collision unique après normalize — laisser le signIn callback gérer.
             console.error(
               "[auth] createUser email normalize failed",
               err instanceof Error ? err.message.slice(0, 120) : "unknown"
@@ -218,6 +229,8 @@ export const authOptions: NextAuthOptions = {
           }
         }
       }
+      if (!user.id) return;
+      const { bootstrapOrganizationForUser } = await import("@/lib/org-access");
       await bootstrapOrganizationForUser({
         userId: user.id,
         name: user.name,
@@ -237,7 +250,6 @@ export const authOptions: NextAuthOptions = {
           data: { discordId: account.providerAccountId },
         });
 
-        // Chiffre les jetons OAuth juste après l’insertion NextAuth.
         if (isTokenEncryptionEnabled()) {
           const row = await prisma.account.findUnique({
             where: {
@@ -273,5 +285,5 @@ export const authOptions: NextAuthOptions = {
       }
     },
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: authSecret(),
 };

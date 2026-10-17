@@ -4,8 +4,10 @@ import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { requireUnsealSecret } from "@/lib/token-crypto";
 import {
+  checkoutPriceMatchesProduct,
+  extractAccessProductIdFromSession,
   extractDiscordUserIdFromSession,
-  extractPriceIdFromSession,
+  extractPaidPriceIdFromLineItems,
 } from "@/lib/learner-access-parse";
 import {
   shouldOpenAccessFromCheckout,
@@ -44,28 +46,34 @@ function asCustomerId(
   return customer.id;
 }
 
-async function resolvePriceId(input: {
+/**
+ * Price payé = line items uniquement (fail-closed).
+ * Pas de fallback metadata — forgeable sur Payment Link / Checkout.
+ */
+async function resolvePaidPriceId(input: {
   session: Stripe.Checkout.Session;
   apiKey: string | null;
 }): Promise<string | null> {
-  const fromMeta = extractPriceIdFromSession(input.session);
-  if (fromMeta && fromMeta.startsWith("price_")) return fromMeta;
-
   if (!input.apiKey) return null;
 
   const stripe = new Stripe(input.apiKey, {
     apiVersion: "2025-08-27.basil",
     typescript: true,
   });
-  const full = await stripe.checkout.sessions.retrieve(input.session.id, {
-    expand: ["line_items.data.price"],
-  });
-  const fromLines = extractPriceIdFromSession(
-    input.session,
-    full.line_items?.data ?? null
-  );
-  if (fromLines && fromLines.startsWith("price_")) return fromLines;
-  return null;
+  try {
+    const full = await stripe.checkout.sessions.retrieve(input.session.id, {
+      expand: ["line_items.data.price"],
+    });
+    return extractPaidPriceIdFromLineItems(full.line_items?.data ?? null);
+  } catch {
+    console.warn(
+      JSON.stringify({
+        msg: "checkout_line_items_retrieve_failed",
+        sessionId: input.session.id,
+      })
+    );
+    return null;
+  }
 }
 
 async function handleCheckoutCompleted(
@@ -89,30 +97,51 @@ async function handleCheckoutCompleted(
     throw new StripeWebhookPermanentIgnore("org_deleted");
   }
 
-  const priceId = await resolvePriceId({ session, apiKey });
-  if (!priceId) {
-    // Soft-return avalait le claim → paiement sans accès. Throw pour release + retry Stripe.
-    throw new StripeWebhookRetryableError(
-      `price introuvable session=${session.id}`
-    );
+  const accessProductIdMeta = extractAccessProductIdFromSession(session);
+  const paidPriceId = await resolvePaidPriceId({ session, apiKey });
+
+  const productInclude = {
+    bot: {
+      select: { id: true, guildId: true, status: true, deletedAt: true },
+    },
+  } as const;
+
+  let product = accessProductIdMeta
+    ? await prisma.accessProduct.findFirst({
+        where: {
+          id: accessProductIdMeta,
+          organizationId,
+          active: true,
+        },
+        include: productInclude,
+      })
+    : null;
+
+  if (!product && paidPriceId) {
+    product = await prisma.accessProduct.findFirst({
+      where: {
+        organizationId,
+        stripePriceId: paidPriceId,
+        active: true,
+      },
+      include: productInclude,
+    });
   }
 
-  const product = await prisma.accessProduct.findFirst({
-    where: {
-      organizationId,
-      stripePriceId: priceId,
-      active: true,
-    },
-    include: {
-      bot: {
-        select: { id: true, guildId: true, status: true, deletedAt: true },
-      },
-    },
-  });
-
   if (!product) {
+    if (!paidPriceId && !accessProductIdMeta) {
+      throw new StripeWebhookRetryableError(
+        `price introuvable session=${session.id}`
+      );
+    }
     const dead = await prisma.accessProduct.findFirst({
-      where: { organizationId, stripePriceId: priceId },
+      where: {
+        organizationId,
+        OR: [
+          ...(accessProductIdMeta ? [{ id: accessProductIdMeta }] : []),
+          ...(paidPriceId ? [{ stripePriceId: paidPriceId }] : []),
+        ],
+      },
       include: {
         bot: { select: { deletedAt: true, guildId: true } },
       },
@@ -124,8 +153,21 @@ async function handleCheckoutCompleted(
       throw new StripeWebhookPermanentIgnore("product_or_bot_inactive");
     }
     throw new StripeWebhookRetryableError(
-      `produit inconnu ou guild manquante price=${priceId}`
+      `produit inconnu ou guild manquante price=${paidPriceId ?? "none"} product=${accessProductIdMeta ?? "none"}`
     );
+  }
+
+  const priceMatch = checkoutPriceMatchesProduct({
+    paidPriceId,
+    productStripePriceId: product.stripePriceId,
+  });
+  if (priceMatch === "missing_paid_price") {
+    throw new StripeWebhookRetryableError(
+      `price payé introuvable session=${session.id}`
+    );
+  }
+  if (priceMatch === "mismatch") {
+    throw new StripeWebhookPermanentIgnore("price_product_mismatch");
   }
 
   if (product.bot.deletedAt != null || !product.bot.guildId) {

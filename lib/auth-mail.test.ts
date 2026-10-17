@@ -1,102 +1,69 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-type TransportOptions = {
-  host: string;
-  disableFileAccess?: boolean;
-  disableUrlAccess?: boolean;
-  auth: { user: string; pass: string };
-};
+const sendEmailMock = vi.fn();
+const isEmailConfiguredMock = vi.fn();
 
-const sendMail = vi.fn(async () => ({}));
-const createTransport = vi.fn((options: TransportOptions) => {
-  void options;
-  return { sendMail };
-});
-
-vi.mock("nodemailer", () => ({
-  default: {
-    createTransport: (options: TransportOptions) => createTransport(options),
-  },
+vi.mock("@/lib/email", () => ({
+  sendEmail: (input: {
+    to: string;
+    subject: string;
+    text: string;
+    html?: string;
+  }) => sendEmailMock(input),
+  isEmailConfigured: () => isEmailConfiguredMock(),
 }));
 
-import {
-  resetAuthMailTransporterForTests,
-  sendAuthMail,
-} from "./auth-mail";
+import { isAuthMailConfigured, sendAuthMail } from "./auth-mail";
 
-describe("sendAuthMail", () => {
+describe("sendAuthMail (Resend)", () => {
   beforeEach(() => {
-    createTransport.mockClear();
-    sendMail.mockClear();
-    createTransport.mockImplementation((options: TransportOptions) => {
-      void options;
-      return { sendMail };
-    });
-    sendMail.mockResolvedValue({});
-    resetAuthMailTransporterForTests();
-    delete process.env.SMTP_HOST;
-    delete process.env.SMTP_FROM;
-    delete process.env.SMTP_USER;
-    delete process.env.SMTP_PASS;
-    delete process.env.SMTP_PORT;
-    delete process.env.SMTP_SECURE;
+    sendEmailMock.mockReset();
+    isEmailConfiguredMock.mockReset();
+    isEmailConfiguredMock.mockReturnValue(true);
+    sendEmailMock.mockResolvedValue({ ok: true });
   });
 
-  afterEach(() => {
-    resetAuthMailTransporterForTests();
+  it("expose isAuthMailConfigured via Resend", () => {
+    isEmailConfiguredMock.mockReturnValue(false);
+    expect(isAuthMailConfigured()).toBe(false);
+    isEmailConfiguredMock.mockReturnValue(true);
+    expect(isAuthMailConfigured()).toBe(true);
   });
 
-  it("refuse un destinataire avec CRLF sans ouvrir SMTP", async () => {
-    process.env.SMTP_HOST = "smtp.example";
-    process.env.SMTP_FROM = "noreply@example.com";
-    process.env.SMTP_USER = "user";
-    process.env.SMTP_PASS = "pass";
-
+  it("refuse un destinataire avec CRLF sans appeler Resend", async () => {
     const result = await sendAuthMail({
       to: "victim@example.com\r\nBcc: evil@example.com",
       subject: "x",
       text: "y",
     });
     expect(result).toEqual({ ok: false, error: "auth_mail_invalid_recipient" });
-    expect(createTransport).not.toHaveBeenCalled();
+    expect(sendEmailMock).not.toHaveBeenCalled();
   });
 
-  it("signale mail non configuré sans SMTP", async () => {
+  it("signale mail non configuré si Resend absent", async () => {
+    isEmailConfiguredMock.mockReturnValue(false);
     const result = await sendAuthMail({
       to: "ok@example.com",
       subject: "x",
       text: "y",
     });
     expect(result).toEqual({ ok: false, error: "auth_mail_not_configured" });
-    expect(createTransport).not.toHaveBeenCalled();
+    expect(sendEmailMock).not.toHaveBeenCalled();
   });
 
-  it("crée le transport avec disableFileAccess et disableUrlAccess", async () => {
-    process.env.SMTP_HOST = "smtp.example";
-    process.env.SMTP_FROM = "noreply@example.com";
-    process.env.SMTP_USER = "user";
-    process.env.SMTP_PASS = "pass";
-
+  it("délègue à sendEmail (Resend)", async () => {
     const result = await sendAuthMail({
       to: "ok@example.com",
       subject: "hello",
       text: "body",
+      html: "<p>body</p>",
     });
-
     expect(result).toEqual({ ok: true });
-    expect(createTransport).toHaveBeenCalledWith(
-      expect.objectContaining({
-        host: "smtp.example",
-        disableFileAccess: true,
-        disableUrlAccess: true,
-        auth: { user: "user", pass: "pass" },
-      })
-    );
-    expect(sendMail).toHaveBeenCalledWith(
-      expect.objectContaining({
-        to: "ok@example.com",
-        from: "noreply@example.com",
-      })
-    );
+    expect(sendEmailMock).toHaveBeenCalledWith({
+      to: "ok@example.com",
+      subject: "hello",
+      text: "body",
+      html: "<p>body</p>",
+    });
   });
 });

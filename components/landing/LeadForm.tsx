@@ -26,6 +26,7 @@ export function LeadForm({
   const [name, setName] = useState("");
   const [company, setCompany] = useState("");
   const [message, setMessage] = useState("");
+  const [contactConsent, setContactConsent] = useState(false);
   const [marketingConsent, setMarketingConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
@@ -33,7 +34,7 @@ export function LeadForm({
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!marketingConsent) {
+    if (!contactConsent) {
       setError(tg("leadConsentRequired"));
       return;
     }
@@ -50,7 +51,8 @@ export function LeadForm({
           message: message || undefined,
           offer: defaultOffer,
           source: "landing",
-          marketingConsent: true,
+          contactConsent: true,
+          marketingConsent,
         }),
       });
       const data = (await response.json()) as { error?: string };
@@ -130,8 +132,8 @@ export function LeadForm({
       <label className="flex items-start gap-2.5 text-xs leading-relaxed text-[color:var(--muted)]">
         <input
           type="checkbox"
-          checked={marketingConsent}
-          onChange={(e) => setMarketingConsent(e.target.checked)}
+          checked={contactConsent}
+          onChange={(e) => setContactConsent(e.target.checked)}
           className="mt-0.5"
           required
         />
@@ -144,6 +146,15 @@ export function LeadForm({
             ),
           })}
         </span>
+      </label>
+      <label className="flex items-start gap-2.5 text-xs leading-relaxed text-[color:var(--muted)]">
+        <input
+          type="checkbox"
+          checked={marketingConsent}
+          onChange={(e) => setMarketingConsent(e.target.checked)}
+          className="mt-0.5"
+        />
+        <span>{tg("leadMarketingConsent")}</span>
       </label>
       <button
         type="submit"

@@ -8,6 +8,7 @@ type Prefs = {
   notifyBillingEmail: boolean;
   notifySecurityEmail: boolean;
   notifyProductEmail: boolean;
+  marketingConsent: boolean;
 };
 
 export function NotificationPrefsPanel({ initial }: { initial: Prefs }) {
@@ -62,6 +63,11 @@ export function NotificationPrefsPanel({ initial }: { initial: Prefs }) {
       key: "notifyProductEmail",
       label: t("notifProduct"),
       hint: t("notifProductHint"),
+    },
+    {
+      key: "marketingConsent",
+      label: t("notifMarketing"),
+      hint: t("notifMarketingHint"),
     },
   ];
 

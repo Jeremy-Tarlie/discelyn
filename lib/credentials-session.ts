@@ -10,12 +10,29 @@ export const PLAN_INTENT_COOKIE = "discelyn_plan_intent";
 export const PLAN_INTENT_MAX_AGE_SEC = 60 * 60; // 1 h
 
 export function sessionCookieName(): string {
-  const url = process.env.NEXTAUTH_URL ?? "";
+  const url =
+    process.env.AUTH_URL?.trim() ||
+    process.env.NEXTAUTH_URL?.trim() ||
+    "";
   const secure =
     url.startsWith("https://") || getAppEnvironment() === "production";
   return secure
     ? "__Secure-next-auth.session-token"
     : "next-auth.session-token";
+}
+
+/** Noms lus (v4 + éventuel legacy authjs d’une tentative v5). */
+export function sessionCookieReadNames(): readonly string[] {
+  const secure = isSecureSessionCookie();
+  if (secure) {
+    return [
+      "__Secure-next-auth.session-token",
+      "__Secure-authjs.session-token",
+      "next-auth.session-token",
+      "authjs.session-token",
+    ] as const;
+  }
+  return ["next-auth.session-token", "authjs.session-token"] as const;
 }
 
 export function isSecureSessionCookie(): boolean {
@@ -49,7 +66,6 @@ function cookieOptions(expires: Date) {
   };
 }
 
-/** Pose le cookie session sur le jar Next (Server Action / RSC). */
 export async function setSessionCookieOnJar(
   jar: CookieJar,
   sessionToken: string,
@@ -58,7 +74,6 @@ export async function setSessionCookieOnJar(
   jar.set(sessionCookieName(), sessionToken, cookieOptions(expires));
 }
 
-/** Pose le cookie session sur une NextResponse (route handlers). */
 export function setSessionCookieOnResponse(
   response: NextResponse,
   sessionToken: string,
@@ -68,19 +83,21 @@ export function setSessionCookieOnResponse(
 }
 
 export function clearSessionCookiesOnResponse(response: NextResponse): void {
-  response.cookies.set("next-auth.session-token", "", {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 0,
-  });
-  response.cookies.set("__Secure-next-auth.session-token", "", {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    secure: true,
-    maxAge: 0,
-  });
+  const names = [
+    "next-auth.session-token",
+    "__Secure-next-auth.session-token",
+    "authjs.session-token",
+    "__Secure-authjs.session-token",
+  ] as const;
+  for (const name of names) {
+    response.cookies.set(name, "", {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      secure: name.startsWith("__Secure-"),
+      maxAge: 0,
+    });
+  }
 }
 
 export type PlanIntentValue = {

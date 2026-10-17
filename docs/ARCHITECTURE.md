@@ -25,12 +25,13 @@ Il n’y a **pas** de token Discord bot client en base : un bot plateforme uniqu
 
 1. Dashboard → contrôle d’accès : `bootstrapOrgStripe` (`lib/org-stripe.ts`) exige `TOKEN_ENCRYPTION_KEY`, stocke `sk_` / `whsec_` chiffrés (`enc:v1:`).
 2. Crée (ou réutilise) un webhook Stripe → `POST /api/access/webhook/{pathToken}`.
-3. Produit : price Stripe → rôle Discord (+ grants multi-serveur optionnels via `AccessProductGuildGrant`).
-4. Payment Link généré via l’API Stripe orga (`createAccessPaymentLink`).
+3. Offre (wizard) : **créer** product/price/Payment Link sur le Stripe orga (`createOrgStripeOffer` / `attachDiscelynPaymentLink`), **ou brancher** un `price_` / Payment Link existant (`resolveOrgStripePriceId`) — pas de liste catalogue. 0 % commission Discelyn sur le CA formation. Rôle Discord via `AccessProductGuildGrant`.
+4. `AccessProduct.paymentSource` : `DISCELYN_LINK` | `EXTERNAL_STRIPE` ; metadata Payment Link `discelyn_access_product_id` (+ `discelyn_price_id`).
+5. Webhook : price payé = **line items uniquement** (fail-closed, jamais metadata) ; si `discelyn_access_product_id` résout un produit, `product.stripePriceId` doit égaler ce price sinon ignore permanent (`price_product_mismatch`). Sites hors-Stripe / PayPal : phase 2 (hors MVP).
 
 ### Paiement → claim
 
-1. Checkout / Payment Link payé → webhook orga.
+1. Checkout / Payment Link payé → webhook orga (matching ci-dessus).
 2. `openLearnerAccessFromCheckout` : réserve un siège, crée `LearnerAccess` (`PENDING_CLAIM`) + `claimToken`.
 3. Si `discord_user_id` déjà en metadata → `fulfillDiscordAccess` immédiat.
 4. Sinon l’apprenant ouvre `/claim/{token}` → OAuth Discord → `fulfillDiscordAccess`.
@@ -57,7 +58,8 @@ On ne passe **pas** `ACTIVE` dès qu’un seul serveur a réussi.
 
 - Remboursement / unpaid / canceled / fin de cohorte → `revokeLearnerAccess` (tous les grants).
 - Cron `POST /api/cron/access` (~15 min) : expiry, relances claim (DM ou webhook `claim_reminder`), J-N, onboarding, retry grants, retry refunds oversold, reconcile `seatsUsed`.
-- Cron `POST /api/cron/retention` (1 h) : purge analytics / leads / consentements cookies expirés + anonymisation PII apprenants révoqués (365 j).
+- Cron `POST /api/cron/retention` (1 h) : purge analytics / leads / consentements cookies / EmailEvent (13 mois) expirés + anonymisation PII apprenants révoqués (365 j).
+- Cron `POST /api/cron/campaigns` (~60 s) : envoi file campagnes marketing Resend (batch 25, List-Unsubscribe).
 
 ### Codes manuels
 
@@ -132,6 +134,7 @@ User-as-org remplacé par `Organization` + `OrganizationMembership` (`2026092810
 - Preuve money path : `npm run test:db` + tests HTTP webhooks (`*.http.test.ts`) — **pas** d’E2E Stripe/Discord live (`npm run smoke:live`).
 - Secrets Stripe formation : toujours `enc:v1:` ; migration legacy : `npm run seal-org-stripe`.
 - Release / ops : `docs/RELEASE.md`, `docs/OPS-RUNBOOK.md`, `npm run preflight:prod`.
+- Auth / mail : `next-auth@4` stable + Resend (pas de nodemailer) ; notes : `docs/TECH-DEBT-AUTHJS-NODEMAILER.md`.
 
 ---
 

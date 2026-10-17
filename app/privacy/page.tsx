@@ -84,7 +84,8 @@ export default async function PrivacyPage() {
               <li>Billing: Stripe IDs (no card data stored by Discelyn).</li>
               <li>
                 Commercial leads (landing form): email, name, company, role,
-                message, requested offer, marketing consent timestamp — kept for
+                message, requested offer; optional marketing consent timestamp —
+                kept for
                 follow-up until manual deletion or erasure request (max 24 months).
               </li>
               <li>
@@ -124,8 +125,8 @@ export default async function PrivacyPage() {
               </li>
               <li>Facturation : IDs Stripe (pas de carte chez Discelyn).</li>
               <li>
-                Leads commerciaux : email, nom, société, message, offre,
-                horodatage du consentement marketing — suivi jusqu’à
+                Leads commerciaux : email, nom, société, message, offre ;
+                horodatage marketing optionnel (case distincte) — suivi jusqu’à
                 suppression / demande d’effacement (max 24 mois).
               </li>
               <li>
@@ -201,11 +202,53 @@ export default async function PrivacyPage() {
             <li>Redis (optional) — distributed rate-limiting</li>
             <li>
               {isEn
-                ? "SMTP email provider (via Nodemailer) — account verification / password reset"
-                : "Fournisseur SMTP (via Nodemailer) — vérification de compte / reset mot de passe"}
+                ? "Resend — account verification / password reset, claim / reminder emails, and optional marketing campaigns (opens/clicks webhooks when configured)"
+                : "Resend — vérification de compte / reset mot de passe, emails claim / relances, et campagnes marketing optionnelles (webhooks opens/clicks si configuré)"}
             </li>
-            <li>Resend (optional) — claim / reminder emails</li>
           </ul>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="font-display text-xl text-[color:var(--page-fg)]">
+            {isEn ? "Marketing emails" : "E-mails marketing"}
+          </h2>
+          {isEn ? (
+            <ul className="list-disc space-y-2 pl-5">
+              <li>
+                Sent only with an explicit marketing opt-in (account preferences
+                or optional lead-form checkbox — separate from contacting you
+                about a single request).
+              </li>
+              <li>
+                Delivery events (accepted/delivered/opened/clicked/bounced/
+                complained) may be stored as EmailEvent for up to 13 months, then
+                purged.
+              </li>
+              <li>
+                Every marketing message includes an unsubscribe link (and
+                List-Unsubscribe headers when supported). Spam complaints also
+                revoke marketing consent.
+              </li>
+            </ul>
+          ) : (
+            <ul className="list-disc space-y-2 pl-5">
+              <li>
+                Envois uniquement avec opt-in marketing explicite (préférences
+                compte ou case optionnelle du formulaire lead — distinct du
+                recontact sur une demande).
+              </li>
+              <li>
+                Les événements d’envoi (accepté / délivré / ouverture / clic /
+                bounce / plainte) peuvent être stockés (EmailEvent) jusqu’à 13
+                mois, puis purgés.
+              </li>
+              <li>
+                Chaque message marketing contient un lien de désinscription
+                (et en-têtes List-Unsubscribe si supportés). Une plainte spam
+                révoque aussi le consentement marketing.
+              </li>
+            </ul>
+          )}
         </section>
 
         <section className="space-y-3">

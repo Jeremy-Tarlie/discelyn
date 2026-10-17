@@ -10,6 +10,7 @@ vi.mock("@/lib/data-retention", () => ({
   purgeExpiredLeads: vi.fn().mockResolvedValue(0),
   purgeExpiredCookieConsents: vi.fn().mockResolvedValue(0),
   anonymizeExpiredLearnerPii: vi.fn().mockResolvedValue(0),
+  purgeExpiredEmailEvents: vi.fn().mockResolvedValue(0),
 }));
 
 vi.mock("@/lib/learner-access", () => ({
@@ -20,7 +21,7 @@ vi.mock("@/lib/rate-limit", () => ({
   rateLimit: vi.fn().mockResolvedValue({ ok: true }),
 }));
 
-describe("cron retention + internal learner-join auth smoke", () => {
+describe("cron retention/campaigns + internal learner-join auth smoke", () => {
   const prevCron = process.env.CRON_SECRET;
   const prevRuntime = process.env.BOT_RUNTIME_SECRET;
 
@@ -40,6 +41,15 @@ describe("cron retention + internal learner-join auth smoke", () => {
   it("POST /api/cron/retention → 401 sans Bearer", async () => {
     const { POST } = await import("@/app/api/cron/retention/route");
     const req = new NextRequest("http://localhost/api/cron/retention", {
+      method: "POST",
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(401);
+  });
+
+  it("POST /api/cron/campaigns → 401 sans Bearer", async () => {
+    const { POST } = await import("@/app/api/cron/campaigns/route");
+    const req = new NextRequest("http://localhost/api/cron/campaigns", {
       method: "POST",
     });
     const res = await POST(req);

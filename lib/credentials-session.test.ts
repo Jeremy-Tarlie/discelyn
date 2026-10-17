@@ -16,22 +16,26 @@ import {
 
 describe("credentials-session cookies", () => {
   const prevUrl = process.env.NEXTAUTH_URL;
+  const prevAuthUrl = process.env.AUTH_URL;
   const prevEnv = process.env.APP_ENV;
 
   afterEach(() => {
     if (prevUrl === undefined) delete process.env.NEXTAUTH_URL;
     else process.env.NEXTAUTH_URL = prevUrl;
+    if (prevAuthUrl === undefined) delete process.env.AUTH_URL;
+    else process.env.AUTH_URL = prevAuthUrl;
     if (prevEnv === undefined) delete process.env.APP_ENV;
     else process.env.APP_ENV = prevEnv;
   });
 
-  it("choisit le nom cookie selon HTTPS / prod", () => {
+  it("choisit le nom cookie next-auth selon HTTPS / prod", () => {
     process.env.APP_ENV = "development";
     process.env.NEXTAUTH_URL = "http://localhost:3000";
+    delete process.env.AUTH_URL;
     expect(sessionCookieName()).toBe("next-auth.session-token");
     expect(isSecureSessionCookie()).toBe(false);
 
-    process.env.NEXTAUTH_URL = "https://app.example.com";
+    process.env.AUTH_URL = "https://app.example.com";
     expect(sessionCookieName()).toBe("__Secure-next-auth.session-token");
     expect(isSecureSessionCookie()).toBe(true);
   });

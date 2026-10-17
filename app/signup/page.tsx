@@ -1,15 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { parseSignupIntent } from "@/lib/auth-callback";
 import { userNeedsMfaChallenge } from "@/lib/mfa-session";
 import { AuthPageChrome } from "@/components/auth/AuthPageChrome";
-import { AuthPageShell } from "@/components/auth/AuthPageShell";
-import { CredentialsAuthForm } from "@/components/landing/CredentialsAuthForm";
-
+import { SignupWizard } from "@/components/auth/SignupWizard";
 
 type PageProps = {
   searchParams: Promise<{ plan?: string; interval?: string }>;
@@ -44,9 +42,9 @@ export default async function SignupPage({ searchParams }: PageProps) {
 
   return (
     <AuthPageChrome>
-      <AuthPageShell
-        title={t("title")}
-        subtitle={t("subtitle")}
+      <SignupWizard
+        initialPlan={initialPlan}
+        initialInterval={initialInterval}
         footer={t.rich("legal", {
           terms: (chunks) => (
             <Link
@@ -65,13 +63,7 @@ export default async function SignupPage({ searchParams }: PageProps) {
             </Link>
           ),
         })}
-      >
-        <CredentialsAuthForm
-          mode="signup"
-          initialPlan={initialPlan}
-          initialInterval={initialInterval}
-        />
-      </AuthPageShell>
+      />
     </AuthPageChrome>
   );
 }

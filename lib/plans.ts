@@ -9,7 +9,10 @@ export type PlanId = RuntimePlanId;
 /** Intervalle d’abonnement SaaS (jamais un Price ID client). */
 export type BillingInterval = "month" | "year";
 
-/** 2 mois offerts à l’année (= 10 × mensuel). */
+/**
+ * Référence Starter : 2 mois offerts (= 10 × mensuel).
+ * Ops / Scale ont des annuels fixés (réductions plus fortes).
+ */
 export const YEARLY_BILLED_MONTHS = 10;
 
 export type BotModuleId = RuntimeBotModuleId;
@@ -106,7 +109,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     id: "OPS",
     name: "Ops",
     priceMonthlyEur: 49,
-    priceYearlyEur: yearlyFromMonthly(49),
+    priceYearlyEur: 459.99,
     description:
       "Jusqu’à 20 produits accès, export audit, 40 commandes — pack ops formation.",
     ...runtimeSlice("OPS"),
@@ -124,7 +127,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     id: "SCALE",
     name: "Scale",
     priceMonthlyEur: 99,
-    priceYearlyEur: yearlyFromMonthly(99),
+    priceYearlyEur: 899.99,
     description:
       "Jusqu’à 5 serveurs, 100 produits accès, automod, DPA sur demande, support prioritaire.",
     ...runtimeSlice("SCALE"),
@@ -250,12 +253,32 @@ export function planDisplayPriceEur(
   return interval === "year" ? plan.priceYearlyEur : plan.priceMonthlyEur;
 }
 
-/** Économie vs 12 × mensuel (2 mois offerts). 0 pour FREE. */
+/** Économie vs 12 × mensuel. 0 pour FREE. */
 export function planYearlySavingsEur(planId: PlanId): number {
   const plan = PLANS[planId];
   if (plan.priceMonthlyEur <= 0) return 0;
   return (
     Math.round((plan.priceMonthlyEur * 12 - plan.priceYearlyEur) * 100) / 100
+  );
+}
+
+/** % d’économie annuelle vs 12 × mensuel (arrondi). 0 pour FREE. */
+export function planYearlySavingsPercent(planId: PlanId): number {
+  const plan = PLANS[planId];
+  if (plan.priceMonthlyEur <= 0) return 0;
+  const fullYear = plan.priceMonthlyEur * 12;
+  if (fullYear <= 0) return 0;
+  return Math.round(
+    ((fullYear - plan.priceYearlyEur) / fullYear) * 100,
+  );
+}
+
+/** Plus forte réduction annuelle parmi les plans payants (pour le toggle). */
+export function maxPlanYearlySavingsPercent(): number {
+  return Math.max(
+    planYearlySavingsPercent("STARTER"),
+    planYearlySavingsPercent("OPS"),
+    planYearlySavingsPercent("SCALE"),
   );
 }
 

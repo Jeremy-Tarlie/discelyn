@@ -22,7 +22,7 @@ function fakeRequest(input: {
 }
 
 describe("hasSessionCookie", () => {
-  it("détecte le cookie session standard", () => {
+  it("détecte le cookie next-auth", () => {
     expect(
       hasSessionCookie(
         fakeRequest({ cookies: { "next-auth.session-token": "a".repeat(16) } })

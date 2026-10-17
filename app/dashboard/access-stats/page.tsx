@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
-import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getAccessStatsForOrg } from "@/lib/dashboard-data";
 

@@ -35,6 +35,8 @@ describe("safeAuthCallbackUrl", () => {
     expect(
       safeAuthCallbackUrl("/subscribe?plan=STARTER&interval=month")
     ).toBe("/subscribe?plan=STARTER&interval=month");
+    expect(safeAuthCallbackUrl("/admin")).toBe("/admin");
+    expect(safeAuthCallbackUrl("/admin/customers")).toBe("/admin/customers");
   });
 
   it("rejette les open-redirects classiques", () => {
