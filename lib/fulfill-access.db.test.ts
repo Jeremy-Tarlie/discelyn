@@ -54,6 +54,7 @@ describe("fulfill + join multi-guild (DB)", () => {
     ({ prisma } = await import("@/lib/prisma"));
     const { bootstrapOrganizationForUser } = await import("@/lib/org-access");
 
+
     const user = await prisma.user.create({
       data: {
         email: `dbtest_${suffix}@example.com`,
@@ -173,6 +174,7 @@ describe("fulfill + join multi-guild (DB)", () => {
     expect(row.status).toBe("AWAITING_JOIN");
     expect(row.discordUserId).toBe(discordUserId);
     expect(row.inviteUrl).toBeTruthy();
+    expect(row.claimToken).toBeTruthy();
   });
 
   it("grantPendingOnJoin → ACTIVE quand tous les grants sont OK", async () => {

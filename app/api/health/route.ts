@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import Redis from "ioredis";
 import { prisma } from "@/lib/prisma";
 import { fetchPlatformBotIdentity } from "@/lib/discord";
+import { getAppEnvironment } from "@/lib/demo";
 
 export const dynamic = "force-dynamic";
+
 
 type PlatformBotHealth =
   | { status: "ok" }
@@ -44,7 +46,7 @@ async function pingRuntime(): Promise<{
     if (!response.ok) {
       return { status: "error" };
     }
-    const body = (await response.json()) as { ready?: boolean };
+    const body: { ready?: boolean } = await response.json();
     return {
       status: "ok",
       ready: typeof body.ready === "boolean" ? body.ready : undefined,
@@ -73,12 +75,20 @@ async function pingRedis(): Promise<"ok" | "error" | "skipped"> {
   }
 }
 
+function exposeHealthDetails(): boolean {
+  // Uniquement en development local — staging/prod = payload minimal
+  // (même si APP_ENV est mal posé mais NODE_ENV=production).
+  if (process.env.NODE_ENV === "production") return false;
+  return getAppEnvironment() === "development";
+}
+
 /**
  * Readiness produit — pas de side-effects.
  * Ne divulgue pas la présence/absence de secrets (encryption, cron).
  *
  * Docker / crons : utiliser `/api/health/live` (DB only).
  * Uptime externe : cet endpoint — 503 si runtime/redis/bot plateforme down.
+ * En production : payload minimal (status/service/time) sans détail composants.
  */
 export async function GET() {
   try {
@@ -93,6 +103,17 @@ export async function GET() {
     const botDown = platformBot.status === "error";
     const degraded = runtimeDown || redisDown || botDown;
     const status = degraded ? "degraded" : "ok";
+
+    if (!exposeHealthDetails()) {
+      return NextResponse.json(
+        {
+          status,
+          service: "discelyn-web",
+          time: new Date().toISOString(),
+        },
+        { status: degraded ? 503 : 200 }
+      );
+    }
 
     return NextResponse.json(
       {
@@ -111,7 +132,6 @@ export async function GET() {
       {
         status: "error",
         service: "discelyn-web",
-        db: "error",
         time: new Date().toISOString(),
       },
       { status: 503 }

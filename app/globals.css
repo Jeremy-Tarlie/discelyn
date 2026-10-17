@@ -44,6 +44,16 @@ body {
   background-image: theme("backgroundImage.noise-soft");
 }
 
+/* Clavier : anneau visible sans casser le style souris */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid #5865f2;
+  outline-offset: 2px;
+}
+
 /* Syne: descenders (g, y, p) overflow the em-box — keep room + never clip.
    line-height !important beats Tailwind leading-* utilities. */
 .font-display {

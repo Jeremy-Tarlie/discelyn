@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  discordCallbackForSignupPlan,
   loginWithSubscribeIntent,
+  parseSignupIntent,
   parseSubscribeIntent,
   safeAuthCallbackUrl,
+  signupWithPlanIntent,
   subscribePath,
 } from "@/lib/auth-callback";
 
@@ -38,7 +41,19 @@ describe("safeAuthCallbackUrl", () => {
     expect(safeAuthCallbackUrl("/\\evil.com")).toBe("/dashboard");
     expect(safeAuthCallbackUrl("/dashboard@evil.com")).toBe("/dashboard");
   });
+
+  it("rejette la path confusion avec ..", () => {
+    expect(safeAuthCallbackUrl("/dashboard/../../../etc/passwd")).toBe(
+      "/dashboard"
+    );
+    expect(safeAuthCallbackUrl("/dashboard/../../login")).toBe("/dashboard");
+    expect(safeAuthCallbackUrl("/subscribe/../login")).toBe("/dashboard");
+    expect(safeAuthCallbackUrl("/dashboard/%2e%2e/etc/passwd")).toBe(
+      "/dashboard"
+    );
+  });
 });
+
 
 describe("subscribePath / loginWithSubscribeIntent", () => {
   it("encode l’intent plan", () => {
@@ -67,5 +82,29 @@ describe("parseSubscribeIntent", () => {
       parseSubscribeIntent({ plan: "GOLD", interval: "month" })
     ).toBeNull();
     expect(parseSubscribeIntent({ plan: null, interval: "month" })).toBeNull();
+  });
+});
+
+describe("signupWithPlanIntent / parseSignupIntent", () => {
+  it("FREE → /signup ; payant → query", () => {
+    expect(signupWithPlanIntent("FREE")).toBe("/signup");
+    expect(signupWithPlanIntent("STARTER", "year")).toBe(
+      "/signup?plan=STARTER&interval=year"
+    );
+  });
+
+  it("discordCallbackForSignupPlan", () => {
+    expect(discordCallbackForSignupPlan("FREE")).toBe("/dashboard");
+    expect(discordCallbackForSignupPlan("OPS", "month")).toBe(
+      "/subscribe?plan=OPS&interval=month"
+    );
+  });
+
+  it("parseSignupIntent accepte FREE", () => {
+    expect(parseSignupIntent({ plan: "FREE", interval: "month" })).toEqual({
+      plan: "FREE",
+      interval: "month",
+    });
+    expect(parseSignupIntent({ plan: "GOLD", interval: "month" })).toBeNull();
   });
 });

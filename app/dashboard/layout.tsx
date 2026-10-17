@@ -64,7 +64,11 @@ export default async function DashboardLayout({
         organizations={organizations}
         activeOrganizationId={organizationId}
       />
-      <div className="flex-1 px-6 py-8 md:px-10">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex-1 px-6 py-8 md:px-10 outline-none"
+      >
         <PastDueBanner status={subscription.status} />
         <OwnerMfaSignupModal
           userId={session.user.id}
@@ -72,7 +76,7 @@ export default async function DashboardLayout({
           mfaEnabled={dbUser.totpEnabled}
         />
         {children}
-      </div>
+      </main>
     </div>
   );
 }

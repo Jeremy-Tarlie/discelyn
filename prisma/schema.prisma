@@ -40,9 +40,13 @@ enum OrgRole {
 model User {
   id            String    @id @default(cuid())
   name          String?
+  /// Toujours stocké en lowercase (normalizeEmail). Index SQL partiel
+  /// User_email_lower_active_unique (migration 20261017110000) en filet CI.
   email         String?   @unique
   emailVerified DateTime?
   image         String?
+  /// Hash argon2id — null pour comptes Discord-only.
+  passwordHash  String?   @db.Text
   discordId     String?   @unique
   /// Soft-delete RGPD / résiliation — les rows liées restent pour audit.
   deletedAt     DateTime?
@@ -175,10 +179,13 @@ model Session {
 }
 
 model VerificationToken {
+  /// Un seul jeton actif par identifier (email-verify: / password-reset:).
   identifier String
   token      String   @unique
   expires    DateTime
 
+  @@unique([identifier])
+  /// Conservé pour compat Auth.js adapter (`identifier_token`).
   @@unique([identifier, token])
 }
 

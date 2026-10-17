@@ -16,6 +16,7 @@ import { NotificationPrefsPanel } from "@/components/dashboard/NotificationPrefs
 import { OrgSummaryPanel } from "@/components/dashboard/OrgSummaryPanel";
 import { ActivityLogPanel } from "@/components/dashboard/ActivityLogPanel";
 import { CookieConsentPanel } from "@/components/dashboard/CookieConsentPanel";
+import { LinkDiscordButton } from "@/components/dashboard/LinkDiscordButton";
 
 export default async function AccountPage() {
   const session = await getServerSession(authOptions);
@@ -118,6 +119,11 @@ export default async function AccountPage() {
           </div>
         </div>
         <p className="mt-4 text-sm text-soft">{t("accountDiscordHint")}</p>
+        {user.discordId ? (
+          <p className="mt-2 text-sm text-[#57F287]">{t("accountDiscordLinked")}</p>
+        ) : (
+          <LinkDiscordButton />
+        )}
       </section>
 
       <OrgSummaryPanel

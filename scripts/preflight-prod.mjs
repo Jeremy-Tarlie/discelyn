@@ -155,6 +155,28 @@ if (appEnv === "production") {
   );
 }
 
+const requiredSmtpProd = [
+  "SMTP_HOST",
+  "SMTP_USER",
+  "SMTP_PASS",
+  "SMTP_FROM",
+];
+if (appEnv === "production") {
+  for (const name of requiredSmtpProd) {
+    if (!present(name)) {
+      errors.push(
+        `manquant (production): ${name} — auth email/mdp (vérif + reset)`
+      );
+    }
+  }
+} else if (appEnv === "staging") {
+  for (const name of requiredSmtpProd) {
+    if (!present(name)) {
+      warnings.push(`recommandé (staging): ${name} — auth email/mdp`);
+    }
+  }
+}
+
 if (present("RESEND_API_KEY") && !present("EMAIL_FROM")) {
   errors.push("EMAIL_FROM requis si RESEND_API_KEY est défini");
 }

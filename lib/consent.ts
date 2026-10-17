@@ -156,6 +156,19 @@ export function hasOptionalConsentFromCookieHeader(
   return allowsAffiliate(parseConsentPreferencesFromCookieHeader(header));
 }
 
+/** True si l’utilisateur a déjà fait un choix (essentiels ou plus). */
+export function hasConsentChoiceFromCookieHeader(
+  header: string | null | undefined
+): boolean {
+  return parseConsentPreferencesFromCookieHeader(header) !== null;
+}
+
+/** True côté document si un choix cookies a été enregistré. */
+export function hasConsentChoiceFromDocument(): boolean {
+  return readConsentFromDocument() !== null;
+}
+
+
 function cookieAttrs(maxAgeSeconds: number): Cookies.CookieAttributes {
   return {
     path: "/",

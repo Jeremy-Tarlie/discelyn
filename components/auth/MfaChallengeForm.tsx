@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { SignOutButton } from "@/components/auth/SignOutButton";
 
 export function MfaChallengeForm() {
   const t = useTranslations("mfa");
@@ -39,30 +39,31 @@ export function MfaChallengeForm() {
 
   return (
     <form onSubmit={(e) => void submit(e)} className="space-y-4">
-      <label className="block text-sm text-[#949ba4]">
+      <label className="block text-sm text-[color:var(--muted)]">
         {t("codeLabel")}
         <input
           value={code}
           onChange={(e) => setCode(e.target.value)}
-          autoFocus
           autoComplete="one-time-code"
           inputMode="numeric"
-          className="mt-2 w-full rounded-xl border border-white/10 bg-[#1e1f22] px-4 py-3 text-white"
+          className="mt-2 w-full rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-4 py-3 text-[color:var(--page-fg)] outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5865F2]"
           placeholder={t("codePlaceholder")}
         />
       </label>
       <button
         type="submit"
         disabled={busy || code.trim().length < 6}
-        className="w-full rounded-full bg-[#5865F2] px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
+        className="w-full rounded-lg bg-[#5865F2] px-5 py-3 text-sm font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5865F2] disabled:opacity-50"
       >
         {busy ? tc("loading") : t("submit")}
       </button>
-      {error ? <p className="text-center text-sm text-warn">{error}</p> : null}
-      <p className="text-center text-xs text-[#6d737e]">
-        <Link href="/api/auth/signout" className="underline-offset-2 hover:underline">
-          {t("signOut")}
-        </Link>
+      {error ? (
+        <p className="text-center text-sm text-warn" role="alert">
+          {error}
+        </p>
+      ) : null}
+      <p className="text-center text-xs text-[color:var(--muted)]">
+        <SignOutButton variant="link" labelNamespace="mfa" />
       </p>
     </form>
   );

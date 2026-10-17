@@ -18,7 +18,7 @@ export default async function PrivacyPage() {
   return (
     <div className="min-h-screen bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
       <SiteHeader />
-      <main className="mx-auto max-w-3xl space-y-8 px-6 py-16 text-[color:var(--muted)]">
+      <main id="main-content" className="mx-auto max-w-3xl space-y-8 px-6 py-16 text-[color:var(--muted)]">
         <h1 className="font-display text-4xl text-[color:var(--page-fg)]">
           {t("privacyTitle")}
         </h1>
@@ -63,7 +63,11 @@ export default async function PrivacyPage() {
           </h2>
           {isEn ? (
             <ul className="list-disc space-y-2 pl-5">
-              <li>Account: Discord ID, name, email, avatar (OAuth).</li>
+              <li>
+                Account: Discord ID, name, email, avatar (OAuth Discord and/or
+                email + hashed password); email verification / password-reset
+                tokens (short-lived).
+              </li>
               <li>
                 Discord OAuth session: access_token and refresh_token stored
                 server-side (Account table, NextAuth), encrypted at rest when
@@ -99,7 +103,11 @@ export default async function PrivacyPage() {
             </ul>
           ) : (
             <ul className="list-disc space-y-2 pl-5">
-              <li>Compte : ID Discord, nom, email, avatar (OAuth).</li>
+              <li>
+                Compte : ID Discord, nom, email, avatar (OAuth Discord et/ou
+                e-mail + mot de passe haché) ; jetons de vérification e-mail /
+                reset mot de passe (durée limitée).
+              </li>
               <li>
                 Session OAuth Discord : access_token et refresh_token stockés
                 côté serveur (table Account, NextAuth), chiffrés au repos si
@@ -191,6 +199,11 @@ export default async function PrivacyPage() {
             </li>
             <li>Sentry (optional) — application errors</li>
             <li>Redis (optional) — distributed rate-limiting</li>
+            <li>
+              {isEn
+                ? "SMTP email provider (via Nodemailer) — account verification / password reset"
+                : "Fournisseur SMTP (via Nodemailer) — vérification de compte / reset mot de passe"}
+            </li>
             <li>Resend (optional) — claim / reminder emails</li>
           </ul>
         </section>
@@ -293,6 +306,20 @@ export default async function PrivacyPage() {
                   <td className="px-3 py-2">
                     {isEn ? "Session" : "Session"}
                   </td>
+                </tr>
+                <tr className="border-t border-white/5">
+                  <td className="px-3 py-2 font-mono text-xs">
+                    discelyn_plan_intent
+                  </td>
+                  <td className="px-3 py-2">
+                    {isEn
+                      ? "Remember plan chosen at signup (HttpOnly)"
+                      : "Mémoriser le plan choisi à l’inscription (HttpOnly)"}
+                  </td>
+                  <td className="px-3 py-2">
+                    {isEn ? "Essential" : "Essentiel"}
+                  </td>
+                  <td className="px-3 py-2">1 {isEn ? "hour" : "heure"}</td>
                 </tr>
                 <tr className="border-t border-white/5">
                   <td className="px-3 py-2 font-mono text-xs">discelyn_locale</td>

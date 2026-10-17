@@ -21,6 +21,11 @@ import {
   writeConsentCookie,
   type ConsentPreferences,
 } from "@/lib/consent";
+import {
+  clearPreferenceCookies,
+  syncPreferenceCookiesFromStorage,
+} from "@/lib/preference-cookies";
+
 
 type ConsentContextValue = {
   consent: ConsentPreferences | null;
@@ -37,6 +42,12 @@ export function useConsentUi(): ConsentContextValue {
   }
   return ctx;
 }
+
+/** Null si hors ConsentProvider (ex. tests / pages sans bannière). */
+export function useConsentUiOptional(): ConsentContextValue | null {
+  return useContext(ConsentContext);
+}
+
 
 export function ConsentProvider({ children }: { children: ReactNode }) {
   const [consent, setConsentState] = useState<ConsentPreferences | null>(null);
@@ -58,9 +69,14 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
       await Promise.resolve();
       if (cancelled) return;
       const current = readConsentFromDocument();
+      // Pas de choix → pas de cookies langue/thème (éventuels cookies legacy).
+      if (!current) {
+        clearPreferenceCookies();
+      }
       setConsentState(current);
       setDraft(current ?? EMPTY_CONSENT);
       setReady(true);
+
     })();
     return () => {
       cancelled = true;
@@ -91,9 +107,12 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
       if (!prefs.affiliate) {
         clearAffiliateCookie();
       }
+      // Langue/thème choisis avant le consentement → cookies maintenant autorisés.
+      syncPreferenceCookiesFromStorage();
       setConsentState(prefs);
       setPrefsOpen(false);
       window.location.reload();
+
     } catch {
       setSaveError(tc("networkError"));
       setSaving(false);

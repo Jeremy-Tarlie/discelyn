@@ -4,10 +4,12 @@ import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { daysFromNow } from "@/lib/clock";
+import { resolveJoinCta } from "@/lib/claim-join-cta";
 import { SiteHeader } from "@/components/landing/SiteHeader";
 import { SiteFooter } from "@/components/landing/SiteFooter";
 import { LearnerPortalButton } from "@/components/claim/LearnerPortalButton";
 import { ClaimSessionPending } from "@/components/claim/ClaimSessionPending";
+
 
 type PageProps = {
   params: Promise<{ sessionId: string }>;
@@ -107,19 +109,50 @@ export default async function ClaimBySessionPage({ params }: PageProps) {
     );
   }
 
-  if (access.status === "AWAITING_JOIN" && access.inviteUrl) {
+  if (access.status === "AWAITING_JOIN") {
+    const joinHref = resolveJoinCta(access);
     return (
       <div className="min-h-screen bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
         <SiteHeader signedIn={false} />
         <main className="mx-auto max-w-lg px-6 py-16">
           <h1 className="font-display text-3xl font-bold">{t("title")}</h1>
-          <p className="mt-4 text-page-fg">{t("successJoin")}</p>
-          <a
-            href={access.inviteUrl}
-            className="mt-6 inline-flex rounded-full bg-[#5865F2] px-5 py-3 text-sm font-semibold text-white"
-          >
-            {t("joinDiscord")}
-          </a>
+          {joinHref ? (
+            <>
+              <p className="mt-4 text-page-fg">{t("successJoin")}</p>
+              <a
+                href={joinHref}
+                className="mt-6 inline-flex rounded-full bg-[#5865F2] px-5 py-3 text-sm font-semibold text-white"
+              >
+                {t("joinDiscord")}
+              </a>
+            </>
+          ) : (
+            <p className="mt-4 text-warn">{t("errors.awaitingJoin")}</p>
+          )}
+          <p className="mt-6 text-sm text-soft">
+            <Link href="/" className="underline">
+              {t("backHome")}
+            </Link>
+          </p>
+        </main>
+        <SiteFooter />
+      </div>
+    );
+  }
+
+  // Jamais repasser AWAITING_JOIN / REVOKED / … → PENDING_CLAIM.
+  if (access.status !== "PENDING_CLAIM") {
+    return (
+      <div className="min-h-screen bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
+        <SiteHeader signedIn={false} />
+        <main className="mx-auto max-w-lg px-6 py-16">
+          <h1 className="font-display text-3xl font-bold">{t("title")}</h1>
+          <p className="mt-4 text-warn">{t("errors.invalid")}</p>
+          <p className="mt-6 text-sm text-soft">
+            <Link href="/" className="underline">
+              {t("backHome")}
+            </Link>
+          </p>
         </main>
         <SiteFooter />
       </div>
@@ -134,7 +167,6 @@ export default async function ClaimBySessionPage({ params }: PageProps) {
       data: {
         claimToken: token,
         claimTokenExpiresAt: daysFromNow(14),
-        status: "PENDING_CLAIM",
       },
     });
   }

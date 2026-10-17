@@ -191,6 +191,20 @@ export async function softDeleteUserAccount(input: {
 
   await prisma.session.deleteMany({ where: { userId: input.userId } });
   await prisma.account.deleteMany({ where: { userId: input.userId } });
+
+  // Purge jetons verify/reset qui contiennent l’email en clair (art. 17).
+  if (input.email) {
+    const emailLower = input.email.trim().toLowerCase();
+    await prisma.verificationToken.deleteMany({
+      where: {
+        OR: [
+          { identifier: `email-verify:${emailLower}` },
+          { identifier: `password-reset:${emailLower}` },
+        ],
+      },
+    });
+  }
+
   await prisma.user.update({
     where: { id: input.userId },
     data: {
@@ -200,6 +214,7 @@ export async function softDeleteUserAccount(input: {
       image: null,
       discordId: null,
       emailVerified: null,
+      passwordHash: null,
       totpEnabled: false,
       totpSecret: null,
       totpPendingSecret: null,

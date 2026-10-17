@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { BillingInterval, PlanId } from "@/lib/plans";
 import {
-  loginWithSubscribeIntent,
+  signupWithPlanIntent,
   type SubscribePlanId,
 } from "@/lib/auth-callback";
 import { redirectIfMfaRequired } from "@/lib/api-client-auth";
@@ -36,7 +36,7 @@ export function CheckoutButton({
 
   async function handleClick() {
     if (planId === "FREE") {
-      router.push("/login");
+      router.push(signupWithPlanIntent("FREE"));
       return;
     }
 
@@ -62,9 +62,9 @@ export function CheckoutButton({
       if (!response.ok || !data.url) {
         if (response.status === 401) {
           if (isSubscription) {
-            router.push(loginWithSubscribeIntent(planId, interval));
+            router.push(signupWithPlanIntent(planId, interval));
           } else {
-            router.push("/login");
+            router.push("/signup");
           }
           return;
         }

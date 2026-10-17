@@ -1,6 +1,10 @@
 import { createHmac, randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
-import { assertSafeOutboundWebhookUrl } from "@/lib/webhook-url-safety";
+import {
+  assertSafeOutboundWebhookUrl,
+  pickPinnedAddress,
+} from "@/lib/webhook-url-safety";
+import { pinnedWebhookPost } from "@/lib/webhook-pinned-fetch";
 import { unsealToken } from "@/lib/token-crypto";
 
 export const OUTBOUND_EVENTS = [
@@ -50,8 +54,11 @@ export async function dispatchOutboundWebhooks(input: {
     let attempts = 0;
 
     let safeUrl: string;
+    let pinnedIp: string;
     try {
-      safeUrl = assertSafeOutboundWebhookUrl(hook.url);
+      const validated = await assertSafeOutboundWebhookUrl(hook.url);
+      safeUrl = validated.url;
+      pinnedIp = pickPinnedAddress(validated.addresses);
     } catch (err) {
       await prisma.outboundWebhookDelivery.create({
         data: {
@@ -77,16 +84,16 @@ export async function dispatchOutboundWebhooks(input: {
           break;
         }
         const signature = signPayload(plainSecret, body);
-        const res = await fetch(safeUrl, {
-          method: "POST",
+        const res = await pinnedWebhookPost({
+          url: safeUrl,
+          pinnedIp,
           headers: {
             "Content-Type": "application/json",
             "X-Discelyn-Signature": signature,
             "X-Discelyn-Event": input.event,
           },
           body,
-          signal: AbortSignal.timeout(8_000),
-          redirect: "error",
+          timeoutMs: 8_000,
         });
         statusCode = res.status;
         ok = res.ok;

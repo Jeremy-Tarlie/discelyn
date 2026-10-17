@@ -249,7 +249,7 @@ export default async function HowItWorksPage() {
     <div className="min-h-screen overflow-x-hidden bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
       <SiteHeader signedIn={Boolean(session)} />
 
-      <main>
+      <main id="main-content">
         {/* Hero */}
         <section className="relative bg-[#2a9e86]">
           <div

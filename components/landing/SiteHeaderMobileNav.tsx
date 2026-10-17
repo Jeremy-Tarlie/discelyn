@@ -9,6 +9,7 @@ import {
 } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { SignOutButton } from "@/components/auth/SignOutButton";
 
 type NavLink = { href: string; label: string };
 
@@ -16,16 +17,22 @@ export function SiteHeaderMobileNav({
   links,
   signedIn,
   loginLabel,
+  signupLabel,
   ctaHref,
   ctaLabel,
   ctaIcon,
+  themeSwitcher,
+  localeSwitcher,
 }: {
   links: NavLink[];
   signedIn: boolean;
   loginLabel: string;
+  signupLabel: string;
   ctaHref: string;
   ctaLabel: string;
   ctaIcon: ReactNode;
+  themeSwitcher: ReactNode;
+  localeSwitcher: ReactNode;
 }) {
   const t = useTranslations("common");
   const [open, setOpen] = useState(false);
@@ -76,7 +83,7 @@ export function SiteHeaderMobileNav({
       <button
         ref={buttonRef}
         type="button"
-        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[color:var(--border)] text-[color:var(--page-fg)]"
+        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[color:var(--border)] text-[color:var(--page-fg)] transition hover:bg-[color:var(--page-fg)]/[0.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5865F2]"
         aria-expanded={open}
         aria-controls={panelId}
         aria-label={open ? t("closeMenu") : t("openMenu")}
@@ -103,7 +110,7 @@ export function SiteHeaderMobileNav({
         <>
           <button
             type="button"
-            className="fixed inset-0 z-40 bg-black/40"
+            className="fixed inset-0 z-40 bg-[color:var(--page-fg)]/20 backdrop-blur-[2px]"
             aria-label={t("closeMenu")}
             onClick={() => setOpen(false)}
           />
@@ -112,31 +119,58 @@ export function SiteHeaderMobileNav({
             id={panelId}
             role="dialog"
             aria-modal="true"
-            className="fixed inset-x-0 top-0 z-50 border-b border-[color:var(--border)] bg-[color:var(--header-bg)] px-6 pb-4 pt-16 shadow-lg backdrop-blur-xl"
+            aria-label={t("menu")}
+            className="fixed inset-x-0 top-0 z-50 border-b border-[color:var(--border)] bg-[color:var(--header-bg)] px-6 pb-6 pt-[4.5rem] shadow-[0_12px_40px_rgba(26,28,33,0.12)]"
           >
-            <nav className="mx-auto flex max-w-6xl flex-col gap-3 text-sm text-[color:var(--muted)]">
+
+            <nav className="mx-auto flex max-w-6xl flex-col gap-1">
               {links.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="py-1 transition hover:text-[color:var(--page-fg)]"
+                  className="rounded-lg px-3 py-2.5 text-sm font-medium text-[color:var(--muted)] transition hover:bg-[color:var(--page-fg)]/[0.04] hover:text-[color:var(--page-fg)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5865F2]"
                   onClick={() => setOpen(false)}
                 >
                   {link.label}
                 </Link>
               ))}
+
+              <div className="my-3 h-px bg-[color:var(--border)]" />
+
+              <div className="flex flex-wrap items-center gap-2 px-1 pb-2">
+                {themeSwitcher}
+                {localeSwitcher}
+              </div>
+
               {!signedIn ? (
-                <Link
-                  href="/login"
-                  className="py-1 transition hover:text-[color:var(--page-fg)]"
-                  onClick={() => setOpen(false)}
-                >
-                  {loginLabel}
-                </Link>
-              ) : null}
+                <>
+                  <Link
+                    href="/login"
+                    className="rounded-lg px-3 py-2.5 text-sm font-medium text-[color:var(--muted)] transition hover:bg-[color:var(--page-fg)]/[0.04] hover:text-[color:var(--page-fg)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5865F2]"
+                    onClick={() => setOpen(false)}
+                  >
+                    {loginLabel}
+                  </Link>
+                  <Link
+                    href="/signup"
+                    className="rounded-lg px-3 py-2.5 text-sm font-semibold text-[color:var(--page-fg)] transition hover:bg-[color:var(--page-fg)]/[0.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5865F2]"
+                    onClick={() => setOpen(false)}
+                  >
+                    {signupLabel}
+                  </Link>
+                </>
+              ) : (
+                <SignOutButton
+                  variant="link"
+                  labelNamespace="common"
+                  className="rounded-lg px-3 py-2.5 text-left text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
+                  onAfterClick={() => setOpen(false)}
+                />
+              )}
+
               <Link
                 href={ctaHref}
-                className="mt-1 inline-flex items-center justify-center gap-2 rounded-full bg-[#1a1c21] px-3.5 py-2 text-sm font-bold text-white dark:bg-white dark:text-[#1a1c21]"
+                className="mt-2 inline-flex items-center justify-center gap-2 rounded-full bg-[#5865F2] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_1px_2px_rgba(88,101,242,0.35)] transition hover:bg-[#4752C4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                 onClick={() => setOpen(false)}
               >
                 {ctaIcon}

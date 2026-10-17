@@ -5,6 +5,7 @@ import {
   LOCALE_COOKIE,
   LOCALE_COOKIE_MAX_AGE,
 } from "@/i18n/config";
+import { hasConsentChoiceFromCookieHeader } from "@/lib/consent";
 import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
@@ -35,11 +36,15 @@ export async function POST(request: NextRequest) {
   }
 
   const response = NextResponse.json({ ok: true, locale });
-  response.cookies.set(LOCALE_COOKIE, locale, {
-    path: "/",
-    maxAge: LOCALE_COOKIE_MAX_AGE,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-  });
+  if (hasConsentChoiceFromCookieHeader(request.headers.get("cookie"))) {
+    response.cookies.set(LOCALE_COOKIE, locale, {
+      path: "/",
+      maxAge: LOCALE_COOKIE_MAX_AGE,
+      sameSite: "lax",
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+    });
+  }
+
   return response;
 }

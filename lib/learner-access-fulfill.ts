@@ -157,14 +157,14 @@ export async function fulfillDiscordAccess(
 
   if (outcome.status === "AWAITING_JOIN") {
     const invite = primaryInvite ?? access.inviteUrl;
+    // Conservé claimToken : la page /claim/[token] doit retrouver l’accès
+    // pour afficher inviteUrl (plus d’invite en query string).
     await prisma.learnerAccess.update({
       where: { id: access.id },
       data: {
         discordUserId: userId,
         status: "AWAITING_JOIN",
         inviteUrl: invite,
-        claimToken: null,
-        claimTokenExpiresAt: null,
       },
     });
     await recordEvent(access.id, "awaiting_join", {

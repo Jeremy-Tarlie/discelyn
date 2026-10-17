@@ -16,7 +16,7 @@ export default async function TermsPage() {
   return (
     <div className="min-h-screen bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
       <SiteHeader />
-      <main className="mx-auto max-w-3xl space-y-8 px-6 py-16 text-[color:var(--muted)]">
+      <main id="main-content" className="mx-auto max-w-3xl space-y-8 px-6 py-16 text-[color:var(--muted)]">
         <h1 className="font-display text-4xl text-[color:var(--page-fg)]">
           {t("termsTitle")}
         </h1>

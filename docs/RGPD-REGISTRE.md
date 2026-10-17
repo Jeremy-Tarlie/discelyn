@@ -8,6 +8,7 @@ Document interne Discelyn (instance discelyn.fr). Pas un substitut à un avis ju
 | Traitement | Finalité | Catégories de données | Personnes concernées | Base légale | Destinataires / sous-traitants | Transfert hors UE | Durée | Mesures de sécurité |
 |---|---|---|---|---|---|---|---|---|
 | Compte OAuth Discord | Fournir le service SaaS | ID Discord, nom, email, avatar, jetons OAuth chiffrés | Clients / utilisateurs dashboard | Contrat | Discord, hébergeur | Selon Discord / hébergeur (SCC si besoin) | Vie du compte + soft-delete | Chiffrement `TOKEN_ENCRYPTION_KEY`, 2FA OWNER |
+| Compte email/mdp | Fournir le service SaaS (alternative à Discord) | Email, hash argon2id, jetons vérif/reset (hashés, TTL court), cookie `discelyn_plan_intent` (1 h) | Clients / utilisateurs dashboard | Contrat | Hébergeur, fournisseur SMTP (via Nodemailer) | Selon fournisseur SMTP | Vie du compte + soft-delete (`passwordHash` + tokens nullifiés) | Hash argon2id, rate-limit, emails jetables refusés en prod |
 | Configs bots / guilds | Ops Discord formation | Noms configs, guildId, modules, settings | Clients | Contrat | Hébergeur, Discord (API bot) | Idem | Vie du compte | Accès authentifié, rôles orga |
 | Modération (warns) | Traçabilité modération | ID Discord cible, raison, auteur | Membres serveurs clients | Intérêt légitime / contrat | Hébergeur | Non (si hébergement UE) | Max 90 j puis purge | Accès dashboard |
 | Facturation Discelyn | Abonnement SaaS | IDs Stripe customer/sub, plan | Clients | Contrat + obligation légale | Stripe | Stripe DPA / SCC | Obligations comptables | MFA avant actions billing |
@@ -21,5 +22,5 @@ Document interne Discelyn (instance discelyn.fr). Pas un substitut à un avis ju
 
 ## Mise à jour
 
-- Date de dernière revue : 2026-10-07
+- Date de dernière revue : 2026-10-16
 - Contact référent RGPD : contact@tarlie.fr (pas de DPO désigné — non requis pour cette structure)

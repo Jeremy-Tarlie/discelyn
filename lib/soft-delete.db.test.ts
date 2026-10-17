@@ -187,6 +187,7 @@ describe("soft-delete purge (DB)", () => {
       data: {
         email: `softdel2_${suffix}@example.com`,
         name: "SoftDel2",
+        passwordHash: "argon2id-placeholder-for-test",
         discordId: `6${Date.now().toString().padStart(17, "0").slice(-17)}`,
         totpEnabled: true,
         totpSecret: "enc:v1:secret",
@@ -232,6 +233,7 @@ describe("soft-delete purge (DB)", () => {
     expect(gone.email).toBeNull();
     expect(gone.discordId).toBeNull();
     expect(gone.name).toBeNull();
+    expect(gone.passwordHash).toBeNull();
     expect(gone.totpEnabled).toBe(false);
     expect(gone.totpSecret).toBeNull();
     expect(gone.totpPendingSecret).toBeNull();

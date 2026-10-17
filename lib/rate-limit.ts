@@ -38,7 +38,11 @@ function getRedis(): Redis | null {
     maxRetriesPerRequest: 1,
     enableReadyCheck: true,
     lazyConnect: true,
+    // Évite de bloquer theme/locale si Redis est down (connect hang).
+    connectTimeout: 200,
+    commandTimeout: 200,
   });
+
   redisClient.on("error", (error) => {
     console.error("[rate-limit] redis error", error.message);
   });
