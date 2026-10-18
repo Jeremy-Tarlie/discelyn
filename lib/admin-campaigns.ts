@@ -182,11 +182,18 @@ export async function processCampaignBatch(
   let sent = 0;
   let failed = 0;
 
+  const campaignIdsInBatch = [...new Set(claimed.map((r) => r.campaignId))];
+  const campaignRows =
+    campaignIdsInBatch.length === 0
+      ? []
+      : await prisma.marketingCampaign.findMany({
+          where: { id: { in: campaignIdsInBatch } },
+          select: { id: true, subject: true, bodyText: true, status: true },
+        });
+  const campaignsById = new Map(campaignRows.map((c) => [c.id, c]));
+
   for (const row of claimed) {
-    const campaign = await prisma.marketingCampaign.findUnique({
-      where: { id: row.campaignId },
-      select: { subject: true, bodyText: true, status: true },
-    });
+    const campaign = campaignsById.get(row.campaignId);
     if (!campaign || campaign.status === "failed") {
       await prisma.marketingCampaignRecipient.update({
         where: { id: row.id },

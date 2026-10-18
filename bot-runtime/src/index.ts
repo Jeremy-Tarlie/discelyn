@@ -2,6 +2,7 @@ import "dotenv/config";
 import http from "node:http";
 import { timingSafeEqual } from "node:crypto";
 import { PrismaClient } from "../../generated/prisma/client.js";
+import type { BotStatus } from "../../generated/prisma/enums.js";
 import { PrismaPg } from "@prisma/adapter-pg";
 import type { Client, Guild } from "discord.js";
 import { Events } from "discord.js";
@@ -118,6 +119,43 @@ const warnings: WarningRepository = {
   },
 };
 
+const LAST_SEEN_UPDATE_MS = 5 * 60 * 1000;
+
+type BotSyncRow = {
+  id: string;
+  status: BotStatus;
+  lastError: string | null;
+  lastSeenAt: Date | null;
+};
+
+async function updateBotIfNeeded(
+  row: BotSyncRow,
+  data: {
+    status: BotStatus;
+    lastError: string | null;
+    lastSeenAt?: Date;
+  }
+): Promise<void> {
+  const statusChanged =
+    row.status !== data.status || row.lastError !== data.lastError;
+  const lastSeenStale =
+    data.lastSeenAt !== undefined &&
+    (!row.lastSeenAt ||
+      data.lastSeenAt.getTime() - row.lastSeenAt.getTime() >
+        LAST_SEEN_UPDATE_MS);
+  if (!statusChanged && !lastSeenStale) return;
+  await prisma.bot.update({
+    where: { id: row.id },
+    data: {
+      status: data.status,
+      lastError: data.lastError,
+      ...(data.lastSeenAt !== undefined
+        ? { lastSeenAt: data.lastSeenAt }
+        : {}),
+    },
+  });
+}
+
 async function syncConfigs(): Promise<void> {
   const cutoff = moderationWarningCutoff();
   const purged = await prisma.moderationWarning.deleteMany({
@@ -162,9 +200,9 @@ async function syncConfigs(): Promise<void> {
 
     const status = row.organization.subscription?.status ?? "ACTIVE";
     if (status !== "ACTIVE" && status !== "TRIALING") {
-      await prisma.bot.update({
-        where: { id: row.id },
-        data: { status: "PAUSED", lastError: "Abonnement inactif" },
+      await updateBotIfNeeded(row, {
+        status: "PAUSED",
+        lastError: "Abonnement inactif",
       });
       continue;
     }
@@ -182,12 +220,9 @@ async function syncConfigs(): Promise<void> {
 
     const orgGuildCount = guildsByOrg.get(row.organizationId) ?? 0;
     if (orgGuildCount >= limits.maxGuilds) {
-      await prisma.bot.update({
-        where: { id: row.id },
-        data: {
-          status: "PAUSED",
-          lastError: `Limite plan (${limits.maxGuilds} serveur${limits.maxGuilds > 1 ? "s" : ""}).`,
-        },
+      await updateBotIfNeeded(row, {
+        status: "PAUSED",
+        lastError: `Limite plan (${limits.maxGuilds} serveur${limits.maxGuilds > 1 ? "s" : ""}).`,
       });
       continue;
     }
@@ -196,17 +231,17 @@ async function syncConfigs(): Promise<void> {
     const stillInGuild =
       !client?.isReady() || client.guilds.cache.has(guildId);
 
-    await prisma.bot.update({
-      where: { id: row.id },
-      data: stillInGuild
+    await updateBotIfNeeded(
+      row,
+      stillInGuild
         ? { status: "ONLINE", lastError: null, lastSeenAt: new Date() }
         : {
             status: "PENDING",
             lastError:
               "Bot absent du serveur — invite Discelyn ou attends la synchro.",
             lastSeenAt: new Date(),
-          },
-    });
+          }
+    );
 
     if (!stillInGuild) {
       continue;
@@ -462,7 +497,24 @@ await new Promise<void>((resolve) => {
 });
 
 try {
-  await syncConfigs();
+  let syncOk = false;
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    try {
+      await syncConfigs();
+      syncOk = true;
+      break;
+    } catch (error) {
+      console.error(
+        `[platform] syncConfigs boot attempt ${attempt}/5 failed`,
+        error
+      );
+      if (attempt === 5) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+    }
+  }
+  if (!syncOk) {
+    throw new Error("syncConfigs boot failed after retries");
+  }
   client = createPlatformClient();
 
   client.on(Events.ShardError, (error, shardId) => {

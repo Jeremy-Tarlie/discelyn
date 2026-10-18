@@ -152,8 +152,8 @@
       "01": {
         "short": "Sign in",
         "t": "Sign in with Discord",
-        "d": "Click Try and sign in with Discord. No Discelyn password: Discord OAuth, secure session.",
-        "points": ["Discord OAuth", "Secure session", "Instant dashboard"]
+        "d": "Click Try and create an account (Discord OAuth or email + password). Secure session, instant dashboard.",
+        "points": ["Discord or email", "Secure session", "Instant dashboard"]
       },
       "02": {
         "short": "Bot config",
@@ -236,7 +236,7 @@
       "Audit export + 40 commands",
       "Full training ops pack"
     ],
-    "scaleBullets": ["Everything in Ops + automod", "Up to 5 servers", "DPA on request + priority support"],
+    "scaleBullets": ["Everything in Ops + automod", "100 access products", "DPA on request + priority support"],
     "diagnosticBullets": [
       "Review of moderation / tickets / onboarding",
       "GDPR watchpoints",
@@ -579,7 +579,7 @@
     "billingPerMonth": "{price} € / month",
     "billingStatus": "Status: {status}",
     "billingRenewal": " · renews {date}",
-    "billingDpa": "Scale DPA: template available on request (docs/DPA.md) — not a signed in-app PDF. Contact support for the contractual process before signing.",
+    "billingDpa": "DPA: template available on request (docs/DPA.md) for any plan with learner access — not a signed in-app PDF. Contact support for the contractual process before signing.",
     "billingAuditHint": "Moderation audit export: each bot page → “History & audit export” section.",
     "billingChangePlan": "Change plan",
     "changePlanTitle": "Change plan",
@@ -1083,7 +1083,9 @@
     "sessionSoldOutBody": "Payment was received while the training was full. Contact your training support — a refund should follow.",
     "sessionSoldOutRefunded": "The training was full: your payment was refunded automatically. You will not be charged.",
     "connectDiscord": "Connect Discord",
-    "privacyHint": "Discelyn only reads your Discord ID to grant the role. No messages, no acting as you.",
+    "privacyHint": "Discelyn processes your Discord ID (and the Stripe email already received) to grant the role and send claim reminders. No messages posted as you. GDPR rights: contact your training org (controller) or {support} — procedure in the privacy policy.",
+    "privacyLink": "Privacy policy",
+    "rightsHint": "To access, rectify or erase your training-access data, contact the organisation that sold you the training first. Discelyn can relay your request to the org (processor).",
     "successActive": "Access active — your role is on the server.",
     "successJoin": "Almost — join the server to receive your role.",
     "joinDiscord": "Join the server",
@@ -1106,7 +1108,11 @@
       "awaitingJoin": "Sign in then join the Discord server to receive your role.",
       "oauth": "Discord login cancelled or failed. Try again.",
       "config": "OAuth misconfigured. Contact Discelyn support.",
-      "grant": "Could not grant the role. Contact your training support."
+      "grant": "Could not grant the role. Contact your training support.",
+      "invalid_code": "Invalid code. Check the code from your training org.",
+      "code_expired": "This code has expired. Ask your training org for a new one.",
+      "code_exhausted": "This code has already been used the maximum number of times.",
+      "sold_out": "No seats left for this training."
     }
   },
   "api": {

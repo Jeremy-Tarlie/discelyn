@@ -128,6 +128,9 @@ export async function softDeleteOrganization(
         claimToken: null,
         claimTokenExpiresAt: null,
         stripeCustomerId: null,
+        stripeCheckoutSessionId: null,
+        stripePaymentIntentId: null,
+        stripeSubscriptionId: null,
         inviteUrl: null,
       },
     });

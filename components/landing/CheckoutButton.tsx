@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { BillingInterval, PlanId } from "@/lib/plans";
 import {
+  isOneShotOfferId,
   signupWithPlanIntent,
   type SubscribePlanId,
 } from "@/lib/auth-callback";
@@ -63,6 +64,8 @@ export function CheckoutButton({
         if (response.status === 401) {
           if (isSubscription) {
             router.push(signupWithPlanIntent(planId, interval));
+          } else if (isOneShotOfferId(planId)) {
+            router.push(signupWithPlanIntent(planId));
           } else {
             router.push("/signup");
           }
@@ -98,11 +101,16 @@ export function CheckoutButton({
         type="button"
         onClick={() => void handleClick()}
         disabled={loading}
+        aria-busy={loading}
         className={`w-full rounded-lg px-5 py-3 text-sm font-semibold transition duration-300 disabled:opacity-60 ${classes}`}
       >
         {loading ? tc("redirecting") : label}
       </button>
-      {error ? <p className="text-center text-xs text-warn">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="text-center text-xs text-warn">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

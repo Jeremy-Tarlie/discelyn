@@ -24,7 +24,7 @@ const FEATURE_KEYS = [
 
 export default async function HomePage() {
   const session = await getServerSession(authOptions);
-  const ctaHref = session ? "/dashboard" : "/login";
+  const ctaHref = session ? "/dashboard" : "/signup";
   const t = await getTranslations("home");
   const tc = await getTranslations("common");
   const tf = await getTranslations("features");
@@ -46,7 +46,7 @@ export default async function HomePage() {
       <SiteHeader signedIn={Boolean(session)} />
 
       <main id="main-content">
-        <section className="relative bg-[#2a9e86]">
+        <section className="relative bg-[#1f7a68]">
           <div
             className="pointer-events-none absolute inset-0 overflow-hidden"
             aria-hidden
@@ -61,7 +61,7 @@ export default async function HomePage() {
               <h1 className="animate-fade-up max-w-xl text-balance font-display text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-[3.4rem]">
                 {t("heroTitle")}
               </h1>
-              <p className="animate-fade-up mt-5 max-w-lg text-base leading-relaxed text-white/90 sm:text-lg">
+              <p className="animate-fade-up mt-5 max-w-lg text-base leading-relaxed text-white sm:text-lg">
                 {t("heroBody")}
               </p>
               <div className="animate-fade-up mt-8">
@@ -240,7 +240,7 @@ export default async function HomePage() {
 
         <section className="bg-[color:var(--page-bg)] py-20" id="contact">
           <div className="mx-auto max-w-6xl px-6">
-            <div className="relative rounded-3xl bg-[#2a9e86] px-6 py-12 sm:px-12">
+            <div className="relative rounded-3xl bg-[#1f7a68] px-6 py-12 sm:px-12">
               <div
                 className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl"
                 aria-hidden

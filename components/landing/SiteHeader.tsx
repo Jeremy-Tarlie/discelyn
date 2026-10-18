@@ -23,7 +23,7 @@ export async function SiteHeader({
     { href: "/comment-ca-marche", label: t("howItWorks") },
   ];
 
-  const ctaHref = signedIn ? "/dashboard" : "/login";
+  const ctaHref = signedIn ? "/dashboard" : "/signup";
   const ctaLabel = signedIn ? tc("dashboard") : tc("try");
   const discordIcon = (
     <DiscordIcon className="h-4 w-4 shrink-0 text-white" />

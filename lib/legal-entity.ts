@@ -1,6 +1,7 @@
 /**
  * Identité du responsable de traitement / éditeur (privacy, mentions légales).
- * Remplir via NEXT_PUBLIC_LEGAL_* — ne jamais inventer une société dans le code.
+ * Remplir via NEXT_PUBLIC_LEGAL_* (alias serveur LEGAL_* / SUPPORT_EMAIL acceptés).
+ * Ne jamais inventer une société dans le code.
  */
 
 export type LegalEntity = {
@@ -25,6 +26,7 @@ export type ConfiguredLegalEntity = {
   siret: string | null;
 };
 
+/** Noms affichés dans les erreurs fail-fast (forme publique NEXT_PUBLIC_*). */
 const REQUIRED_LEGAL_ENV = [
   "NEXT_PUBLIC_LEGAL_ENTITY_NAME",
   "NEXT_PUBLIC_LEGAL_ENTITY_ADDRESS",
@@ -34,20 +36,52 @@ const REQUIRED_LEGAL_ENV = [
   "NEXT_PUBLIC_HOSTING_REGION",
 ] as const;
 
-function trimEnv(name: string): string | null {
-  const value = process.env[name]?.trim();
-  return value && value.length > 0 ? value : null;
+/** Alias runtime (Docker env_file) — évite l’inline build-time Next manquant. */
+const LEGAL_ENV_ALIASES: Record<(typeof REQUIRED_LEGAL_ENV)[number], string[]> =
+  {
+    NEXT_PUBLIC_LEGAL_ENTITY_NAME: [
+      "NEXT_PUBLIC_LEGAL_ENTITY_NAME",
+      "LEGAL_ENTITY_NAME",
+    ],
+    NEXT_PUBLIC_LEGAL_ENTITY_ADDRESS: [
+      "NEXT_PUBLIC_LEGAL_ENTITY_ADDRESS",
+      "LEGAL_ENTITY_ADDRESS",
+    ],
+    NEXT_PUBLIC_LEGAL_ENTITY_COUNTRY: [
+      "NEXT_PUBLIC_LEGAL_ENTITY_COUNTRY",
+      "LEGAL_ENTITY_COUNTRY",
+    ],
+    NEXT_PUBLIC_SUPPORT_EMAIL: ["NEXT_PUBLIC_SUPPORT_EMAIL", "SUPPORT_EMAIL"],
+    NEXT_PUBLIC_HOSTING_PROVIDER: [
+      "NEXT_PUBLIC_HOSTING_PROVIDER",
+      "HOSTING_PROVIDER",
+    ],
+    NEXT_PUBLIC_HOSTING_REGION: [
+      "NEXT_PUBLIC_HOSTING_REGION",
+      "HOSTING_REGION",
+    ],
+  };
+
+function trimEnv(...names: string[]): string | null {
+  for (const name of names) {
+    const value = process.env[name]?.trim();
+    if (value && value.length > 0) return value;
+  }
+  return null;
 }
 
 export function getLegalEntity(): LegalEntity {
   return {
-    name: trimEnv("NEXT_PUBLIC_LEGAL_ENTITY_NAME"),
-    address: trimEnv("NEXT_PUBLIC_LEGAL_ENTITY_ADDRESS"),
-    country: trimEnv("NEXT_PUBLIC_LEGAL_ENTITY_COUNTRY"),
-    supportEmail: trimEnv("NEXT_PUBLIC_SUPPORT_EMAIL"),
-    hostingProvider: trimEnv("NEXT_PUBLIC_HOSTING_PROVIDER"),
-    hostingRegion: trimEnv("NEXT_PUBLIC_HOSTING_REGION"),
-    siret: trimEnv("NEXT_PUBLIC_LEGAL_ENTITY_SIRET"),
+    name: trimEnv(...LEGAL_ENV_ALIASES.NEXT_PUBLIC_LEGAL_ENTITY_NAME),
+    address: trimEnv(...LEGAL_ENV_ALIASES.NEXT_PUBLIC_LEGAL_ENTITY_ADDRESS),
+    country: trimEnv(...LEGAL_ENV_ALIASES.NEXT_PUBLIC_LEGAL_ENTITY_COUNTRY),
+    supportEmail: trimEnv(...LEGAL_ENV_ALIASES.NEXT_PUBLIC_SUPPORT_EMAIL),
+    hostingProvider: trimEnv(...LEGAL_ENV_ALIASES.NEXT_PUBLIC_HOSTING_PROVIDER),
+    hostingRegion: trimEnv(...LEGAL_ENV_ALIASES.NEXT_PUBLIC_HOSTING_REGION),
+    siret: trimEnv(
+      "NEXT_PUBLIC_LEGAL_ENTITY_SIRET",
+      "LEGAL_ENTITY_SIRET"
+    ),
   };
 }
 
@@ -71,7 +105,9 @@ export function getConfiguredLegalEntity(): ConfiguredLegalEntity | null {
 }
 
 export function missingLegalEnvVars(): string[] {
-  return REQUIRED_LEGAL_ENV.filter((name) => !trimEnv(name));
+  return REQUIRED_LEGAL_ENV.filter(
+    (name) => !trimEnv(...LEGAL_ENV_ALIASES[name])
+  );
 }
 
 /**

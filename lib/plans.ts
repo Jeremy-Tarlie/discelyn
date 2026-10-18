@@ -38,7 +38,7 @@ export type PlanDefinition = {
   auditExport: boolean;
   /** Nombre max de produits accès (Stripe price → rôle Discord). */
   maxAccessProducts: number;
-  /** DPA contractuel sur demande (Scale) — process commercial, pas un PDF in-app. */
+  /** DPA contractuel sur demande (tout plan avec accès apprenants) — process commercial, pas un PDF in-app. */
   dpaAvailable: boolean;
   highlighted?: boolean;
   commercial: boolean;
@@ -82,7 +82,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     prioritySupport: false,
     auditExport: false,
     maxAccessProducts: 1,
-    dpaAvailable: false,
+    dpaAvailable: true,
     commercial: false,
     stripePriceEnvKey: null,
     stripePriceYearlyEnvKey: null,
@@ -99,7 +99,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     prioritySupport: false,
     auditExport: true,
     maxAccessProducts: 5,
-    dpaAvailable: false,
+    dpaAvailable: true,
     commercial: true,
     stripePriceEnvKey: "STRIPE_PRICE_STARTER",
     stripePriceYearlyEnvKey: "STRIPE_PRICE_STARTER_YEARLY",
@@ -116,7 +116,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     prioritySupport: false,
     auditExport: true,
     maxAccessProducts: 20,
-    dpaAvailable: false,
+    dpaAvailable: true,
     highlighted: true,
     commercial: true,
     stripePriceEnvKey: "STRIPE_PRICE_OPS",

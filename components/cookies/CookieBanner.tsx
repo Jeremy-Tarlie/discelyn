@@ -57,9 +57,12 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const bannerRef = useRef<HTMLDivElement>(null);
+  const firstBannerButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
   const titleId = useId();
+  const bannerTitleId = useId();
   const t = useTranslations("cookies");
   const tc = useTranslations("common");
 
@@ -172,6 +175,50 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
     };
   }, [prefsOpen]);
 
+  const bannerVisible = ready && consent === null && !prefsOpen;
+
+  useEffect(() => {
+    if (!bannerVisible) return;
+
+    previouslyFocusedRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+
+    const focusTimer = window.setTimeout(() => {
+      firstBannerButtonRef.current?.focus();
+    }, 0);
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        return;
+      }
+      if (event.key !== "Tab" || !bannerRef.current) return;
+      const focusable = bannerRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!first || !last) return;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.clearTimeout(focusTimer);
+      window.removeEventListener("keydown", onKeyDown);
+      previouslyFocusedRef.current?.focus();
+    };
+  }, [bannerVisible]);
+
   return (
     <ConsentContext.Provider
       value={{ consent, openPrefs, setConsent: (v) => void applyConsent(v) }}
@@ -179,9 +226,18 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
       {children}
       {ready && consent === null ? (
         <div className="fixed inset-x-0 bottom-0 z-50 p-4 sm:p-6">
-          <div className="mx-auto flex max-w-3xl flex-col gap-4 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-5 shadow-2xl sm:flex-row sm:items-end">
+          <div
+            ref={bannerRef}
+            role="dialog"
+            aria-modal
+            aria-labelledby={bannerTitleId}
+            className="mx-auto flex max-w-3xl flex-col gap-4 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-5 shadow-2xl sm:flex-row sm:items-end"
+          >
             <div className="flex-1">
-              <p className="font-display text-sm font-semibold text-[color:var(--page-fg)]">
+              <p
+                id={bannerTitleId}
+                className="font-display text-sm font-semibold text-[color:var(--page-fg)]"
+              >
                 {t("title")}
               </p>
               <p className="mt-2 text-sm leading-relaxed text-[color:var(--muted)]">
@@ -194,13 +250,17 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
                 </Link>
               </p>
               {saveError ? (
-                <p className="mt-2 text-xs text-warn">{saveError}</p>
+                <p role="alert" className="mt-2 text-xs text-warn">
+                  {saveError}
+                </p>
               ) : null}
             </div>
             <div className="flex flex-wrap gap-2">
               <button
+                ref={firstBannerButtonRef}
                 type="button"
                 disabled={saving}
+                aria-busy={saving}
                 onClick={() => void applyConsent(EMPTY_CONSENT)}
                 className="rounded-full border border-[color:var(--border)] px-4 py-2.5 text-sm font-semibold text-[color:var(--page-fg)] transition hover:bg-[color:var(--surface-muted)] disabled:opacity-50"
               >
@@ -209,6 +269,7 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 disabled={saving}
+                aria-busy={saving}
                 onClick={openPrefs}
                 className="rounded-full border border-[color:var(--border)] px-4 py-2.5 text-sm font-semibold text-[color:var(--page-fg)] transition hover:bg-[color:var(--surface-muted)] disabled:opacity-50"
               >
@@ -217,6 +278,7 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 disabled={saving}
+                aria-busy={saving}
                 onClick={() => void applyConsent(FULL_CONSENT)}
                 className="rounded-full bg-signal px-4 py-2.5 text-sm font-bold text-ink-950 transition hover:bg-signal-glow disabled:opacity-50"
               >
@@ -295,7 +357,9 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
               ))}
             </ul>
             {saveError ? (
-              <p className="mt-3 text-sm text-warn">{saveError}</p>
+              <p role="alert" className="mt-3 text-sm text-warn">
+                {saveError}
+              </p>
             ) : null}
             <div className="mt-6 flex flex-wrap justify-end gap-2">
               <button
@@ -303,6 +367,7 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
                 type="button"
                 onClick={closePrefs}
                 disabled={saving}
+                aria-busy={saving}
                 className="rounded-full px-4 py-2.5 text-sm text-[color:var(--muted)] hover:text-[color:var(--page-fg)]"
               >
                 {t("close")}
@@ -310,6 +375,7 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 disabled={saving}
+                aria-busy={saving}
                 onClick={() => void applyConsent(draft)}
                 className="rounded-full bg-signal px-4 py-2.5 text-sm font-bold text-ink-950 disabled:opacity-50"
               >

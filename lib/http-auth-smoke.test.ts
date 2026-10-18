@@ -11,6 +11,8 @@ vi.mock("@/lib/data-retention", () => ({
   purgeExpiredCookieConsents: vi.fn().mockResolvedValue(0),
   anonymizeExpiredLearnerPii: vi.fn().mockResolvedValue(0),
   purgeExpiredEmailEvents: vi.fn().mockResolvedValue(0),
+  anonymizeExpiredOversoldEmails: vi.fn().mockResolvedValue(0),
+  purgeExpiredOutboundWebhookDeliveries: vi.fn().mockResolvedValue(0),
 }));
 
 vi.mock("@/lib/learner-access", () => ({

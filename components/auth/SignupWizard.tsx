@@ -12,6 +12,9 @@ import { DiscordIcon } from "@/components/landing/DiscordIcon";
 import { PlanPicker } from "@/components/landing/PlanPicker";
 import {
   discordCallbackForSignupPlan,
+  loginWithSubscribeIntent,
+  subscribePath,
+  type AuthOneShotOfferId,
   type SignupPlanId,
 } from "@/lib/auth-callback";
 import type { BillingInterval } from "@/lib/plans";
@@ -30,10 +33,13 @@ const inputClass =
 export function SignupWizard({
   initialPlan = "FREE",
   initialInterval = "month",
+  oneShotOffer = null,
   footer,
 }: {
   initialPlan?: SignupPlanId;
   initialInterval?: BillingInterval;
+  /** Diagnostic / Setup : saute le sélecteur d’abonnement. */
+  oneShotOffer?: AuthOneShotOfferId | null;
   footer?: ReactNode;
 }) {
   const t = useTranslations("signup");
@@ -41,7 +47,9 @@ export function SignupWizard({
   const tLogin = useTranslations("login");
   const tp = useTranslations("plans");
 
-  const [step, setStep] = useState<SignupStep>("plan");
+  const [step, setStep] = useState<SignupStep>(
+    oneShotOffer ? "account" : "plan"
+  );
   const [plan, setPlan] = useState<SignupPlanId>(initialPlan);
   const [interval, setInterval] = useState<BillingInterval>(initialInterval);
   const [email, setEmail] = useState("");
@@ -126,9 +134,15 @@ export function SignupWizard({
   }
 
   function discordSignIn() {
-    const cb = discordCallbackForSignupPlan(plan, interval);
+    const cb = oneShotOffer
+      ? subscribePath(oneShotOffer)
+      : discordCallbackForSignupPlan(plan, interval);
     void signIn("discord", { callbackUrl: cb });
   }
+
+  const postVerifyLoginHref = oneShotOffer
+    ? loginWithSubscribeIntent(oneShotOffer)
+    : "/login";
 
   if (step === "verify") {
     return (
@@ -137,7 +151,7 @@ export function SignupWizard({
           tone="success"
           title={t("verifyTitle")}
           description={t("checkEmail")}
-          action={{ href: "/login", label: t("loginLink") }}
+          action={{ href: postVerifyLoginHref, label: t("loginLink") }}
         />
         <div className="mt-4 space-y-2 text-center">
           {info ? (

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Outfit, Syne } from "next/font/google";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { shouldShowEnvironmentBanner, getAppEnvironment } from "@/lib/demo";
@@ -33,12 +33,15 @@ export async function generateMetadata(): Promise<Metadata> {
       icon: [{ url: "/icon", type: "image/png" }],
       apple: [{ url: "/apple-icon", type: "image/png" }],
     },
-    themeColor: [
-      { media: "(prefers-color-scheme: light)", color: "#f3f5f8" },
-      { media: "(prefers-color-scheme: dark)", color: "#1a1c21" },
-    ],
   };
 }
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f3f5f8" },
+    { media: "(prefers-color-scheme: dark)", color: "#1a1c21" },
+  ],
+};
 
 export default async function RootLayout({
   children,

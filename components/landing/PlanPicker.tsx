@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { useTranslations } from "next-intl";
 import {
+  formatPriceEur,
   maxPlanYearlySavingsPercent,
   planDisplayPriceEur,
   planYearlySavingsPercent,
@@ -94,15 +95,6 @@ export function PlanPicker({
             </span>
           </button>
         </div>
-        {interval === "year" ? (
-          <p className="text-center text-xs font-semibold text-signal-dim">
-            {tPricing("yearlyDiscountUpTo", { percent: maxYearlyPercent })}
-            <span className="font-normal text-[color:var(--muted)]">
-              {" "}
-              · {tPricing("yearlyDiscountHint")}
-            </span>
-          </p>
-        ) : null}
       </div>
       <div
         role="radiogroup"
@@ -116,7 +108,9 @@ export function PlanPicker({
             id === "FREE"
               ? tPricing("freePrice")
               : tPricing("priceEur", {
-                  amount: planDisplayPriceEur(id as PlanId, interval),
+                  amount: formatPriceEur(
+                    planDisplayPriceEur(id as PlanId, interval),
+                  ),
                 });
           const period =
             id === "FREE"

@@ -152,8 +152,8 @@
       "01": {
         "short": "Connexion",
         "t": "Connecte-toi avec Discord",
-        "d": "Tu cliques sur Essayer et tu te connectes avec ton compte Discord. Pas de mot de passe : OAuth Discord, session sécurisée.",
-        "points": ["OAuth Discord", "Session sécurisée", "Dashboard immédiat"]
+        "d": "Tu cliques sur Essayer et tu crées un compte (Discord OAuth ou e-mail + mot de passe). Session sécurisée, dashboard immédiat.",
+        "points": ["Discord ou e-mail", "Session sécurisée", "Dashboard immédiat"]
       },
       "02": {
         "short": "Stripe → rôle",
@@ -236,7 +236,7 @@
       "Export audit + 40 commandes",
       "Pack ops formation"
     ],
-    "scaleBullets": ["Tout Ops + automod", "Jusqu’à 5 serveurs", "DPA sur demande + support prioritaire"],
+    "scaleBullets": ["Tout Ops + automod", "100 produits accès", "DPA sur demande + support prioritaire"],
     "diagnosticBullets": [
       "Revue modération / tickets / onboarding",
       "Points de vigilance RGPD",
@@ -579,7 +579,7 @@
     "billingPerMonth": "{price} € / mois",
     "billingStatus": "Statut : {status}",
     "billingRenewal": " · renouvellement {date}",
-    "billingDpa": "DPA Scale : modèle disponible sur demande (docs/DPA.md) — pas un PDF signé in-app. Contacte le support pour le process contractuel avant signature.",
+    "billingDpa": "DPA : modèle disponible sur demande (docs/DPA.md) pour tout plan avec accès apprenants — pas un PDF signé in-app. Contacte le support pour le process contractuel avant signature.",
     "billingAuditHint": "Export audit modération : page de chaque bot → section « Historique & export audit ».",
     "billingChangePlan": "Changer de plan",
     "changePlanTitle": "Changer de plan",
@@ -1083,7 +1083,9 @@
     "sessionSoldOutBody": "Le paiement a été reçu alors que la formation était complète. Contacte le support de ta formation — un remboursement devrait suivre.",
     "sessionSoldOutRefunded": "La formation était complète : ton paiement a été remboursé automatiquement. Tu ne seras pas débité.",
     "connectDiscord": "Connecter Discord",
-    "privacyHint": "Discelyn ne lit que ton ID Discord pour attribuer le rôle. Pas de message, pas de serveur en ton nom.",
+    "privacyHint": "Discelyn traite ton ID Discord (et l’e-mail Stripe déjà reçu) pour attribuer le rôle et t’envoyer les relances claim. Pas de message publié en ton nom. Droits RGPD : contacte le support de ta formation (responsable de traitement) ou {support} — procédure décrite dans la politique de confidentialité.",
+    "privacyLink": "Politique de confidentialité",
+    "rightsHint": "Pour accéder, rectifier ou effacer tes données d’accès formation, contacte d’abord l’organisme qui t’a vendu la formation. Discelyn peut relayer ta demande à l’orga (sous-traitant).",
     "successActive": "Accès activé — ton rôle est en place sur le serveur.",
     "successJoin": "Presque — rejoins le serveur pour recevoir ton rôle.",
     "joinDiscord": "Rejoindre le serveur",
@@ -1106,7 +1108,11 @@
       "awaitingJoin": "Connecte-toi puis rejoins le serveur Discord pour recevoir ton rôle.",
       "oauth": "Connexion Discord annulée ou échouée. Réessaie.",
       "config": "Configuration OAuth incomplete. Contacte le support Discelyn.",
-      "grant": "Impossible d’attribuer le rôle. Contacte le support de ta formation."
+      "grant": "Impossible d’attribuer le rôle. Contacte le support de ta formation.",
+      "invalid_code": "Code invalide. Vérifie le code fourni par ta formation.",
+      "code_expired": "Ce code a expiré. Demande un nouveau code à ta formation.",
+      "code_exhausted": "Ce code a déjà été utilisé le nombre maximum de fois.",
+      "sold_out": "Plus de places disponibles pour cette formation."
     }
   },
   "api": {

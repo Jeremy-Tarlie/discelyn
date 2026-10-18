@@ -83,6 +83,13 @@ export default async function PrivacyPage() {
               </li>
               <li>Billing: Stripe IDs (no card data stored by Discelyn).</li>
               <li>
+                Learners (training access sold by an organization): email
+                collected via Stripe Checkout, Discord user ID after claim,
+                claim token / invite URL, reminder timestamps, org outbound
+                webhook deliveries related to access events. After status
+                REVOKED or EXPIRED, learner PII is anonymized after 365 days.
+              </li>
+              <li>
                 Commercial leads (landing form): email, name, company, role,
                 message, requested offer; optional marketing consent timestamp —
                 kept for
@@ -90,7 +97,10 @@ export default async function PrivacyPage() {
               </li>
               <li>
                 Product analytics (internal events) — first-party only; recorded
-                only with the analytics cookie category.
+                with the analytics cookie category. Server-side billing events
+                (e.g. checkout_completed from Stripe webhooks) are recorded
+                under legitimate interest / contract and do not rely on cookie
+                consent (meta flag serverSideBilling).
               </li>
               <li>
                 Cookie consent log: per-category choices (analytics / Sentry /
@@ -125,13 +135,24 @@ export default async function PrivacyPage() {
               </li>
               <li>Facturation : IDs Stripe (pas de carte chez Discelyn).</li>
               <li>
+                Apprenants (accès formation vendu par une organisation) : e-mail
+                collecté via Stripe Checkout, ID Discord après claim, jeton /
+                URL de claim, horodatages de relances, livraisons de webhooks
+                sortants orga liés aux événements d’accès. Après statut REVOKED
+                ou EXPIRED, les PII apprenant sont anonymisées après 365 jours.
+              </li>
+              <li>
                 Leads commerciaux : email, nom, société, message, offre ;
                 horodatage marketing optionnel (case distincte) — suivi jusqu’à
                 suppression / demande d’effacement (max 24 mois).
               </li>
               <li>
-                Analytics produit (événements internes) — first-party ; uniquement
-                avec la catégorie cookies « analytics ».
+                Analytics produit (événements internes) — first-party ;
+                enregistrés avec la catégorie cookies « analytics ». Les
+                événements facturation serveur (ex. checkout_completed depuis
+                les webhooks Stripe) sont enregistrés au titre du contrat /
+                intérêt légitime et ne dépendent pas du consentement cookies
+                (drapeau meta serverSideBilling).
               </li>
               <li>
                 Journal des consentements cookies : choix par catégorie
@@ -158,6 +179,12 @@ export default async function PrivacyPage() {
           {isEn ? (
             <ul className="list-disc space-y-2 pl-5">
               <li>Contract: account, bot configs, paid subscription.</li>
+              <li>
+                Contract between the organization and its learners (Discelyn as
+                processor / technical provider for training access); Discelyn
+                legitimate interest for platform security and reliability of
+                learner-access delivery.
+              </li>
               <li>Legal obligation: invoicing / accounting traces via Stripe.</li>
               <li>Legitimate interest: security, abuse prevention, rate-limiting.</li>
               <li>
@@ -165,10 +192,19 @@ export default async function PrivacyPage() {
                 affiliate); marketing contact via lead form; storage of the
                 cookie-consent log (proof of choice).
               </li>
+              <li>
+                Server-side billing analytics (checkout_completed via Stripe
+                webhook) — contract / legitimate interest; not cookie-based.
+              </li>
             </ul>
           ) : (
             <ul className="list-disc space-y-2 pl-5">
               <li>Contrat : compte, configs bot, abonnement payant.</li>
+              <li>
+                Contrat orga–apprenant (Discelyn sous-traitant / prestataire
+                technique pour l’accès formation) ; intérêt légitime Discelyn
+                pour la sécurité et la fiabilité de la délivrance des accès.
+              </li>
               <li>Obligation légale : facturation / traces comptables via Stripe.</li>
               <li>
                 Intérêt légitime : sécurité, anti-abus, rate-limiting.
@@ -177,6 +213,10 @@ export default async function PrivacyPage() {
                 Consentement : catégories cookies optionnelles (analytics, Sentry
                 navigateur, affilié) ; contact commercial via formulaire lead ;
                 conservation du journal de consentement (preuve du choix).
+              </li>
+              <li>
+                Analytics facturation serveur (checkout_completed via webhook
+                Stripe) — contrat / intérêt légitime ; hors cookies.
               </li>
             </ul>
           )}
@@ -285,8 +325,8 @@ export default async function PrivacyPage() {
           </h2>
           <p>
             {isEn
-              ? "Owners must enable TOTP 2FA before billing actions and pasting training Stripe secret keys. OAuth and org Stripe secrets are encrypted at rest when TOKEN_ENCRYPTION_KEY is configured. A DPA template is available on request for Scale plans."
-              : "Les OWNER doivent activer la 2FA TOTP avant les actions billing et le collage d’une clé secrète Stripe formation. Les secrets OAuth et Stripe orga sont chiffrés au repos (TOKEN_ENCRYPTION_KEY). Un modèle de DPA est disponible sur demande pour le plan Scale."}
+              ? "Owners must enable TOTP 2FA before billing actions and pasting training Stripe secret keys. OAuth and org Stripe secrets are encrypted at rest when TOKEN_ENCRYPTION_KEY is configured. A DPA template is available on request for any plan with training (learner access) access — not only Scale."
+              : "Les OWNER doivent activer la 2FA TOTP avant les actions billing et le collage d’une clé secrète Stripe formation. Les secrets OAuth et Stripe orga sont chiffrés au repos (TOKEN_ENCRYPTION_KEY). Un modèle de DPA est disponible sur demande pour tout plan avec accès formation — pas seulement Scale."}
           </p>
         </section>
 
@@ -296,8 +336,8 @@ export default async function PrivacyPage() {
           </h2>
           <p>
             {isEn
-              ? "Access, rectification, erasure, portability, restriction, objection. From the dashboard → Account: cookie-consent history, JSON export and account deletion. Change cookie preferences anytime via the footer Cookies link. You may lodge a complaint with your supervisory authority (e.g. CNIL in France: "
-              : "Accès, rectification, effacement, portabilité, limitation, opposition. Depuis le dashboard → Compte : historique des consentements cookies, export JSON et suppression de compte. Modifie tes préférences cookies à tout moment via le lien Cookies du footer. Réclamation possible auprès de la "}
+              ? "Access, rectification, erasure, portability, restriction, objection. From the dashboard → Account: cookie-consent history, JSON export and account deletion. Change cookie preferences anytime via the footer Cookies link. Learners: contact the training organization first (controller for their purchase), then Discelyn support if needed. You may lodge a complaint with your supervisory authority (e.g. CNIL in France: "
+              : "Accès, rectification, effacement, portabilité, limitation, opposition. Depuis le dashboard → Compte : historique des consentements cookies, export JSON et suppression de compte. Modifie tes préférences cookies à tout moment via le lien Cookies du footer. Apprenants : contacter d’abord l’organisation formatrice (responsable de traitement de leur achat), puis le support Discelyn si besoin. Réclamation possible auprès de la "}
             <a
               className="text-signal underline"
               href="https://www.cnil.fr/fr/plaintes"
@@ -316,8 +356,8 @@ export default async function PrivacyPage() {
           </h2>
           <p>
             {isEn
-              ? "Account data while the account is active. Moderation warns: max 90 days then automatic purge. Analytics events: max 24 months then purge. Cookie consent logs: max 24 months then purge (account deletion unlinks userId). Leads: max 24 months or earlier on request. Stripe billing traces per legal accounting rules. Account deletion erases bots, warns, sessions and linked analytics/leads where applicable."
-              : "Données compte tant que le compte est actif. Warns : max 90 jours puis purge. Analytics : max 24 mois puis purge. Journal consentements cookies : max 24 mois puis purge (la suppression de compte détache le userId). Leads : max 24 mois ou plus tôt sur demande. Traces Stripe selon obligations comptables. Suppression du compte = bots, warns, sessions et analytics/leads liés."}
+              ? "Account data while the account is active. Moderation warns: max 90 days then automatic purge. Analytics events: max 24 months then purge. Cookie consent logs: max 24 months then purge (account deletion unlinks userId). Leads: max 24 months or earlier on request. Learner PII (LEARNER_PII): anonymized 365 days after REVOKED/EXPIRED. Access oversold events retain operational fields; customer email anonymized with learner retention. Outbound webhook deliveries: TTL 90 days then purge. Stripe billing traces per legal accounting rules. Account deletion erases bots, warns, sessions and linked analytics/leads where applicable."
+              : "Données compte tant que le compte est actif. Warns : max 90 jours puis purge. Analytics : max 24 mois puis purge. Journal consentements cookies : max 24 mois puis purge (la suppression de compte détache le userId). Leads : max 24 mois ou plus tôt sur demande. PII apprenants (LEARNER_PII) : anonymisation 365 jours après REVOKED/EXPIRED. Événements oversold : e-mail client anonymisé selon la même rétention. Livraisons webhooks sortants : TTL 90 jours puis purge. Traces Stripe selon obligations comptables. Suppression du compte = bots, warns, sessions et analytics/leads liés."}
           </p>
         </section>
 

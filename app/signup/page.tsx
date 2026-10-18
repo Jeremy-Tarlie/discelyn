@@ -4,13 +4,17 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { parseSignupIntent } from "@/lib/auth-callback";
+import {
+  isOneShotOfferId,
+  parseSignupIntent,
+  subscribePath,
+} from "@/lib/auth-callback";
 import { userNeedsMfaChallenge } from "@/lib/mfa-session";
 import { AuthPageChrome } from "@/components/auth/AuthPageChrome";
 import { SignupWizard } from "@/components/auth/SignupWizard";
 
 type PageProps = {
-  searchParams: Promise<{ plan?: string; interval?: string }>;
+  searchParams: Promise<{ plan?: string; interval?: string; offer?: string }>;
 };
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -20,6 +24,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function SignupPage({ searchParams }: PageProps) {
   const params = await searchParams;
+  const oneShotOffer =
+    params.offer && isOneShotOfferId(params.offer) ? params.offer : null;
   const intent = parseSignupIntent({
     plan: params.plan,
     interval: params.interval,
@@ -31,6 +37,9 @@ export default async function SignupPage({ searchParams }: PageProps) {
   if (session?.user?.id) {
     if (await userNeedsMfaChallenge(session.user.id)) {
       redirect("/login/mfa");
+    }
+    if (oneShotOffer) {
+      redirect(subscribePath(oneShotOffer));
     }
     if (initialPlan !== "FREE") {
       redirect(`/subscribe?plan=${initialPlan}&interval=${initialInterval}`);
@@ -45,6 +54,7 @@ export default async function SignupPage({ searchParams }: PageProps) {
       <SignupWizard
         initialPlan={initialPlan}
         initialInterval={initialInterval}
+        oneShotOffer={oneShotOffer}
         footer={t.rich("legal", {
           terms: (chunks) => (
             <Link

@@ -225,7 +225,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function HowItWorksPage() {
   const session = await getServerSession(authOptions);
-  const ctaHref = session ? "/dashboard" : "/login";
+  const ctaHref = session ? "/dashboard" : "/signup";
   const t = await getTranslations("howItWorks");
   const tc = await getTranslations("common");
 
@@ -251,7 +251,7 @@ export default async function HowItWorksPage() {
 
       <main id="main-content">
         {/* Hero */}
-        <section className="relative bg-[#2a9e86]">
+        <section className="relative bg-[#1f7a68]">
           <div
             className="pointer-events-none absolute inset-0 overflow-hidden"
             aria-hidden
@@ -264,7 +264,7 @@ export default async function HowItWorksPage() {
           <div className="relative mx-auto grid max-w-6xl items-end gap-8 px-6 pb-4 pt-14 md:grid-cols-[1.15fr_0.85fr] md:gap-10 md:pb-0 md:pt-16">
             <div className="relative z-10 pb-8 md:pb-14">
               <div className="animate-fade-up flex flex-wrap items-center gap-2">
-                <p className="inline-flex items-center gap-2 rounded-full bg-black/15 px-3 py-1 font-display text-xs font-semibold uppercase tracking-[0.2em] text-white/90">
+                <p className="inline-flex items-center gap-2 rounded-full bg-black/15 px-3 py-1 font-display text-xs font-semibold uppercase tracking-[0.2em] text-white">
                   {t("eyebrow")}
                 </p>
                 <p className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white">
@@ -275,7 +275,7 @@ export default async function HowItWorksPage() {
               <h1 className="animate-fade-up mt-5 max-w-xl font-display text-4xl font-bold text-white sm:text-5xl lg:text-6xl">
                 {t("title")}
               </h1>
-              <p className="animate-fade-up mt-5 max-w-lg text-base leading-relaxed text-white/90 sm:text-lg">
+              <p className="animate-fade-up mt-5 max-w-lg text-base leading-relaxed text-white sm:text-lg">
                 {t("subtitle")}
               </p>
               <div className="animate-fade-up mt-8 flex flex-wrap gap-3">
@@ -546,7 +546,7 @@ export default async function HowItWorksPage() {
         {/* CTA */}
         <section className="mx-auto max-w-6xl px-6 py-16 md:py-20">
           <Reveal>
-            <div className="relative rounded-[2rem] bg-[#2a9e86] px-6 py-12 sm:px-12 sm:py-14">
+            <div className="relative rounded-[2rem] bg-[#1f7a68] px-6 py-12 sm:px-12 sm:py-14">
               <div
                 className="pointer-events-none absolute inset-0 overflow-hidden rounded-[2rem]"
                 aria-hidden
@@ -562,7 +562,7 @@ export default async function HowItWorksPage() {
                   <h2 className="mt-4 font-display text-3xl font-bold text-white sm:text-4xl">
                     {t("ctaTitle")}
                   </h2>
-                  <p className="mt-4 text-lg text-white/90">{t("ctaBody")}</p>
+                  <p className="mt-4 text-lg text-white">{t("ctaBody")}</p>
                   <div className="mt-8 flex flex-wrap gap-3">
                     <Link
                       href={ctaHref}

@@ -8,6 +8,8 @@ import { SiteHeader } from "@/components/landing/SiteHeader";
 import { SiteFooter } from "@/components/landing/SiteFooter";
 import { SubscribeCheckout } from "@/components/landing/SubscribeCheckout";
 import {
+  isOneShotOfferId,
+  isSubscribePlanId,
   parseSubscribeIntent,
   signupWithPlanIntent,
 } from "@/lib/auth-callback";
@@ -31,7 +33,12 @@ export default async function SubscribePage({ searchParams }: PageProps) {
   const session = await getServerSession(authOptions);
 
   if (intent && !session?.user?.id) {
-    redirect(signupWithPlanIntent(intent.plan, intent.interval));
+    if (isOneShotOfferId(intent.plan)) {
+      redirect(signupWithPlanIntent(intent.plan));
+    }
+    if (isSubscribePlanId(intent.plan)) {
+      redirect(signupWithPlanIntent(intent.plan, intent.interval));
+    }
   }
 
   const t = await getTranslations("subscribe");

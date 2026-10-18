@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useId, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 
 const fieldClass =
   "w-full rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-3 py-2.5 text-sm text-[color:var(--page-fg)] placeholder:text-[color:var(--muted)] transition focus:border-[#5865F2] focus:outline-none focus:ring-2 focus:ring-[#5865F2]/30";
+
+const labelClass =
+  "mb-1.5 block text-xs font-semibold text-[color:var(--page-fg)]";
 
 export function LeadForm({
   defaultOffer = "DEMO",
@@ -22,6 +25,7 @@ export function LeadForm({
   const t = useTranslations("lead");
   const tg = useTranslations("gdpr");
   const tn = useTranslations("nav");
+  const errorId = useId();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [company, setCompany] = useState("");
@@ -76,10 +80,12 @@ export function LeadForm({
     );
   }
 
+  const fieldDescribedBy = error ? errorId : undefined;
+
   return (
     <form onSubmit={(e) => void onSubmit(e)} className="space-y-3">
       <div>
-        <label htmlFor="lead-email" className="sr-only">
+        <label htmlFor="lead-email" className={labelClass}>
           {t("email")}
         </label>
         <input
@@ -89,11 +95,13 @@ export function LeadForm({
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder={t("email")}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={fieldDescribedBy}
           className={fieldClass}
         />
       </div>
       <div>
-        <label htmlFor="lead-name" className="sr-only">
+        <label htmlFor="lead-name" className={labelClass}>
           {t("name")}
         </label>
         <input
@@ -101,11 +109,13 @@ export function LeadForm({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder={t("name")}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={fieldDescribedBy}
           className={fieldClass}
         />
       </div>
       <div>
-        <label htmlFor="lead-company" className="sr-only">
+        <label htmlFor="lead-company" className={labelClass}>
           {t("company")}
         </label>
         <input
@@ -113,11 +123,13 @@ export function LeadForm({
           value={company}
           onChange={(e) => setCompany(e.target.value)}
           placeholder={t("company")}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={fieldDescribedBy}
           className={fieldClass}
         />
       </div>
       <div>
-        <label htmlFor="lead-message" className="sr-only">
+        <label htmlFor="lead-message" className={labelClass}>
           {t("message")}
         </label>
         <textarea
@@ -126,6 +138,8 @@ export function LeadForm({
           onChange={(e) => setMessage(e.target.value)}
           placeholder={t("message")}
           rows={3}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={fieldDescribedBy}
           className={fieldClass}
         />
       </div>
@@ -136,6 +150,8 @@ export function LeadForm({
           onChange={(e) => setContactConsent(e.target.checked)}
           className="mt-0.5"
           required
+          aria-invalid={error && !contactConsent ? true : undefined}
+          aria-describedby={error && !contactConsent ? errorId : undefined}
         />
         <span>
           {tg.rich("leadConsent", {
@@ -163,7 +179,11 @@ export function LeadForm({
       >
         {loading ? t("sending") : t("submit")}
       </button>
-      {error ? <p className="text-sm text-warn">{error}</p> : null}
+      {error ? (
+        <p id={errorId} role="alert" className="text-sm text-warn">
+          {error}
+        </p>
+      ) : null}
       <p className="text-[11px] leading-normal text-[color:var(--muted)]">
         <Link
           href="/privacy"

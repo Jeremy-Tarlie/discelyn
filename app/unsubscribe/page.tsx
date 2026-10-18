@@ -8,10 +8,14 @@ import {
 import { SiteHeader } from "@/components/landing/SiteHeader";
 import { SiteFooter } from "@/components/landing/SiteFooter";
 
-export const metadata: Metadata = {
-  title: "Unsubscribe · Discelyn",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const isEn = locale === "en";
+  return {
+    title: isEn ? "Unsubscribe · Discelyn" : "Se désinscrire · Discelyn",
+    robots: { index: false, follow: false },
+  };
+}
 
 type PageProps = {
   searchParams: Promise<{ token?: string }>;
@@ -77,7 +81,10 @@ export default async function UnsubscribePage({ searchParams }: PageProps) {
             {isEn ? "Privacy policy" : "Politique de confidentialité"}
           </Link>
           {" · "}
-          <Link href="/dashboard/account" className="text-signal underline">
+          <Link
+            href="/login?callbackUrl=/dashboard/account"
+            className="text-signal underline"
+          >
             {isEn ? "Account" : "Compte"}
           </Link>
         </p>

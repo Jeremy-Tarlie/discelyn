@@ -78,6 +78,16 @@ describe("parseSubscribeIntent", () => {
     ).toEqual({ plan: "SCALE", interval: "month" });
   });
 
+  it("accepte SETUP / DIAGNOSTIC (one-shot)", () => {
+    expect(
+      parseSubscribeIntent({ plan: "DIAGNOSTIC", interval: undefined })
+    ).toEqual({ plan: "DIAGNOSTIC", interval: "month" });
+    expect(parseSubscribeIntent({ plan: "SETUP", interval: "year" })).toEqual({
+      plan: "SETUP",
+      interval: "year",
+    });
+  });
+
   it("refuse FREE et plans inconnus", () => {
     expect(parseSubscribeIntent({ plan: "FREE", interval: "month" })).toBeNull();
     expect(
@@ -88,10 +98,15 @@ describe("parseSubscribeIntent", () => {
 });
 
 describe("signupWithPlanIntent / parseSignupIntent", () => {
-  it("FREE → /signup ; payant → query", () => {
+  it("FREE → /signup ; payant → query ; one-shot → offer", () => {
     expect(signupWithPlanIntent("FREE")).toBe("/signup");
     expect(signupWithPlanIntent("STARTER", "year")).toBe(
       "/signup?plan=STARTER&interval=year"
+    );
+    expect(signupWithPlanIntent("DIAGNOSTIC")).toBe("/signup?offer=DIAGNOSTIC");
+    expect(subscribePath("SETUP")).toBe("/subscribe?plan=SETUP");
+    expect(loginWithSubscribeIntent("SETUP")).toBe(
+      `/login?callbackUrl=${encodeURIComponent("/subscribe?plan=SETUP")}`
     );
   });
 

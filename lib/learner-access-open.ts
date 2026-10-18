@@ -157,7 +157,6 @@ export async function openLearnerAccessFromCheckout(input: {
   await notifyOutbound(input.organizationId, "payment_received", {
     accessId: txResult.accessId,
     productId: input.productId,
-    email: input.customerEmail,
     amountTotal: input.amountTotal ?? null,
   });
 
@@ -226,8 +225,6 @@ async function sendImmediateClaimInvite(input: {
     await notifyOutbound(input.organizationId, "claim_reminder", {
       accessId: input.accessId,
       productId: input.productId,
-      email: input.customerEmail,
-      claimUrl: url,
       productName,
       reminderCount: 0,
     });
@@ -407,7 +404,6 @@ async function recordOversoldCheckout(input: {
   await notifyOutbound(input.organizationId, "sold_out", {
     productId: input.productId,
     sessionId: input.stripeCheckoutSessionId,
-    email: input.customerEmail,
     amountTotal: input.amountTotal ?? null,
     refundStatus: refund.refundStatus,
   });

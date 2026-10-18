@@ -35,11 +35,11 @@ const config: Config = {
         line: "var(--border)",
         signal: {
           DEFAULT: "#3dcfb0",
-          dim: "#2a9e86",
+          dim: "#1f7a68",
           glow: "#6ef0d0",
         },
         warn: {
-          DEFAULT: "#e8a54b",
+          DEFAULT: "#b45309",
         },
       },
       fontFamily: {

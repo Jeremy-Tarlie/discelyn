@@ -7,6 +7,7 @@ const recipientUpdateMany = vi.fn();
 const queryRaw = vi.fn();
 const campaignUpdateMany = vi.fn();
 const campaignFindUnique = vi.fn();
+const campaignFindMany = vi.fn();
 const recipientUpdate = vi.fn();
 const campaignUpdate = vi.fn();
 const emailEventCreate = vi.fn();
@@ -23,6 +24,7 @@ vi.mock("@/lib/prisma", () => ({
       create: (...args: unknown[]) => campaignCreate(...args),
       updateMany: (...args: unknown[]) => campaignUpdateMany(...args),
       findUnique: (...args: unknown[]) => campaignFindUnique(...args),
+      findMany: (...args: unknown[]) => campaignFindMany(...args),
       update: (...args: unknown[]) => campaignUpdate(...args),
     },
     marketingCampaignRecipient: {
@@ -55,6 +57,7 @@ describe("admin-campaigns", () => {
     queryRaw.mockReset();
     campaignUpdateMany.mockReset();
     campaignFindUnique.mockReset();
+    campaignFindMany.mockReset();
     recipientUpdate.mockReset();
     campaignUpdate.mockReset();
     emailEventCreate.mockReset();
@@ -125,13 +128,14 @@ describe("admin-campaigns", () => {
       }
       return Promise.all(arg as Promise<unknown>[]);
     });
-    campaignFindUnique.mockResolvedValue({
-      subject: "Hi",
-      bodyText: "Hello world body",
-      status: "sending",
-      sentCount: 1,
-      failCount: 0,
-    });
+    campaignFindMany.mockResolvedValue([
+      {
+        id: "c1",
+        subject: "Hi",
+        bodyText: "Hello world body",
+        status: "sending",
+      },
+    ]);
     sendEmail.mockResolvedValue({ ok: true });
     recipientUpdate.mockResolvedValue({});
     campaignUpdate.mockResolvedValue({});
@@ -141,6 +145,7 @@ describe("admin-campaigns", () => {
     const result = await processCampaignBatch(10);
     expect(result.processed).toBe(1);
     expect(result.sent).toBe(1);
+    expect(campaignFindMany).toHaveBeenCalled();
     expect(sendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         to: "a@ex.com",

@@ -193,7 +193,17 @@ export default async function ClaimPage({ params, searchParams }: PageProps) {
             >
               {t("connectDiscord")}
             </a>
-            <p className="text-xs text-soft">{t("privacyHint")}</p>
+            <p className="text-xs text-soft">
+              {t("privacyHint", {
+                support: process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || "support",
+              })}
+            </p>
+            <p className="text-xs text-soft">{t("rightsHint")}</p>
+            <p className="text-xs">
+              <Link href="/privacy" className="underline hover:text-page-fg">
+                {t("privacyLink")}
+              </Link>
+            </p>
           </div>
         ) : null}
 
