@@ -153,17 +153,38 @@ export async function anonymizeExpiredLearnerPii(
   let total = 0;
 
   for (;;) {
+    // REVOKED/EXPIRED après TTL + ACTIVE dont accessEndsAt dépassé depuis TTL
+    // (accès contractuel terminé non encore basculé EXPIRED).
     const candidates = await prisma.learnerAccess.findMany({
       where: {
-        status: { in: ["REVOKED", "EXPIRED"] },
         AND: [
+          { OR: [...LEARNER_PII_PRESENT_OR] },
           {
             OR: [
-              { revokedAt: { lt: cutoff } },
-              { AND: [{ revokedAt: null }, { updatedAt: { lt: cutoff } }] },
+              {
+                AND: [
+                  { status: { in: ["REVOKED", "EXPIRED"] } },
+                  {
+                    OR: [
+                      { revokedAt: { lt: cutoff } },
+                      {
+                        AND: [
+                          { revokedAt: null },
+                          { updatedAt: { lt: cutoff } },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+              {
+                AND: [
+                  { status: "ACTIVE" },
+                  { product: { accessEndsAt: { lt: cutoff } } },
+                ],
+              },
             ],
           },
-          { OR: [...LEARNER_PII_PRESENT_OR] },
         ],
       },
       select: { id: true },
@@ -264,6 +285,89 @@ export async function purgeExpiredEmailEvents(
     },
     async (ids) => {
       const result = await prisma.emailEvent.deleteMany({
+        where: { id: { in: ids } },
+      });
+      return result.count;
+    }
+  );
+}
+
+/** Journal d’activité compte : 24 mois. */
+export const USER_ACTIVITY_RETENTION_DAYS = 730;
+
+export async function purgeExpiredUserActivityLogs(
+  now = new Date()
+): Promise<number> {
+  const cutoff = new Date(now);
+  cutoff.setUTCDate(cutoff.getUTCDate() - USER_ACTIVITY_RETENTION_DAYS);
+  return batchedDeleteByIds(
+    async () => {
+      const rows = await prisma.userActivityLog.findMany({
+        where: { createdAt: { lt: cutoff } },
+        select: { id: true },
+        take: DELETE_BATCH_SIZE,
+        orderBy: { createdAt: "asc" },
+      });
+      return rows.map((r) => r.id);
+    },
+    async (ids) => {
+      const result = await prisma.userActivityLog.deleteMany({
+        where: { id: { in: ids } },
+      });
+      return result.count;
+    }
+  );
+}
+
+/** Clics affiliés : 24 mois (aligné analytics). */
+export async function purgeExpiredAffiliateClicks(
+  now = new Date()
+): Promise<number> {
+  const cutoff = analyticsCutoff(now);
+  return batchedDeleteByIds(
+    async () => {
+      const rows = await prisma.affiliateClick.findMany({
+        where: { createdAt: { lt: cutoff } },
+        select: { id: true },
+        take: DELETE_BATCH_SIZE,
+        orderBy: { createdAt: "asc" },
+      });
+      return rows.map((r) => r.id);
+    },
+    async (ids) => {
+      const result = await prisma.affiliateClick.deleteMany({
+        where: { id: { in: ids } },
+      });
+      return result.count;
+    }
+  );
+}
+
+/** Destinataires campagne terminés (sent/failed) : 90 jours. */
+export const MARKETING_RECIPIENT_RETENTION_DAYS = 90;
+
+export async function purgeExpiredMarketingRecipients(
+  now = new Date()
+): Promise<number> {
+  const cutoff = new Date(now);
+  cutoff.setUTCDate(
+    cutoff.getUTCDate() - MARKETING_RECIPIENT_RETENTION_DAYS
+  );
+  return batchedDeleteByIds(
+    async () => {
+      const rows = await prisma.marketingCampaignRecipient.findMany({
+        where: {
+          status: { in: ["sent", "failed"] },
+          updatedAt: { lt: cutoff },
+        },
+        select: { id: true },
+        take: DELETE_BATCH_SIZE,
+        orderBy: { updatedAt: "asc" },
+      });
+      return rows.map((r) => r.id);
+    },
+    async (ids) => {
+      const result = await prisma.marketingCampaignRecipient.deleteMany({
         where: { id: { in: ids } },
       });
       return result.count;

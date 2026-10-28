@@ -17,6 +17,28 @@ const optionalText = (max: number) =>
     .nullable()
     .transform((v) => (v && v.length > 0 ? v : null));
 
+/** http(s) only — refuse javascript:/data: (stored XSS claim branding). */
+const optionalSafeHttpUrl = (locale: Locale, max = 500) =>
+  z
+    .union([
+      z
+        .string()
+        .trim()
+        .max(max)
+        .refine((v) => {
+          try {
+            const u = new URL(v);
+            return u.protocol === "https:" || u.protocol === "http:";
+          } catch {
+            return false;
+          }
+        }, tApi(locale, "invalidData")),
+      z.literal(""),
+      z.null(),
+    ])
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : null));
+
 const sharedProductFields = (locale: Locale) => ({
   name: z.string().trim().min(2).max(80),
   discordRoleId: snowflakeFor(locale),
@@ -31,10 +53,7 @@ const sharedProductFields = (locale: Locale) => ({
     .optional()
     .nullable(),
   brandName: optionalText(80),
-  brandLogoUrl: z
-    .union([z.string().trim().url().max(500), z.literal(""), z.null()])
-    .optional()
-    .transform((v) => (v && v.length > 0 ? v : null)),
+  brandLogoUrl: optionalSafeHttpUrl(locale),
   brandColor: z
     .union([
       z.string().trim().regex(/^#[0-9A-Fa-f]{6}$/),
@@ -146,10 +165,7 @@ export function accessProductUpdateSchemaFor(locale: Locale) {
       .optional()
       .nullable(),
     brandName: optionalText(80),
-    brandLogoUrl: z
-      .union([z.string().trim().url().max(500), z.literal(""), z.null()])
-      .optional()
-      .transform((v) => (v && v.length > 0 ? v : null)),
+    brandLogoUrl: optionalSafeHttpUrl(locale),
     brandColor: z
       .union([
         z.string().trim().regex(/^#[0-9A-Fa-f]{6}$/),
@@ -268,10 +284,7 @@ export function orgStripeConfigSchemaFor(locale: Locale) {
       .optional(),
     label: z.string().trim().max(80).optional().nullable(),
     displayName: optionalText(80),
-    logoUrl: z
-      .union([z.string().trim().url().max(500), z.literal(""), z.null()])
-      .optional()
-      .transform((v) => (v && v.length > 0 ? v : null)),
+    logoUrl: optionalSafeHttpUrl(locale),
     primaryColor: z
       .union([
         z.string().trim().regex(/^#[0-9A-Fa-f]{6}$/),
@@ -280,10 +293,7 @@ export function orgStripeConfigSchemaFor(locale: Locale) {
       ])
       .optional()
       .transform((v) => (v && v.length > 0 ? v : null)),
-    supportUrl: z
-      .union([z.string().trim().url().max(500), z.literal(""), z.null()])
-      .optional()
-      .transform((v) => (v && v.length > 0 ? v : null)),
+    supportUrl: optionalSafeHttpUrl(locale),
   });
 }
 

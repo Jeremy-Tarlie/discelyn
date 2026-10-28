@@ -12,7 +12,7 @@ export async function AuthPageChrome({
   children: ReactNode;
 }) {
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
+    <div className="relative min-h-screen overflow-x-clip bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
       <AmbientOrbs variant="login" />
       <div className="relative z-10 flex min-h-screen flex-col">
         <SiteHeader signedIn={signedIn} />

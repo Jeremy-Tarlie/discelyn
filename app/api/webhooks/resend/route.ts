@@ -4,7 +4,6 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
-import { getAppEnvironment } from "@/lib/demo";
 import { revokeMarketingConsent } from "@/lib/marketing-unsubscribe";
 
 const MAX_SVIX_AGE_SEC = 300;
@@ -47,8 +46,9 @@ function secretsEqual(provided: string, expected: string): boolean {
 
 function verifySvixOrSecret(request: NextRequest, rawBody: string): boolean {
   const secret = process.env.RESEND_WEBHOOK_SECRET?.trim();
+  // Jamais « open » sans secret — même en development (tunnel / LAN).
   if (!secret) {
-    return getAppEnvironment() === "development";
+    return false;
   }
 
   const svixSignature = request.headers.get("svix-signature");

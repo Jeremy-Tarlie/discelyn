@@ -39,11 +39,11 @@ const config: Config = {
           glow: "#6ef0d0",
         },
         warn: {
-          DEFAULT: "#b45309",
+          DEFAULT: "var(--warn-fg)",
         },
       },
       fontFamily: {
-        display: ["var(--font-syne)", "system-ui", "sans-serif"],
+        display: ["var(--font-outfit)", "system-ui", "sans-serif"],
         sans: ["var(--font-outfit)", "system-ui", "sans-serif"],
       },
       backgroundImage: {
@@ -54,8 +54,8 @@ const config: Config = {
       },
       keyframes: {
         "fade-up": {
-          "0%": { opacity: "0", transform: "translateY(20px)" },
-          "100%": { opacity: "1", transform: "translateY(0)" },
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
         },
         "fade-in": {
           "0%": { opacity: "0" },

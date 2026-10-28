@@ -27,7 +27,7 @@ export default async function PricingPage() {
   const th = await getTranslations("nav");
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
+    <div className="min-h-screen overflow-x-clip bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
       <SiteHeader signedIn={Boolean(session)} />
       <main id="main-content">
         <section className="relative bg-[#1f7a68]">
@@ -87,7 +87,7 @@ export default async function PricingPage() {
 
         <section className="mx-auto max-w-6xl px-6 pb-16 md:pb-20">
           <Reveal>
-            <div className="relative overflow-hidden rounded-[2rem] border border-[color:var(--border)] bg-[color:var(--surface)] px-6 py-10 sm:px-10">
+            <div className="relative overflow-visible rounded-[2rem] border border-[color:var(--border)] bg-[color:var(--surface)] px-6 py-10 sm:px-10">
               <div className="flex flex-wrap items-center justify-between gap-6">
                 <div>
                   <h2 className="font-display text-2xl font-bold text-[color:var(--page-fg)] sm:text-3xl">

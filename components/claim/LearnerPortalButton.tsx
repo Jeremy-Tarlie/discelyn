@@ -4,9 +4,11 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 export function LearnerPortalButton({
-  checkoutSessionId,
+  portalToken,
+  claimToken,
 }: {
-  checkoutSessionId: string;
+  portalToken?: string;
+  claimToken?: string;
 }) {
   const t = useTranslations("claim");
   const [busy, setBusy] = useState(false);
@@ -16,10 +18,19 @@ export function LearnerPortalButton({
     setBusy(true);
     setError(null);
     try {
+      const body = portalToken
+        ? { portalToken }
+        : claimToken
+          ? { claimToken }
+          : null;
+      if (!body) {
+        setError(t("portalFailed"));
+        return;
+      }
       const res = await fetch("/api/access/portal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ checkoutSessionId }),
+        body: JSON.stringify(body),
       });
       const data = (await res.json()) as { url?: string; error?: string };
       if (!res.ok || !data.url) {
@@ -33,6 +44,8 @@ export function LearnerPortalButton({
       setBusy(false);
     }
   }
+
+  if (!portalToken && !claimToken) return null;
 
   return (
     <div className="mt-4 space-y-2">

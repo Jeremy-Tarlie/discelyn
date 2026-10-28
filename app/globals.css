@@ -9,10 +9,13 @@
   --surface: #ffffff;
   --surface-muted: #e8ecf1;
   --muted: #5c6f88;
+  /* Footer : contraste AA (≥ 4,5:1) sur --footer-bg */
+  --footer-muted: #44566e;
   --border: rgba(15, 23, 42, 0.1);
   --header-bg: rgba(255, 255, 255, 0.92);
   --footer-bg: #e8ecf1;
   --wave-fill: #f3f5f8;
+  --warn-fg: #b45309;
 }
 
 html.dark {
@@ -22,10 +25,13 @@ html.dark {
   --surface: #2b2d31;
   --surface-muted: #23272a;
   --muted: #b5bac1;
+  --footer-muted: #c5cad1;
   --border: rgba(255, 255, 255, 0.08);
   --header-bg: rgba(35, 39, 42, 0.95);
   --footer-bg: #14161a;
   --wave-fill: #1a1c21;
+  /* Amber clair : contraste OK sur surface dark */
+  --warn-fg: #f0a060;
 }
 
 html {
@@ -54,13 +60,19 @@ body {
   outline-offset: 2px;
 }
 
-/* Syne: descenders (g, y, p) overflow the em-box — keep room + never clip.
-   line-height !important beats Tailwind leading-* utilities. */
+/* Contraste AA : texte signal sur fond clair → teinte dim (#1f7a68).
+   bg-signal (mint) inchangé pour surfaces / boutons. */
+:root:not(.dark) .text-signal {
+  color: #1f7a68;
+}
+
+/*
+  Titres Tailwind (text-4xl…) imposent line-height ~1.11 — battre via !important.
+  Outfit : g arrondi (vérifié), contrairement à Syne / Space Grotesk (fond plat).
+*/
 .font-display {
-  line-height: 1.4 !important;
   overflow: visible !important;
-  padding-block: 0.12em;
-  margin-block: -0.12em;
+  line-height: 1.3 !important;
 }
 
 ::selection {
@@ -152,41 +164,22 @@ a {
     animation: line-draw 1.2s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  /* Visible par défaut (SSR / sans JS). Masquage uniquement avec .js-animate côté client. */
-  .reveal {
-    opacity: 1;
-    transform: none;
-    transition:
-      opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
-      transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .reveal.js-animate:not(.is-visible) {
-    opacity: 0;
-    transform: translateY(28px);
-  }
-
-  .reveal.is-visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
+  /* Visible par défaut (SSR / sans JS). Opacity only — pas de transform (évite clip jambages). */
+  .reveal,
   .reveal-scale {
+    overflow: visible;
     opacity: 1;
-    transform: none;
-    transition:
-      opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1),
-      transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
+  .reveal.js-animate:not(.is-visible),
   .reveal-scale.js-animate:not(.is-visible) {
     opacity: 0;
-    transform: translateY(20px) scale(0.96);
   }
 
+  .reveal.is-visible,
   .reveal-scale.is-visible {
     opacity: 1;
-    transform: translateY(0) scale(1);
   }
 
   .reveal-delay-1 {

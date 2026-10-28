@@ -17,10 +17,6 @@ vi.mock("@/lib/rate-limit", () => ({
   rateLimit: vi.fn().mockResolvedValue({ ok: true }),
 }));
 
-vi.mock("@/lib/demo", () => ({
-  getAppEnvironment: () => "development",
-}));
-
 describe("POST /api/webhooks/resend", () => {
   const prevSecret = process.env.RESEND_WEBHOOK_SECRET;
 
@@ -37,7 +33,7 @@ describe("POST /api/webhooks/resend", () => {
     else process.env.RESEND_WEBHOOK_SECRET = prevSecret;
   });
 
-  it("accepte sans secret en development", async () => {
+  it("refuse sans secret même en development", async () => {
     const { POST } = await import("@/app/api/webhooks/resend/route");
     const req = new NextRequest("http://localhost/api/webhooks/resend", {
       method: "POST",
@@ -47,8 +43,8 @@ describe("POST /api/webhooks/resend", () => {
       }),
     });
     const res = await POST(req);
-    expect(res.status).toBe(200);
-    expect(emailEventCreate).toHaveBeenCalled();
+    expect(res.status).toBe(401);
+    expect(emailEventCreate).not.toHaveBeenCalled();
   });
 
   it("refuse signature Bearer invalide si secret défini", async () => {

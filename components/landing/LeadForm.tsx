@@ -74,7 +74,10 @@ export function LeadForm({
 
   if (done) {
     return (
-      <p className="animate-scale-in rounded-xl border border-signal/40 bg-signal/10 p-4 text-sm text-signal-dim">
+      <p
+        role="status"
+        className="animate-scale-in rounded-xl border border-signal/40 bg-signal/10 p-4 text-sm text-signal-dim"
+      >
         {t("success")}
       </p>
     );

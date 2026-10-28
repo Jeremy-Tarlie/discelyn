@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { SiteHeader } from "@/components/landing/SiteHeader";
 import { SiteFooter } from "@/components/landing/SiteFooter";
 import { ClaimCodeForm } from "@/components/claim/ClaimCodeForm";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("meta");
+  return { title: t("claimCodeTitle") };
+}
 
 export default async function ClaimCodePage() {
   const t = await getTranslations("claim");
@@ -10,7 +16,7 @@ export default async function ClaimCodePage() {
   return (
     <div className="min-h-screen bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
       <SiteHeader signedIn={false} />
-      <main className="mx-auto max-w-lg px-6 py-16">
+      <main id="main-content" tabIndex={-1} className="mx-auto max-w-lg px-6 py-16">
         <p className="text-xs uppercase tracking-wide text-signal">Discelyn</p>
         <h1 className="mt-2 font-display text-3xl font-bold">
           {t("codeTitle")}

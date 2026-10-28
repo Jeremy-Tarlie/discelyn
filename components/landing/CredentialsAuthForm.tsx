@@ -88,6 +88,8 @@ export function CredentialsAuthForm({
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className={inputClass}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? "login-error" : undefined}
           />
         </label>
 
@@ -96,6 +98,8 @@ export function CredentialsAuthForm({
           value={password}
           onChange={setPassword}
           autoComplete="current-password"
+          invalid={Boolean(error)}
+          describedBy={error ? "login-error" : undefined}
         />
 
         <p className="text-right text-xs">
@@ -108,7 +112,7 @@ export function CredentialsAuthForm({
         </p>
 
         {error ? (
-          <p className="text-sm text-warn" role="alert">
+          <p id="login-error" className="text-sm text-warn" role="alert">
             {error}
           </p>
         ) : null}

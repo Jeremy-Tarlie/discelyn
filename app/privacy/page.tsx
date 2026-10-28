@@ -227,8 +227,16 @@ export default async function PrivacyPage() {
             {t("processorsTitle")}
           </h2>
           <ul className="list-disc space-y-2 pl-5">
-            <li>Discord — OAuth and platform bot API</li>
-            <li>Stripe — payments (Stripe DPA)</li>
+            <li>
+              {isEn
+                ? "Discord — OAuth and platform bot API"
+                : "Discord — OAuth et API du bot plateforme"}
+            </li>
+            <li>
+              {isEn
+                ? "Stripe — payments (Stripe DPA)"
+                : "Stripe — paiements (DPA Stripe)"}
+            </li>
             <li>
               {entity
                 ? isEn
@@ -238,8 +246,16 @@ export default async function PrivacyPage() {
                   ? "Hosting provider of the instance (configure NEXT_PUBLIC_HOSTING_PROVIDER / REGION)"
                   : "Hébergeur de l’instance (configurer NEXT_PUBLIC_HOSTING_PROVIDER / REGION)"}
             </li>
-            <li>Sentry (optional) — application errors</li>
-            <li>Redis (optional) — distributed rate-limiting</li>
+            <li>
+              {isEn
+                ? "Sentry (optional) — application errors"
+                : "Sentry (optionnel) — erreurs applicatives"}
+            </li>
+            <li>
+              {isEn
+                ? "Redis (optional) — distributed rate-limiting"
+                : "Redis (optionnel) — limitation de débit distribuée"}
+            </li>
             <li>
               {isEn
                 ? "Resend — account verification / password reset, claim / reminder emails, and optional marketing campaigns (opens/clicks webhooks when configured)"
@@ -345,6 +361,9 @@ export default async function PrivacyPage() {
               rel="noopener noreferrer"
             >
               CNIL
+              <span className="sr-only">
+                {isEn ? " (new window)" : " (nouvelle fenêtre)"}
+              </span>
             </a>
             {isEn ? ")." : "."}
           </p>
@@ -356,8 +375,8 @@ export default async function PrivacyPage() {
           </h2>
           <p>
             {isEn
-              ? "Account data while the account is active. Moderation warns: max 90 days then automatic purge. Analytics events: max 24 months then purge. Cookie consent logs: max 24 months then purge (account deletion unlinks userId). Leads: max 24 months or earlier on request. Learner PII (LEARNER_PII): anonymized 365 days after REVOKED/EXPIRED. Access oversold events retain operational fields; customer email anonymized with learner retention. Outbound webhook deliveries: TTL 90 days then purge. Stripe billing traces per legal accounting rules. Account deletion erases bots, warns, sessions and linked analytics/leads where applicable."
-              : "Données compte tant que le compte est actif. Warns : max 90 jours puis purge. Analytics : max 24 mois puis purge. Journal consentements cookies : max 24 mois puis purge (la suppression de compte détache le userId). Leads : max 24 mois ou plus tôt sur demande. PII apprenants (LEARNER_PII) : anonymisation 365 jours après REVOKED/EXPIRED. Événements oversold : e-mail client anonymisé selon la même rétention. Livraisons webhooks sortants : TTL 90 jours puis purge. Traces Stripe selon obligations comptables. Suppression du compte = bots, warns, sessions et analytics/leads liés."}
+              ? "Account data while the account is active. Moderation warns: max 90 days then automatic purge (runtime cron — account soft-delete does not purge third-party Discord warns immediately). Analytics / activity logs / affiliate clicks: max 24 months. Cookie consent logs: max 24 months (account deletion unlinks userId). Leads: max 24 months or earlier on request. Learner PII: kept while access is ACTIVE under contract; anonymized 365 days after REVOKED/EXPIRED or after product accessEndsAt. Oversold emails follow the same learner retention. Outbound webhook deliveries and finished campaign recipients: TTL 90 days. Stripe billing traces per legal accounting rules. Account deletion = soft-delete + anonymisation (bots, sessions, org Stripe secrets, learner PII for sole-OWNER orgs)."
+              : "Données compte tant que le compte est actif. Warns : max 90 jours puis purge automatique (cron runtime — la suppression de compte soft-delete ne purge pas immédiatement les warns Discord tiers). Analytics / journaux d’activité / clics affiliés : max 24 mois. Journal consentements cookies : max 24 mois (détachement userId à la suppression). Leads : max 24 mois ou plus tôt sur demande. PII apprenants : conservées tant que l’accès est ACTIVE (contrat) ; anonymisation 365 jours après REVOKED/EXPIRED ou après accessEndsAt produit. Oversold : même rétention e-mail. Livraisons webhooks sortants et destinataires campagnes terminés : TTL 90 jours. Traces Stripe selon obligations comptables. Suppression compte = soft-delete + anonymisation (bots, sessions, secrets Stripe orga, PII apprenants si seul OWNER)."}
           </p>
         </section>
 
@@ -367,12 +386,25 @@ export default async function PrivacyPage() {
           </h2>
           <div className="overflow-x-auto rounded-xl border border-white/10">
             <table className="w-full min-w-[32rem] text-left text-sm">
+              <caption className="sr-only">
+                {isEn
+                  ? "Cookies used by Discelyn"
+                  : "Cookies utilisés par Discelyn"}
+              </caption>
               <thead className="bg-[#2b2d31] text-white">
                 <tr>
-                  <th className="px-3 py-2">{t("cookieTableName")}</th>
-                  <th className="px-3 py-2">{t("cookieTablePurpose")}</th>
-                  <th className="px-3 py-2">{t("cookieTableCategory")}</th>
-                  <th className="px-3 py-2">{t("cookieTableDuration")}</th>
+                  <th scope="col" className="px-3 py-2">
+                    {t("cookieTableName")}
+                  </th>
+                  <th scope="col" className="px-3 py-2">
+                    {t("cookieTablePurpose")}
+                  </th>
+                  <th scope="col" className="px-3 py-2">
+                    {t("cookieTableCategory")}
+                  </th>
+                  <th scope="col" className="px-3 py-2">
+                    {t("cookieTableDuration")}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -410,7 +442,9 @@ export default async function PrivacyPage() {
                     {isEn ? "UI language" : "Langue de l’interface"}
                   </td>
                   <td className="px-3 py-2">
-                    {isEn ? "Essential" : "Essentiel"}
+                    {isEn
+                      ? "Preference (set after cookie choice)"
+                      : "Préférence (après choix cookies)"}
                   </td>
                   <td className="px-3 py-2">1 {isEn ? "year" : "an"}</td>
                 </tr>
@@ -420,7 +454,9 @@ export default async function PrivacyPage() {
                     {isEn ? "Light / dark theme" : "Thème clair / sombre"}
                   </td>
                   <td className="px-3 py-2">
-                    {isEn ? "Essential" : "Essentiel"}
+                    {isEn
+                      ? "Preference (set after cookie choice)"
+                      : "Préférence (après choix cookies)"}
                   </td>
                   <td className="px-3 py-2">1 {isEn ? "year" : "an"}</td>
                 </tr>

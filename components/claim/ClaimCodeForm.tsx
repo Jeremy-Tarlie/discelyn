@@ -53,7 +53,13 @@ export function ClaimCodeForm() {
   const canSubmit = !busy && code.trim().length >= 4;
 
   return (
-    <div className="mt-8 space-y-3 rounded-2xl border border-line bg-surface p-6">
+    <form
+      className="mt-8 space-y-3 rounded-2xl border border-line bg-surface p-6"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (canSubmit) void redeem();
+      }}
+    >
       <label htmlFor="claim-code" className="block text-sm text-soft">
         {t("codeLabel")}
       </label>
@@ -68,10 +74,9 @@ export function ClaimCodeForm() {
         aria-describedby={error ? "claim-code-error" : undefined}
       />
       <button
-        type="button"
+        type="submit"
         disabled={!canSubmit}
         aria-busy={busy}
-        onClick={() => void redeem()}
         className="w-full rounded-full bg-[#5865F2] px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-[#5865F2]/40 disabled:opacity-70"
       >
         {t("codeCta")}
@@ -81,6 +86,6 @@ export function ClaimCodeForm() {
           {error}
         </p>
       ) : null}
-    </div>
+    </form>
   );
 }

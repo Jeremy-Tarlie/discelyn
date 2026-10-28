@@ -1,20 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { Outfit, Syne } from "next/font/google";
+import { Outfit } from "next/font/google";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { shouldShowEnvironmentBanner, getAppEnvironment } from "@/lib/demo";
 import { getRequestTheme } from "@/lib/theme";
 import { Providers } from "@/components/Providers";
 import "./globals.css";
 
+/*
+  Une seule famille (Outfit) : Syne / Space Grotesk ont un « g » géométrique
+  à fond plat que les lecteurs prennent pour un bug de coupe.
+*/
 const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-outfit",
-  display: "swap",
-});
-
-const syne = Syne({
-  subsets: ["latin"],
-  variable: "--font-syne",
   display: "swap",
 });
 
@@ -58,7 +56,7 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
-      className={`${outfit.variable} ${syne.variable}${theme === "dark" ? " dark" : ""}`}
+      className={`${outfit.variable}${theme === "dark" ? " dark" : ""}`}
       style={{ colorScheme: theme }}
       suppressHydrationWarning
     >

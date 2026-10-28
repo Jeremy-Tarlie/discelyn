@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -45,6 +45,9 @@ export function OwnerMfaSignupModal({
     getDismissServerSnapshot
   );
   const [localDismissed, setLocalDismissed] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const firstButtonRef = useRef<HTMLButtonElement>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
 
   const onAccount =
     pathname === "/dashboard/account" ||
@@ -61,6 +64,49 @@ export function OwnerMfaSignupModal({
     setLocalDismissed(true);
   }
 
+  useEffect(() => {
+    if (!open) return;
+
+    previouslyFocusedRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+
+    const focusTimer = window.setTimeout(() => {
+      firstButtonRef.current?.focus();
+    }, 0);
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        dismiss();
+        return;
+      }
+      if (event.key !== "Tab" || !dialogRef.current) return;
+      const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!first || !last) return;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.clearTimeout(focusTimer);
+      window.removeEventListener("keydown", onKeyDown);
+      previouslyFocusedRef.current?.focus();
+    };
+  }, [open]);
+
   if (!open) return null;
 
   return (
@@ -70,7 +116,10 @@ export function OwnerMfaSignupModal({
       aria-modal="true"
       aria-labelledby="mfa-signup-title"
     >
-      <div className="w-full max-w-md rounded-2xl border border-line bg-surface p-6 shadow-xl">
+      <div
+        ref={dialogRef}
+        className="w-full max-w-md rounded-2xl border border-line bg-surface p-6 shadow-xl"
+      >
         <h2
           id="mfa-signup-title"
           className="font-display text-xl font-bold text-page-fg"
@@ -82,6 +131,7 @@ export function OwnerMfaSignupModal({
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
           <button
+            ref={firstButtonRef}
             type="button"
             onClick={dismiss}
             className="rounded-full border border-line bg-surface-muted px-5 py-2.5 text-sm font-medium text-soft hover:border-signal/30 hover:text-page-fg"
@@ -90,7 +140,7 @@ export function OwnerMfaSignupModal({
           </button>
           <Link
             href="/dashboard/account"
-            className="rounded-full bg-signal px-5 py-2.5 text-sm font-semibold text-white hover:brightness-110"
+            className="rounded-full bg-signal px-5 py-2.5 text-sm font-semibold text-ink-950 hover:brightness-110"
           >
             {t("ownerMfaPopupCta")}
           </Link>

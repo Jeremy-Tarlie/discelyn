@@ -4,7 +4,7 @@ export const dashFieldClass =
   "w-full rounded-xl border border-line bg-surface-muted px-3.5 py-2.5 text-sm text-page-fg outline-none transition placeholder:text-soft/70 focus:border-signal/40 focus:ring-1 focus:ring-signal/40";
 
 export const dashBtnPrimaryClass =
-  "inline-flex items-center justify-center rounded-full bg-signal px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 disabled:opacity-50";
+  "inline-flex items-center justify-center rounded-full bg-signal px-5 py-2.5 text-sm font-semibold text-ink-950 shadow-sm transition hover:brightness-110 disabled:opacity-50";
 
 export const dashBtnGhostClass =
   "inline-flex items-center justify-center rounded-full border border-line bg-surface px-4 py-2 text-sm font-semibold text-page-fg transition hover:border-signal/50 hover:text-signal disabled:opacity-50";

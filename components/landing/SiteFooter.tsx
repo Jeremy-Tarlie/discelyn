@@ -8,52 +8,68 @@ export async function SiteFooter() {
 
   return (
     <footer className="border-t border-[color:var(--border)] bg-[color:var(--footer-bg)]">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-12 text-sm text-[color:var(--muted)] md:flex-row md:items-center md:justify-between">
+      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-12 text-sm text-[color:var(--footer-muted)] md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-2.5">
           <DiscelynMark size="sm" />
           <p className="font-display font-semibold text-[color:var(--page-fg)]">
             Discelyn
           </p>
         </div>
-        <div className="flex flex-wrap gap-5">
-          <Link
-            href="/fonctionnalites"
-            className="transition hover:text-[color:var(--page-fg)]"
-          >
-            {t("features")}
-          </Link>
-          <Link
-            href="/comment-ca-marche"
-            className="transition hover:text-[color:var(--page-fg)]"
-          >
-            {t("howItWorks")}
-          </Link>
-          <Link
-            href="/pricing"
-            className="transition hover:text-[color:var(--page-fg)]"
-          >
-            {t("pricing")}
-          </Link>
-          <Link
-            href="/mentions-legales"
-            className="transition hover:text-[color:var(--page-fg)]"
-          >
-            {t("legalNotice")}
-          </Link>
-          <Link
-            href="/privacy"
-            className="transition hover:text-[color:var(--page-fg)]"
-          >
-            {t("privacy")}
-          </Link>
-          <Link
-            href="/terms"
-            className="transition hover:text-[color:var(--page-fg)]"
-          >
-            {t("terms")}
-          </Link>
-          <CookiePrefsButton className="transition hover:text-[color:var(--page-fg)]" />
-        </div>
+        <nav aria-label={t("footerNav")}>
+          <ul className="flex flex-wrap gap-5">
+            <li>
+              <Link
+                href="/fonctionnalites"
+                className="underline-offset-2 transition hover:text-[color:var(--page-fg)] hover:underline"
+              >
+                {t("features")}
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/comment-ca-marche"
+                className="underline-offset-2 transition hover:text-[color:var(--page-fg)] hover:underline"
+              >
+                {t("howItWorks")}
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/pricing"
+                className="underline-offset-2 transition hover:text-[color:var(--page-fg)] hover:underline"
+              >
+                {t("pricing")}
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/mentions-legales"
+                className="underline-offset-2 transition hover:text-[color:var(--page-fg)] hover:underline"
+              >
+                {t("legalNotice")}
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/privacy"
+                className="underline-offset-2 transition hover:text-[color:var(--page-fg)] hover:underline"
+              >
+                {t("privacy")}
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/terms"
+                className="underline-offset-2 transition hover:text-[color:var(--page-fg)] hover:underline"
+              >
+                {t("terms")}
+              </Link>
+            </li>
+            <li>
+              <CookiePrefsButton className="underline-offset-2 transition hover:text-[color:var(--page-fg)] hover:underline" />
+            </li>
+          </ul>
+        </nav>
         <p>© {new Date().getFullYear()} Discelyn</p>
       </div>
     </footer>

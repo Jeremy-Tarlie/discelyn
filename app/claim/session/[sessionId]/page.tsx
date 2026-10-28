@@ -9,7 +9,8 @@ import { SiteHeader } from "@/components/landing/SiteHeader";
 import { SiteFooter } from "@/components/landing/SiteFooter";
 import { LearnerPortalButton } from "@/components/claim/LearnerPortalButton";
 import { ClaimSessionPending } from "@/components/claim/ClaimSessionPending";
-
+import { mintLearnerPortalToken } from "@/lib/portal-token";
+import { isStripeCheckoutSessionId } from "@/lib/stripe-checkout-session-id";
 
 type PageProps = {
   params: Promise<{ sessionId: string }>;
@@ -41,11 +42,28 @@ export default async function ClaimBySessionPage({ params }: PageProps) {
   const { sessionId } = await params;
   const t = await getTranslations("claim");
 
-  let access = await findAccess(sessionId);
-  if (!access) {
-    await new Promise((r) => setTimeout(r, 1500));
-    access = await findAccess(sessionId);
+  if (!isStripeCheckoutSessionId(sessionId)) {
+    return (
+      <div className="min-h-screen bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
+        <SiteHeader signedIn={false} />
+        <main id="main-content" tabIndex={-1} className="mx-auto max-w-lg px-6 py-16">
+          <h1 className="font-display text-3xl font-bold">{t("title")}</h1>
+          <p className="mt-4 text-warn" role="alert">
+            {t("errors.invalid")}
+          </p>
+          <p className="mt-6 text-sm text-soft">
+            <Link href="/" className="underline">
+              {t("backHome")}
+            </Link>
+          </p>
+        </main>
+        <SiteFooter />
+      </div>
+    );
   }
+
+  // Pas de sleep serveur : le client ClaimSessionPending / refresh gère la race webhook.
+  const access = await findAccess(sessionId);
 
   if (!access) {
     const oversold = await findOversold(sessionId);
@@ -54,7 +72,7 @@ export default async function ClaimBySessionPage({ params }: PageProps) {
       return (
         <div className="min-h-screen bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
           <SiteHeader signedIn={false} />
-          <main className="mx-auto max-w-lg px-6 py-16">
+          <main id="main-content" tabIndex={-1} className="mx-auto max-w-lg px-6 py-16">
             <h1 className="font-display text-3xl font-bold">
               {t("sessionSoldOutTitle")}
             </h1>
@@ -77,7 +95,7 @@ export default async function ClaimBySessionPage({ params }: PageProps) {
     return (
       <div className="min-h-screen bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
         <SiteHeader signedIn={false} />
-        <main className="mx-auto max-w-lg px-6 py-16">
+        <main id="main-content" tabIndex={-1} className="mx-auto max-w-lg px-6 py-16">
           <ClaimSessionPending />
           <p className="mt-6 text-sm text-soft">
             <Link href="/" className="underline">
@@ -91,13 +109,16 @@ export default async function ClaimBySessionPage({ params }: PageProps) {
   }
 
   if (access.status === "ACTIVE") {
+    const portalToken = mintLearnerPortalToken(access.id);
     return (
       <div className="min-h-screen bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
         <SiteHeader signedIn={false} />
-        <main className="mx-auto max-w-lg px-6 py-16">
+          <main id="main-content" tabIndex={-1} className="mx-auto max-w-lg px-6 py-16">
           <h1 className="font-display text-3xl font-bold">{t("title")}</h1>
           <p className="mt-4 text-page-fg">{t("successActive")}</p>
-          <LearnerPortalButton checkoutSessionId={sessionId} />
+          {portalToken ? (
+            <LearnerPortalButton portalToken={portalToken} />
+          ) : null}
           <p className="mt-6 text-sm text-soft">
             <Link href="/" className="underline">
               {t("backHome")}
@@ -114,7 +135,7 @@ export default async function ClaimBySessionPage({ params }: PageProps) {
     return (
       <div className="min-h-screen bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
         <SiteHeader signedIn={false} />
-        <main className="mx-auto max-w-lg px-6 py-16">
+          <main id="main-content" tabIndex={-1} className="mx-auto max-w-lg px-6 py-16">
           <h1 className="font-display text-3xl font-bold">{t("title")}</h1>
           {joinHref ? (
             <>
@@ -145,9 +166,11 @@ export default async function ClaimBySessionPage({ params }: PageProps) {
     return (
       <div className="min-h-screen bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
         <SiteHeader signedIn={false} />
-        <main className="mx-auto max-w-lg px-6 py-16">
+          <main id="main-content" tabIndex={-1} className="mx-auto max-w-lg px-6 py-16">
           <h1 className="font-display text-3xl font-bold">{t("title")}</h1>
-          <p className="mt-4 text-warn">{t("errors.invalid")}</p>
+          <p className="mt-4 text-warn" role="alert">
+            {t("errors.invalid")}
+          </p>
           <p className="mt-6 text-sm text-soft">
             <Link href="/" className="underline">
               {t("backHome")}

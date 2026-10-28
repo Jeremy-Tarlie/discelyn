@@ -12,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   const isEn = locale === "en";
   return {
-    title: isEn ? "Unsubscribe · Discelyn" : "Se désinscrire · Discelyn",
+    title: isEn ? "Unsubscribe" : "Se désinscrire",
     robots: { index: false, follow: false },
   };
 }

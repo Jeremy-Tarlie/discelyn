@@ -51,6 +51,7 @@ export function PasswordInput({
   maxLength = PASSWORD_MAX_LENGTH,
   name,
   describedBy,
+  invalid = false,
 }: {
   id?: string;
   label: string;
@@ -62,6 +63,7 @@ export function PasswordInput({
   maxLength?: number;
   name?: string;
   describedBy?: string;
+  invalid?: boolean;
 }) {
   const t = useTranslations("password");
   const generatedId = useId();
@@ -84,6 +86,7 @@ export function PasswordInput({
           onChange={(e) => onChange(e.target.value)}
           className={inputClass}
           aria-describedby={describedBy}
+          aria-invalid={invalid || undefined}
         />
         <button
           type="button"

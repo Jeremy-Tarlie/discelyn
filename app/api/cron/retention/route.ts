@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { authorizeCron } from "@/lib/cron-auth";
+import { authorizeCronRequest } from "@/lib/cron-http";
 import {
   anonymizeExpiredLearnerPii,
   anonymizeExpiredOversoldEmails,
+  purgeExpiredAffiliateClicks,
   purgeExpiredAnalyticsEvents,
   purgeExpiredCookieConsents,
   purgeExpiredEmailEvents,
   purgeExpiredLeads,
+  purgeExpiredMarketingRecipients,
   purgeExpiredOutboundWebhookDeliveries,
+  purgeExpiredUserActivityLogs,
 } from "@/lib/data-retention";
 
 export const dynamic = "force-dynamic";
@@ -16,19 +19,11 @@ export const runtime = "nodejs";
 
 /**
  * Job rétention RGPD : analytics, leads, consentements cookies, anonymisation PII apprenants,
- * oversold emails, livraisons webhooks sortants.
- * Les jobs accès (claim / expiry) sont sur POST /api/cron/access.
+ * oversold emails, livraisons webhooks sortants, activity logs, affiliés, file campagnes.
  */
 export async function POST(request: NextRequest) {
-  if (!process.env.CRON_SECRET) {
-    return NextResponse.json(
-      { error: "CRON_SECRET non configuré" },
-      { status: 503 }
-    );
-  }
-  if (!authorizeCron(request)) {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
-  }
+  const denied = await authorizeCronRequest(request, "cron-retention");
+  if (denied) return denied;
 
   const [
     analytics,
@@ -38,6 +33,9 @@ export async function POST(request: NextRequest) {
     emailEvents,
     oversoldEmails,
     outboundDeliveries,
+    activityLogs,
+    affiliateClicks,
+    marketingRecipients,
   ] = await Promise.all([
     purgeExpiredAnalyticsEvents(),
     purgeExpiredLeads(),
@@ -46,6 +44,9 @@ export async function POST(request: NextRequest) {
     purgeExpiredEmailEvents(),
     anonymizeExpiredOversoldEmails(),
     purgeExpiredOutboundWebhookDeliveries(),
+    purgeExpiredUserActivityLogs(),
+    purgeExpiredAffiliateClicks(),
+    purgeExpiredMarketingRecipients(),
   ]);
 
   return NextResponse.json({
@@ -58,6 +59,9 @@ export async function POST(request: NextRequest) {
       emailEvents,
       oversoldEmails,
       outboundDeliveries,
+      activityLogs,
+      affiliateClicks,
+      marketingRecipients,
     },
     time: new Date().toISOString(),
   });

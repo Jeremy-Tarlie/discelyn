@@ -37,7 +37,8 @@ function resolveLocalTestDatabaseUrl() {
         "(ou définis DISCELYN_TEST_DATABASE_URL)."
     );
   }
-  return `postgresql://discelyn:${encodeURIComponent(password)}@127.0.0.1:5433/discelyn?schema=public`;
+  const port = process.env.DISCELYN_TEST_DB_PORT || "5433";
+  return `postgresql://discelyn:${encodeURIComponent(password)}@127.0.0.1:${port}/discelyn?schema=public`;
 }
 
 const TEST_TOKEN_KEY =
@@ -69,9 +70,22 @@ async function canConnect(url) {
 }
 
 function dockerComposeUp() {
+  const port = process.env.DISCELYN_TEST_DB_PORT || "5433";
+  const composeFile =
+    port === "5433"
+      ? "docker-compose.test.yml"
+      : port === "5436"
+        ? "docker-compose.test-5436.yml"
+        : null;
+  if (!composeFile) {
+    throw new Error(
+      `DISCELYN_TEST_DB_PORT=${port} non supporté (5433|5436) — ` +
+        "ou définis DISCELYN_TEST_DATABASE_URL."
+    );
+  }
   const r = spawnSync(
     "docker",
-    ["compose", "-f", "docker-compose.test.yml", "up", "-d", "--wait"],
+    ["compose", "-f", composeFile, "up", "-d", "--wait"],
     { encoding: "utf8", shell: process.platform === "win32" }
   );
   if (r.status !== 0) {
@@ -127,14 +141,17 @@ async function ensureDatabase() {
   if (await canConnect(testDatabaseUrl)) {
     log(`Postgres test déjà up (${testDatabaseUrl.replace(/:[^:@]+@/, ":***@")})`);
   } else {
-    log("démarrage docker-compose.test.yml (port 5433)…");
+    const port = process.env.DISCELYN_TEST_DB_PORT || "5433";
+    log(`démarrage Postgres test (port ${port})…`);
     dockerComposeUp();
     for (let i = 0; i < 40; i++) {
       if (await canConnect(testDatabaseUrl)) break;
       await delay(500);
     }
     if (!(await canConnect(testDatabaseUrl))) {
-      throw new Error("Postgres test (5433) toujours injoignable après démarrage");
+      throw new Error(
+        `Postgres test (${port}) toujours injoignable après démarrage`
+      );
     }
   }
 

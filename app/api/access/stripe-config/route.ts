@@ -58,9 +58,15 @@ export async function GET(request: NextRequest) {
     });
   }
 
+  // URL webhook (capability) : ADMIN+ seulement — MEMBER voit configured sans token.
+  const canSeeWebhook =
+    org.orgRole === "OWNER" || org.orgRole === "ADMIN";
+
   return NextResponse.json({
     configured: true,
-    webhookUrl: orgWebhookUrl(config.webhookPathToken),
+    webhookUrl: canSeeWebhook
+      ? orgWebhookUrl(config.webhookPathToken)
+      : null,
     label: config.label,
     hasStripeSecretKey: Boolean(config.stripeSecretKey),
     displayName: config.displayName,
@@ -80,7 +86,8 @@ export async function PUT(request: NextRequest) {
   });
   if (!limited.ok) return limited.response;
 
-  const org = await requireOrg({ minRole: "ADMIN" });
+  // Secrets / config Stripe formation : OWNER only (aligné setup + GO-LIVE).
+  const org = await requireOrg({ minRole: "OWNER" });
   if (!org) {
     return deniedAuthResponse(locale);
   }
@@ -146,7 +153,10 @@ export async function PUT(request: NextRequest) {
   const pathToken = existing?.webhookPathToken ?? newWebhookPathToken();
 
   const rawKeyIncoming = parsed.data.stripeSecretKey;
-  if (rawKeyIncoming && rawKeyIncoming.length > 0) {
+  const rotatingSecret =
+    Boolean(rawKeyIncoming && rawKeyIncoming.length > 0) ||
+    Boolean(parsed.data.webhookSecret && parsed.data.webhookSecret.length > 0);
+  if (rotatingSecret) {
     const mfaUser = await prisma.user.findFirst({
       where: { id: org.userId, deletedAt: null },
       select: { totpEnabled: true },

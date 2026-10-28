@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
@@ -6,6 +7,10 @@ import { resolveJoinCta } from "@/lib/claim-join-cta";
 import { SiteHeader } from "@/components/landing/SiteHeader";
 import { SiteFooter } from "@/components/landing/SiteFooter";
 
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("meta");
+  return { title: t("claimTitle") };
+}
 
 type PageProps = {
   params: Promise<{ token: string }>;
@@ -102,7 +107,7 @@ export default async function ClaimPage({ params, searchParams }: PageProps) {
 
     <div className="min-h-screen bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
       <SiteHeader signedIn={false} />
-      <main className="mx-auto max-w-lg px-6 py-16">
+      <main id="main-content" tabIndex={-1} className="mx-auto max-w-lg px-6 py-16">
         <div className="flex items-center gap-3">
           {brandLogo ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -148,13 +153,19 @@ export default async function ClaimPage({ params, searchParams }: PageProps) {
         ) : null}
 
         {!showSuccess && errorMessage ? (
-          <div className="mt-8 rounded-2xl border border-warn/40 bg-surface p-6 text-warn">
+          <div
+            className="mt-8 rounded-2xl border border-warn/40 bg-surface p-6 text-warn"
+            role="alert"
+          >
             {errorMessage}
           </div>
         ) : null}
 
         {!showSuccess && !errorMessage && !canClaim ? (
-          <div className="mt-8 space-y-3 rounded-2xl border border-warn/40 bg-surface p-6 text-warn">
+          <div
+            className="mt-8 space-y-3 rounded-2xl border border-warn/40 bg-surface p-6 text-warn"
+            role="alert"
+          >
             <p>
               {!access
                 ? t("errors.notFound")

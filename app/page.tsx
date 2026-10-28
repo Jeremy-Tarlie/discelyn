@@ -10,17 +10,11 @@ import { Reveal } from "@/components/landing/Reveal";
 import { DiscordIcon } from "@/components/landing/DiscordIcon";
 import { FeatureIcon } from "@/components/landing/FeatureIcon";
 import { HeroPatterns, HeroWave } from "@/components/landing/HeroGraphics";
-import { DiscelynMascot } from "@/components/landing/DiscelynMascot";
+import { ClaimFlowPreview } from "@/components/landing/ClaimFlowPreview";
 import { trackEvent } from "@/lib/analytics";
 
-const FEATURE_KEYS = [
-  "access",
-  "welcome",
-  "ticket",
-  "mod",
-  "rgpd",
-  "dashboard",
-] as const;
+/** Wedge home : paiement→rôle, revoke, 0 % — pas welcome/tickets (socle ops). */
+const WEDGE_KEYS = ["access", "revoke", "zeroCut"] as const;
 
 export default async function HomePage() {
   const session = await getServerSession(authOptions);
@@ -42,7 +36,7 @@ export default async function HomePage() {
   ];
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
+    <div className="min-h-screen bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
       <SiteHeader signedIn={Boolean(session)} />
 
       <main id="main-content">
@@ -57,14 +51,14 @@ export default async function HomePage() {
           </div>
 
           <div className="relative mx-auto grid max-w-6xl items-center gap-8 px-6 pb-8 pt-14 md:grid-cols-[1.15fr_0.85fr] md:gap-6 md:pb-4 md:pt-16">
-            <div className="relative z-10">
-              <h1 className="animate-fade-up max-w-xl text-balance font-display text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-[3.4rem]">
+            <div className="relative z-10 overflow-visible">
+              <h1 className="animate-fade-up max-w-xl text-balance font-display text-4xl font-bold text-white sm:text-5xl lg:text-[3.4rem]">
                 {t("heroTitle")}
               </h1>
               <p className="animate-fade-up mt-5 max-w-lg text-base leading-relaxed text-white sm:text-lg">
                 {t("heroBody")}
               </p>
-              <div className="animate-fade-up mt-8">
+              <div className="animate-fade-up mt-8 flex flex-wrap gap-3">
                 <Link
                   href={ctaHref}
                   className="inline-flex items-center gap-2.5 rounded-full bg-white px-6 py-3.5 text-sm font-bold text-[#1a1c21] shadow-[0_8px_30px_rgba(0,0,0,0.25)] transition hover:scale-[1.02] hover:bg-white/95"
@@ -72,11 +66,35 @@ export default async function HomePage() {
                   <DiscordIcon className="h-5 w-5 text-[#5865F2]" />
                   {session ? tc("openDashboard") : tc("tryFree")}
                 </Link>
+                {session ? null : (
+                  <Link
+                    href="/comment-ca-marche#etapes"
+                    className="inline-flex items-center gap-2 rounded-full border border-white/45 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-white/10"
+                  >
+                    {tc("seeExample")}
+                  </Link>
+                )}
               </div>
+              <ul className="animate-fade-up mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/90">
+                <li className="inline-flex items-center gap-2">
+                  <span
+                    className="h-1.5 w-1.5 rounded-full bg-white"
+                    aria-hidden
+                  />
+                  {t("trustTrial")}
+                </li>
+                <li className="inline-flex items-center gap-2">
+                  <span
+                    className="h-1.5 w-1.5 rounded-full bg-white"
+                    aria-hidden
+                  />
+                  {t("trustCancel")}
+                </li>
+              </ul>
             </div>
 
-            <div className="relative z-10 mx-auto w-full md:justify-self-end md:self-end">
-              <DiscelynMascot priority className="mx-auto md:-mb-8" />
+            <div className="relative z-10 mx-auto w-full pb-4 md:justify-self-end md:self-center md:pb-8">
+              <ClaimFlowPreview />
             </div>
           </div>
 
@@ -86,13 +104,16 @@ export default async function HomePage() {
         <section className="bg-[color:var(--page-bg)] px-6 pb-20 pt-4" id="produit">
           <div className="mx-auto max-w-6xl">
             <Reveal>
-              <h2 className="-mt-6 font-display text-3xl font-bold text-[color:var(--page-fg)] sm:text-4xl md:-mt-10">
+              <h2 className="font-display text-3xl font-bold text-[color:var(--page-fg)] sm:text-4xl">
                 {t("whyTitle")}
               </h2>
+              <p className="mt-3 max-w-2xl text-base leading-relaxed text-[color:var(--muted)]">
+                {t("whySubtitle")}
+              </p>
             </Reveal>
 
-            <ul className="mt-10 grid auto-rows-fr gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {FEATURE_KEYS.map((key, i) => (
+            <ul className="mt-10 grid auto-rows-fr gap-4 sm:grid-cols-3">
+              {WEDGE_KEYS.map((key, i) => (
                 <li key={key} className="h-full">
                   <Reveal
                     delay={(Math.min(i + 1, 4) as 1 | 2 | 3 | 4)}
@@ -106,18 +127,34 @@ export default async function HomePage() {
                       <p className="mt-2 flex-1 text-sm leading-relaxed text-[color:var(--muted)]">
                         {tf(`items.${key}.d`)}
                       </p>
-                      <Link
-                        href="/fonctionnalites"
-                        className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-[#5865F2] transition group-hover:gap-2"
-                      >
-                        {t("learnMore")}
-                        <span aria-hidden>→</span>
-                      </Link>
                     </article>
                   </Reveal>
                 </li>
               ))}
             </ul>
+
+            <Reveal delay={3}>
+              <p className="mt-8 text-sm leading-relaxed text-[color:var(--muted)]">
+                {t("opsNote")}{" "}
+                <Link
+                  href="/fonctionnalites"
+                  className="font-medium text-signal-dim underline-offset-2 hover:underline"
+                >
+                  {t("learnMore")}
+                </Link>
+              </p>
+              <aside
+                className="mt-6 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-5 py-4"
+                aria-label={t("betaProofTitle")}
+              >
+                <p className="font-display text-base font-semibold text-[color:var(--page-fg)]">
+                  {t("betaProofTitle")}
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-[color:var(--muted)]">
+                  {t("betaProofBody")}
+                </p>
+              </aside>
+            </Reveal>
           </div>
         </section>
 
@@ -255,13 +292,23 @@ export default async function HomePage() {
                   <p className="mt-4 max-w-md leading-relaxed text-white/95">
                     {t("ctaBody")}
                   </p>
-                  <Link
-                    href={ctaHref}
-                    className="mt-8 inline-flex items-center gap-2.5 rounded-full bg-white px-6 py-3.5 text-sm font-bold text-[#1a1c21] shadow-lg transition hover:scale-[1.02]"
-                  >
-                    <DiscordIcon className="h-5 w-5 text-[#5865F2]" />
-                    {session ? tc("openDashboard") : tc("tryFree")}
-                  </Link>
+                  <div className="mt-8 flex flex-wrap gap-3">
+                    <Link
+                      href={ctaHref}
+                      className="inline-flex items-center gap-2.5 rounded-full bg-white px-6 py-3.5 text-sm font-bold text-[#1a1c21] shadow-lg transition hover:scale-[1.02]"
+                    >
+                      <DiscordIcon className="h-5 w-5 text-[#5865F2]" />
+                      {session ? tc("openDashboard") : tc("tryFree")}
+                    </Link>
+                    {session ? null : (
+                      <Link
+                        href="/comment-ca-marche#etapes"
+                        className="inline-flex items-center rounded-full border border-white/45 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-white/10"
+                      >
+                        {tc("seeExample")}
+                      </Link>
+                    )}
+                  </div>
                 </Reveal>
                 <Reveal delay={2} variant="scale">
                   <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-lg">

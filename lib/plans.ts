@@ -77,7 +77,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     priceMonthlyEur: 0,
     priceYearlyEur: 0,
     description:
-      "Socle ops + contrôle d’accès : 1 produit Stripe→rôle Discord. Preview warns — export = Starter.",
+      "Teste 1 formation de bout en bout — paiement, accès, révocation. Preview warns — export = Starter.",
     ...runtimeSlice("FREE"),
     prioritySupport: false,
     auditExport: false,
@@ -94,7 +94,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     priceMonthlyEur: 19.99,
     priceYearlyEur: yearlyFromMonthly(19.99),
     description:
-      "Jusqu’à 5 produits accès, export audit, 15 commandes FAQ.",
+      "Jusqu’à 5 formations en parallèle, export audit, 15 réponses FAQ.",
     ...runtimeSlice("STARTER"),
     prioritySupport: false,
     auditExport: true,
@@ -111,7 +111,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     priceMonthlyEur: 49,
     priceYearlyEur: 459.99,
     description:
-      "Jusqu’à 20 produits accès, export audit, 40 commandes — pack ops formation.",
+      "Jusqu’à 20 formations — pack ops pour scaler les promos.",
     ...runtimeSlice("OPS"),
     prioritySupport: false,
     auditExport: true,
@@ -129,7 +129,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     priceMonthlyEur: 99,
     priceYearlyEur: 899.99,
     description:
-      "Jusqu’à 5 serveurs, 100 produits accès, automod, DPA sur demande, support prioritaire.",
+      "Multi-serveurs et volume : jusqu’à 100 formations, automod, DPA, support prioritaire.",
     ...runtimeSlice("SCALE"),
     prioritySupport: true,
     auditExport: true,

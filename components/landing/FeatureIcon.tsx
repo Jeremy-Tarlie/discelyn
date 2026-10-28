@@ -1,6 +1,8 @@
 type FeatureIconProps = {
   name:
     | "access"
+    | "revoke"
+    | "zeroCut"
     | "welcome"
     | "ticket"
     | "mod"
@@ -12,6 +14,8 @@ type FeatureIconProps = {
 
 const COLORS: Record<FeatureIconProps["name"], string> = {
   access: "bg-[#5865F2]",
+  revoke: "bg-[#ed4245]",
+  zeroCut: "bg-[#3dcfb0] text-ink-950",
   welcome: "bg-[#3dcfb0]",
   ticket: "bg-[#57f287] text-ink-950",
   mod: "bg-[#ed4245]",
@@ -29,6 +33,16 @@ export function FeatureIcon({ name, className = "" }: FeatureIconProps) {
       {name === "access" ? (
         <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden>
           <path d="M12 1a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V6a5 5 0 0 0-5-5Zm-3 8V6a3 3 0 1 1 6 0v3H9Zm3 5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z" />
+        </svg>
+      ) : null}
+      {name === "revoke" ? (
+        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden>
+          <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm3.5 13.1-1.4 1.4L12 13.4l-2.1 2.1-1.4-1.4L10.6 12 8.5 9.9l1.4-1.4L12 10.6l2.1-2.1 1.4 1.4L13.4 12Z" />
+        </svg>
+      ) : null}
+      {name === "zeroCut" ? (
+        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden>
+          <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2Zm1 15h-2v-2h2v2Zm0-4h-2V7h2v6Z" />
         </svg>
       ) : null}
       {name === "welcome" ? (

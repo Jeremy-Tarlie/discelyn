@@ -18,14 +18,18 @@ export async function recordEvent(
   });
 }
 
+/**
+ * Dispatch non-bloquant : le money path Stripe / claim ne doit pas attendre
+ * les webhooks sortants (timeouts HTTP jusqu’à 8 s × retries).
+ */
 export async function notifyOutbound(
   organizationId: string,
   event: OutboundEvent,
   payload: Record<string, string | number | boolean | null>
 ): Promise<void> {
-  try {
-    await dispatchOutboundWebhooks({ organizationId, event, payload });
-  } catch (err) {
-    console.warn("[outbound] dispatch failed", err);
-  }
+  void dispatchOutboundWebhooks({ organizationId, event, payload }).catch(
+    (err: unknown) => {
+      console.warn("[outbound] dispatch failed", err);
+    }
+  );
 }

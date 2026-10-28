@@ -118,16 +118,22 @@ export async function fulfillDiscordAccess(
     };
   });
 
+  const grantResults = await Promise.all(
+    targets.map(async (grant) => {
+      const result = await grantGuildRole({
+        guildId: grant.guildId,
+        discordUserId: userId,
+        roleId: grant.discordRoleId,
+      });
+      return { grant, result };
+    })
+  );
+
   const attempts: GrantAttemptKind[] = [];
-  let primaryInvite: string | null = null;
+  let primaryInvite: string | null = access.inviteUrl;
   let lastError: string | null = null;
 
-  for (const grant of targets) {
-    const result = await grantGuildRole({
-      guildId: grant.guildId,
-      discordUserId: userId,
-      roleId: grant.discordRoleId,
-    });
+  for (const { grant, result } of grantResults) {
     if (!result.ok) {
       lastError = result.error;
       attempts.push("failed");
@@ -141,15 +147,19 @@ export async function fulfillDiscordAccess(
       attempts.push("granted");
     } else {
       attempts.push("absent");
-      if (!primaryInvite) {
-        const config = parseBotConfig(grant.bot.config);
-        primaryInvite =
-          access.inviteUrl ??
-          (await createSingleUseInvite(
-            grant.guildId,
-            config.welcomeChannelId || null
-          ));
-      }
+    }
+  }
+
+  if (attempts.includes("absent") && !primaryInvite) {
+    const absentGrant = grantResults.find(
+      (r) => r.result.ok && !r.result.inGuild
+    )?.grant;
+    if (absentGrant) {
+      const config = parseBotConfig(absentGrant.bot.config);
+      primaryInvite = await createSingleUseInvite(
+        absentGrant.guildId,
+        config.welcomeChannelId || null
+      );
     }
   }
 
@@ -216,17 +226,24 @@ export async function fulfillDiscordAccess(
     discordUserId: userId,
   });
 
-  await sendUserDm({ discordUserId: userId, content: welcomeDm });
+  void sendUserDm({ discordUserId: userId, content: welcomeDm }).catch(
+    (err: unknown) => {
+      console.warn("[access] welcome DM failed", err);
+    }
+  );
 
-  for (const grant of targets) {
-    const logsChannelId = parseBotConfig(grant.bot.config).logsChannelId;
-    if (logsChannelId) {
+  void Promise.all(
+    targets.map(async (grant) => {
+      const logsChannelId = parseBotConfig(grant.bot.config).logsChannelId;
+      if (!logsChannelId) return;
       await postGuildLog({
         channelId: logsChannelId,
         content: `💳 Accès activé : <@${userId}> → **${access.product.name}**`,
       });
-    }
-  }
+    })
+  ).catch((err: unknown) => {
+    console.warn("[access] guild log failed", err);
+  });
 
   return { status: "ACTIVE", inviteUrl: null, error: null };
 }

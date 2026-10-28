@@ -342,6 +342,8 @@ export function SignupWizard({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className={inputClass}
+                  aria-invalid={error ? true : undefined}
+                  aria-describedby={error ? "signup-error" : undefined}
                 />
               </label>
               <PasswordInput
@@ -351,6 +353,7 @@ export function SignupWizard({
                 autoComplete="new-password"
                 minLength={PASSWORD_MIN_LENGTH}
                 describedBy="signup-password-rules"
+                invalid={Boolean(error)}
               />
               <PasswordRulesChecklist
                 id="signup-password-rules"
@@ -362,6 +365,7 @@ export function SignupWizard({
                 onChange={setConfirmPassword}
                 autoComplete="new-password"
                 minLength={PASSWORD_MIN_LENGTH}
+                invalid={!passwordsMatch && confirmPassword.length > 0}
               />
               {confirmPassword.length > 0 && !passwordsMatch ? (
                 <p className="text-sm text-warn" role="alert">
@@ -369,7 +373,7 @@ export function SignupWizard({
                 </p>
               ) : null}
               {error ? (
-                <p className="text-sm text-warn" role="alert">
+                <p id="signup-error" className="text-sm text-warn" role="alert">
                   {error}
                 </p>
               ) : null}

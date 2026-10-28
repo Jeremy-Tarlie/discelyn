@@ -13,6 +13,8 @@ import { DiscelynMascot } from "@/components/landing/DiscelynMascot";
 
 const FEATURE_KEYS = [
   "access",
+  "revoke",
+  "zeroCut",
   "welcome",
   "ticket",
   "mod",
@@ -36,7 +38,7 @@ export default async function FeaturesPage() {
   const th = await getTranslations("nav");
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
+    <div className="min-h-screen overflow-x-clip bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
       <SiteHeader signedIn={Boolean(session)} />
 
       <main id="main-content">
@@ -97,7 +99,7 @@ export default async function FeaturesPage() {
                   delay={(Math.min(i + 1, 4) as 1 | 2 | 3 | 4)}
                   className="h-full"
                 >
-                  <article className="group flex h-full flex-col overflow-hidden rounded-3xl border border-[color:var(--border)] bg-[color:var(--surface)] p-6 transition duration-300 hover:-translate-y-1.5">
+                  <article className="group flex h-full flex-col overflow-visible rounded-3xl border border-[color:var(--border)] bg-[color:var(--surface)] p-6 transition duration-300 hover:-translate-y-1.5">
                     <FeatureIcon name={key} className="h-14 w-14 rounded-2xl" />
                     <h3 className="mt-5 font-display text-xl font-semibold text-[color:var(--page-fg)]">
                       {t(`items.${key}.t`)}

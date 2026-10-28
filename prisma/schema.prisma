@@ -545,6 +545,7 @@ model LearnerAccess {
   @@index([guildId, discordUserId])
   @@index([discordUserId, status])
   @@index([stripeSubscriptionId])
+  @@index([stripePaymentIntentId])
   @@index([customerEmail])
   @@index([accessProductId])
   @@index([affiliateId])
