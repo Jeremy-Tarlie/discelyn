@@ -24,7 +24,7 @@ Définition de done pragmatique : **A + B + C14** + smoke live OK + 1–2 pilote
 - [ ] Uptime HTTP sur `/api/health` (readiness : 200 + `"status":"ok"`). Compose utilise `/api/health/live` (DB only).
 - [ ] `RESEND_API_KEY` + `EMAIL_FROM` si claims hors Discord
 - [ ] Backup DB hors machine planifié + 1 restore testé (`docs/OPS-RUNBOOK.md`)
-- [ ] Crons `access-cron` / `retention-cron` → logs HTTP 200
+- [ ] Crons `access-cron` / `retention-cron` / `campaigns-cron` → logs HTTP 200
 - [ ] Alertes Sentry : spikes `learner-join`, `access-webhook`, unseal
 
 ## C. Produit

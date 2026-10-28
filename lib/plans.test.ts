@@ -7,7 +7,9 @@ import {
   getPlan,
   OPS_CORE_MODULES,
   planAllowsModule,
+  maxPlanYearlySavingsPercent,
   planYearlySavingsEur,
+  planYearlySavingsPercent,
   PLANS,
   SETUP_OFFER,
   type PlanId,
@@ -29,19 +31,24 @@ describe("PLANS", () => {
     expect(PLANS.STARTER.priceMonthlyEur).toBe(19.99);
     expect(PLANS.STARTER.priceYearlyEur).toBe(199.9);
     expect(PLANS.OPS.priceMonthlyEur).toBe(49);
-    expect(PLANS.OPS.priceYearlyEur).toBe(490);
+    expect(PLANS.OPS.priceYearlyEur).toBe(459.99);
     expect(PLANS.SCALE.priceMonthlyEur).toBe(99);
-    expect(PLANS.SCALE.priceYearlyEur).toBe(990);
+    expect(PLANS.SCALE.priceYearlyEur).toBe(899.99);
     expect(SETUP_OFFER.priceEur).toBe(290);
     expect(DIAGNOSTIC_OFFER.priceEur).toBe(49);
     expect(DIAGNOSTIC_OFFER.setupCreditEur).toBe(49);
   });
 
-  it("calcule l’économie annuelle (2 mois offerts)", () => {
+  it("calcule l’économie annuelle par plan", () => {
     expect(planYearlySavingsEur("FREE")).toBe(0);
     expect(planYearlySavingsEur("STARTER")).toBe(39.98);
-    expect(planYearlySavingsEur("OPS")).toBe(98);
-    expect(planYearlySavingsEur("SCALE")).toBe(198);
+    expect(planYearlySavingsEur("OPS")).toBe(128.01);
+    expect(planYearlySavingsEur("SCALE")).toBe(288.01);
+    expect(planYearlySavingsPercent("FREE")).toBe(0);
+    expect(planYearlySavingsPercent("STARTER")).toBe(17);
+    expect(planYearlySavingsPercent("OPS")).toBe(22);
+    expect(planYearlySavingsPercent("SCALE")).toBe(24);
+    expect(maxPlanYearlySavingsPercent()).toBe(24);
   });
 
   it("expose les env keys mensuel et annuel pour les plans payants", () => {

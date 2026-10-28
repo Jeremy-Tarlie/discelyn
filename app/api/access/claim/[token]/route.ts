@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { appBaseUrl } from "@/lib/learner-access";
+import { claimPageUrl, sanitizeClaimToken } from "@/lib/claim-redirect";
 import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -22,7 +23,12 @@ export async function GET(request: NextRequest, context: RouteContext) {
   });
   if (!limited.ok) return limited.response;
 
-  const { token } = await context.params;
+  const { token: rawToken } = await context.params;
+  const token = sanitizeClaimToken(rawToken);
+  if (!token) {
+    return NextResponse.redirect(claimPageUrl(null, { error: "invalid" }));
+  }
+
   const access = await prisma.learnerAccess.findFirst({
     where: {
       claimToken: token,
@@ -32,16 +38,12 @@ export async function GET(request: NextRequest, context: RouteContext) {
     select: { id: true },
   });
   if (!access) {
-    return NextResponse.redirect(
-      new URL(`/claim/${token}?error=invalid`, appBaseUrl())
-    );
+    return NextResponse.redirect(claimPageUrl(token, { error: "invalid" }));
   }
 
   const clientId = process.env.DISCORD_CLIENT_ID;
   if (!clientId) {
-    return NextResponse.redirect(
-      new URL(`/claim/${token}?error=config`, appBaseUrl())
-    );
+    return NextResponse.redirect(claimPageUrl(token, { error: "config" }));
   }
 
   const redirectUri = `${appBaseUrl()}/api/access/claim/callback`;

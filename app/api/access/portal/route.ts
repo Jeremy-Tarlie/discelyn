@@ -13,6 +13,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
 import { deniedAuthResponse } from "@/lib/http-auth";
+import { verifyLearnerPortalToken } from "@/lib/portal-token";
 
 export const runtime = "nodejs";
 
@@ -20,16 +21,20 @@ const bodySchema = z
   .object({
     accessId: z.string().trim().min(1).optional(),
     claimToken: z.string().trim().min(8).optional(),
-    checkoutSessionId: z.string().trim().min(8).optional(),
+    portalToken: z.string().trim().min(16).optional(),
   })
   .refine(
     (v) =>
-      [v.accessId, v.claimToken, v.checkoutSessionId].filter(Boolean).length ===
-      1,
-    { message: "one of accessId | claimToken | checkoutSessionId" }
+      [v.accessId, v.claimToken, v.portalToken].filter(Boolean).length === 1,
+    { message: "one of accessId | claimToken | portalToken" }
   );
 
-/** Portail Stripe Customer (compte formation) pour un apprenant. */
+/**
+ * Portail Stripe Customer (compte formation).
+ * - accessId : ADMIN org
+ * - claimToken : apprenant (entropie élevée, avant ACTIVE)
+ * - portalToken : HMAC court durée (session success ACTIVE) — pas de checkoutSessionId
+ */
 export async function POST(request: NextRequest) {
   const locale = getRequestLocale(request);
   const limited = await rateLimit(request, {
@@ -70,8 +75,8 @@ export async function POST(request: NextRequest) {
   if (parsed.data.accessId) {
     const org = await requireOrg({ minRole: "ADMIN" });
     if (!org) {
-    return deniedAuthResponse(locale);
-  }
+      return deniedAuthResponse(locale);
+    }
     const subscription = await getOrgSubscription(org.organizationId);
     const usable = canUseProduct(subscription);
     if (!usable.ok) {
@@ -95,7 +100,14 @@ export async function POST(request: NextRequest) {
     });
   } else if (parsed.data.claimToken) {
     access = await prisma.learnerAccess.findFirst({
-      where: { claimToken: parsed.data.claimToken },
+      where: {
+        claimToken: parsed.data.claimToken,
+        status: { in: ["PENDING_CLAIM", "AWAITING_JOIN", "ACTIVE"] },
+        OR: [
+          { claimTokenExpiresAt: null },
+          { claimTokenExpiresAt: { gt: new Date() } },
+        ],
+      },
       select: {
         id: true,
         stripeCustomerId: true,
@@ -106,9 +118,19 @@ export async function POST(request: NextRequest) {
     if (access?.claimToken) {
       returnUrl = claimUrl(access.claimToken);
     }
-  } else if (parsed.data.checkoutSessionId) {
+  } else if (parsed.data.portalToken) {
+    const accessId = verifyLearnerPortalToken(parsed.data.portalToken);
+    if (!accessId) {
+      return NextResponse.json(
+        { error: tApi(locale, "accessProductNotFound") },
+        { status: 404 }
+      );
+    }
     access = await prisma.learnerAccess.findFirst({
-      where: { stripeCheckoutSessionId: parsed.data.checkoutSessionId },
+      where: {
+        id: accessId,
+        status: { in: ["PENDING_CLAIM", "AWAITING_JOIN", "ACTIVE"] },
+      },
       select: {
         id: true,
         stripeCustomerId: true,
@@ -116,9 +138,11 @@ export async function POST(request: NextRequest) {
         product: { select: { organizationId: true } },
       },
     });
-    returnUrl = access?.claimToken
-      ? claimUrl(access.claimToken)
-      : `${appBaseUrl()}/claim/session/${parsed.data.checkoutSessionId}`;
+    if (access?.claimToken) {
+      returnUrl = claimUrl(access.claimToken);
+    } else {
+      returnUrl = `${appBaseUrl()}/`;
+    }
   }
 
   if (!access) {

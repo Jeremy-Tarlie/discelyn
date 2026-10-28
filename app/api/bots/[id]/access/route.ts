@@ -10,9 +10,11 @@ import { getPlan, type PlanId } from "@/lib/plans";
 import { accessProductCreateSchemaFor } from "@/lib/access-validation";
 import { claimUrl, ensurePrimaryGrant } from "@/lib/learner-access";
 import {
-  createAccessPaymentLink,
-  detectBillingMode,
-} from "@/lib/org-stripe";
+  attachDiscelynPaymentLink,
+  createOrgStripeOffer,
+  OrgStripeCatalogError,
+  resolveOrgStripePriceId,
+} from "@/lib/org-stripe-catalog";
 import { rateLimit } from "@/lib/rate-limit";
 import { getRequestLocale } from "@/lib/locale";
 import { tApi } from "@/lib/i18n-api";
@@ -172,31 +174,90 @@ export async function POST(request: NextRequest, context: RouteContext) {
     );
   }
 
-  const billingMode = await detectBillingMode(
-    org.organizationId,
-    parsed.data.stripePriceId
-  );
+  const data = parsed.data;
+  const isCreate = data.mode === "create";
 
   try {
+    let stripePriceId: string;
+    let stripeProductId: string | null = null;
+    let billingMode: "ONE_TIME" | "RECURRING";
+    let amountCents: number | null = null;
+    let currency: string | null = null;
+    let recurringInterval: string | null = null;
+    let paymentSource: "DISCELYN_LINK" | "EXTERNAL_STRIPE";
+    let existingPaymentLinkUrl: string | null = null;
+    let existingPaymentLinkId: string | null = null;
+
+    if (isCreate) {
+      if (
+        data.billingMode === "RECURRING" &&
+        data.recurringInterval !== "month" &&
+        data.recurringInterval !== "year"
+      ) {
+        return NextResponse.json(
+          { error: tApi(locale, "invalidData") },
+          { status: 400 }
+        );
+      }
+      const offer = await createOrgStripeOffer({
+        organizationId: org.organizationId,
+        name: data.name,
+        amountCents: data.amountCents,
+        currency: data.currency,
+        billingMode: data.billingMode,
+        recurringInterval: data.recurringInterval ?? undefined,
+      });
+      stripePriceId = offer.stripePriceId;
+      stripeProductId = offer.stripeProductId;
+      billingMode = offer.billingMode;
+      amountCents = offer.amountCents;
+      currency = offer.currency;
+      recurringInterval = offer.recurringInterval;
+      paymentSource = "DISCELYN_LINK";
+    } else {
+      const resolved = await resolveOrgStripePriceId({
+        organizationId: org.organizationId,
+        stripePriceId:
+          "stripePriceId" in data ? data.stripePriceId : undefined,
+        paymentLinkUrl:
+          "paymentLinkUrl" in data ? data.paymentLinkUrl : undefined,
+      });
+      stripePriceId = resolved.stripePriceId;
+      billingMode = resolved.billingMode;
+      amountCents = resolved.amountCents;
+      currency = resolved.currency;
+      recurringInterval = resolved.recurringInterval;
+      existingPaymentLinkUrl = resolved.existingPaymentLinkUrl;
+      existingPaymentLinkId = resolved.existingPaymentLinkId;
+      paymentSource = "EXTERNAL_STRIPE";
+    }
+
     const product = await prisma.accessProduct.create({
       data: {
         organizationId: org.organizationId,
         botId,
-        name: parsed.data.name,
-        stripePriceId: parsed.data.stripePriceId,
-        discordRoleId: parsed.data.discordRoleId,
-        pitch: parsed.data.pitch ?? null,
-        welcomeDm: parsed.data.welcomeDm ?? null,
-        revokeOnRefund: parsed.data.revokeOnRefund,
-        accessEndsAt: parsed.data.accessEndsAt ?? null,
+        name: data.name,
+        stripePriceId,
+        stripeProductId,
+        discordRoleId: data.discordRoleId,
+        pitch: data.pitch ?? null,
+        welcomeDm: data.welcomeDm ?? null,
+        revokeOnRefund: data.revokeOnRefund,
+        accessEndsAt: data.accessEndsAt ?? null,
         billingMode,
-        maxSeats: parsed.data.maxSeats ?? null,
-        reminderDaysBefore: parsed.data.reminderDaysBefore ?? 7,
-        onboardingSteps: parsed.data.onboardingSteps ?? undefined,
-        brandName: parsed.data.brandName ?? null,
-        brandLogoUrl: parsed.data.brandLogoUrl ?? null,
-        brandColor: parsed.data.brandColor ?? null,
-        sortOrder: parsed.data.sortOrder ?? 0,
+        paymentSource,
+        amountCents,
+        currency,
+        recurringInterval,
+        maxSeats: data.maxSeats ?? null,
+        reminderDaysBefore: data.reminderDaysBefore ?? 7,
+        onboardingSteps: data.onboardingSteps ?? undefined,
+        brandName: data.brandName ?? null,
+        brandLogoUrl: data.brandLogoUrl ?? null,
+        brandColor: data.brandColor ?? null,
+        sortOrder: data.sortOrder ?? 0,
+        paymentLinkUrl: existingPaymentLinkUrl,
+        paymentLinkId: existingPaymentLinkId,
       },
     });
 
@@ -204,32 +265,42 @@ export async function POST(request: NextRequest, context: RouteContext) {
       productId: product.id,
       botId,
       guildId: bot.guildId,
-      discordRoleId: parsed.data.discordRoleId,
+      discordRoleId: data.discordRoleId,
     });
 
-    let paymentLinkUrl: string | null = null;
-    let paymentLinkId: string | null = null;
-    try {
-      const brand = await prisma.orgStripeConfig.findUnique({
-        where: { organizationId: org.organizationId },
-        select: { displayName: true },
-      });
-      const link = await createAccessPaymentLink({
-        organizationId: org.organizationId,
-        stripePriceId: product.stripePriceId,
-        productName: product.name,
-        customText: brand?.displayName
-          ? `Accès Discord — ${brand.displayName}`
-          : null,
-      });
-      paymentLinkUrl = link.url;
-      paymentLinkId = link.id;
-      await prisma.accessProduct.update({
-        where: { id: product.id },
-        data: { paymentLinkUrl, paymentLinkId },
-      });
-    } catch (linkError) {
-      console.warn("[access] payment link failed", linkError);
+    let paymentLinkUrl = product.paymentLinkUrl;
+    let paymentLinkId = product.paymentLinkId;
+
+    if (!paymentLinkUrl) {
+      try {
+        const link = await attachDiscelynPaymentLink({
+          organizationId: org.organizationId,
+          accessProductId: product.id,
+          stripePriceId: product.stripePriceId,
+          productName: product.name,
+        });
+        paymentLinkUrl = link.url;
+        paymentLinkId = link.id;
+        await prisma.accessProduct.update({
+          where: { id: product.id },
+          data: {
+            paymentLinkUrl,
+            paymentLinkId,
+            paymentSource: isCreate ? "DISCELYN_LINK" : "EXTERNAL_STRIPE",
+          },
+        });
+      } catch (linkError) {
+        console.warn(
+          JSON.stringify({
+            msg: "access_payment_link_failed",
+            productId: product.id,
+            err:
+              linkError instanceof Error ? linkError.message : "unknown",
+          })
+        );
+      }
+    } else if (paymentLinkId) {
+      // Binding d’un PL existant : pas de recreate ; metadata product id non injectable a posteriori.
     }
 
     return NextResponse.json(
@@ -242,10 +313,32 @@ export async function POST(request: NextRequest, context: RouteContext) {
       },
       { status: 201 }
     );
-  } catch {
+  } catch (error) {
+    if (error instanceof OrgStripeCatalogError) {
+      return NextResponse.json(
+        { error: tApi(locale, error.apiKey()) },
+        { status: 400 }
+      );
+    }
+    if (
+      error instanceof Error &&
+      (error.message.includes("Unique constraint") ||
+        error.message.includes("accessProductDuplicate"))
+    ) {
+      return NextResponse.json(
+        { error: tApi(locale, "accessProductDuplicate") },
+        { status: 409 }
+      );
+    }
+    console.warn(
+      JSON.stringify({
+        msg: "access_product_create_failed",
+        botId,
+      })
+    );
     return NextResponse.json(
-      { error: tApi(locale, "accessProductDuplicate") },
-      { status: 409 }
+      { error: tApi(locale, "invalidData") },
+      { status: 400 }
     );
   }
 }

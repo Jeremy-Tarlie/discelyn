@@ -82,31 +82,51 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: tApi(locale, "accountNotFound") }, { status: 404 });
   }
 
-  const [leads, cookieConsents] = await Promise.all([
-    full.email
-      ? prisma.lead.findMany({
-          where: { email: full.email },
-          orderBy: { createdAt: "desc" },
-        })
-      : Promise.resolve([]),
-    prisma.cookieConsentLog.findMany({
-      where: { userId: full.id },
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        visitorId: true,
-        choice: true,
-        policyVersion: true,
-        createdAt: true,
-      },
-    }),
-  ]);
+  const [leads, cookieConsents, activityLogs, analyticsCount, prefs] =
+    await Promise.all([
+      full.email
+        ? prisma.lead.findMany({
+            where: { email: full.email },
+            orderBy: { createdAt: "desc" },
+          })
+        : Promise.resolve([]),
+      prisma.cookieConsentLog.findMany({
+        where: { userId: full.id },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          visitorId: true,
+          choice: true,
+          policyVersion: true,
+          createdAt: true,
+        },
+      }),
+      prisma.userActivityLog.findMany({
+        where: { userId: full.id },
+        orderBy: { createdAt: "desc" },
+        take: 200,
+        select: { id: true, action: true, createdAt: true },
+      }),
+      prisma.analyticsEvent.count({ where: { userId: full.id } }),
+      prisma.user.findFirst({
+        where: { id: full.id },
+        select: {
+          marketingConsentAt: true,
+          totpEnabled: true,
+          emailVerified: true,
+          timezone: true,
+          notifyBillingEmail: true,
+          notifySecurityEmail: true,
+          notifyProductEmail: true,
+        },
+      }),
+    ]);
 
   return NextResponse.json({
     exportedAt: new Date().toISOString(),
     purpose: "RGPD — droit d'accès / portabilité",
     note:
-      "Les warns de modération concernent d'autres utilisateurs Discord ; seul le nombre par config est exporté.",
+      "Les warns de modération concernent d'autres utilisateurs Discord ; seul le nombre par bot est exporté. Jetons OAuth exclus. activityLogs plafonnés à 200 entrées récentes.",
     user: {
       id: full.id,
       name: full.name,
@@ -115,6 +135,13 @@ export async function GET(request: NextRequest) {
       image: full.image,
       createdAt: full.createdAt,
       updatedAt: full.updatedAt,
+      emailVerified: prefs?.emailVerified ?? null,
+      timezone: prefs?.timezone ?? null,
+      marketingConsentAt: prefs?.marketingConsentAt ?? null,
+      totpEnabled: Boolean(prefs?.totpEnabled),
+      notifyBillingEmail: prefs?.notifyBillingEmail ?? null,
+      notifySecurityEmail: prefs?.notifySecurityEmail ?? null,
+      notifyProductEmail: prefs?.notifyProductEmail ?? null,
     },
     accounts: full.accounts,
     oauthNote:
@@ -146,6 +173,8 @@ export async function GET(request: NextRequest) {
     })),
     leads,
     cookieConsents,
+    activityLogs,
+    analyticsEventCount: analyticsCount,
   });
 }
 

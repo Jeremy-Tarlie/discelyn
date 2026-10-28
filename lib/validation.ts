@@ -39,11 +39,12 @@ export function leadSchemaFor(locale: Locale) {
       .enum(["SETUP", "STARTER", "OPS", "SCALE", "DEMO", "DIAGNOSTIC", "OTHER"])
       .optional(),
     source: z.string().trim().max(64).optional(),
-    marketingConsent: z
-      .boolean()
-      .refine((value) => value === true, {
-        message: tApi(locale, "marketingConsentRequired"),
-      }),
+    /** Consentement traitement pour recontact sur cette demande (obligatoire). */
+    contactConsent: z.boolean().refine((value) => value === true, {
+      message: tApi(locale, "contactConsentRequired"),
+    }),
+    /** Opt-in marketing distinct (campagnes) — optionnel. */
+    marketingConsent: z.boolean().optional().default(false),
   });
 }
 

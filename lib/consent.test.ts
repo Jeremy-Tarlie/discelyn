@@ -4,6 +4,7 @@ import {
   allowsAnalytics,
   allowsSentry,
   consentAllowsOptional,
+  hasConsentChoiceFromCookieHeader,
   isValidVisitorId,
   parseConsent,
   parseConsentPreferences,
@@ -11,6 +12,7 @@ import {
   EMPTY_CONSENT,
   FULL_CONSENT,
 } from "@/lib/consent";
+
 
 describe("parseConsentPreferences", () => {
   it("parse necessary / all", () => {
@@ -76,3 +78,17 @@ describe("isValidVisitorId", () => {
     expect(isValidVisitorId(null)).toBe(false);
   });
 });
+
+describe("hasConsentChoiceFromCookieHeader", () => {
+  it("false sans cookie, true après choix", () => {
+    expect(hasConsentChoiceFromCookieHeader(null)).toBe(false);
+    expect(hasConsentChoiceFromCookieHeader("foo=bar")).toBe(false);
+    expect(
+      hasConsentChoiceFromCookieHeader("discelyn_consent=necessary")
+    ).toBe(true);
+    expect(hasConsentChoiceFromCookieHeader("discelyn_consent=all")).toBe(
+      true
+    );
+  });
+});
+

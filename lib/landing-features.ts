@@ -1,17 +1,16 @@
 export const LANDING_FEATURES = [
   {
     t: "Paiement → accès Discord",
-    d: "Webhook sur TON Stripe. L’apprenant paie, claim Discord, reçoit le rôle. Refund = accès coupé.",
+    d: "Sur TON Stripe. L’apprenant paie, réclame son Discord, reçoit le rôle. Remboursement = accès coupé.",
     icon: "access" as const,
     detail:
-      "C’est ça la différence avec MEE6 / Carl : eux animent, toi tu gates l’accès.",
+      "Le contrôle d’accès est le cœur : ouvrir et fermer Discord selon le paiement.",
   },
   {
     t: "Welcome apprenant",
-    d: "Message d’accueil + rôle promo — utile, pas unique.",
+    d: "Message d’accueil + rôle promo dès l’arrivée sur le serveur.",
     icon: "welcome" as const,
-    detail:
-      "Socle ops. Tous les bots le font ; chez Discelyn c’est secondaire derrière l’accès payant.",
+    detail: "Onboarding propre dès le premier message — après le claim.",
   },
   {
     t: "Tickets support",
@@ -23,19 +22,18 @@ export const LANDING_FEATURES = [
     t: "Modération traçable",
     d: "Warns en base + preview ; export audit dès Starter.",
     icon: "mod" as const,
-    detail: "Utile litige — complément, pas le wedge.",
+    detail: "Historique exploitable en cas de litige ou d’audit interne.",
   },
   {
     t: "RGPD & facture UE",
     d: "Export / suppression compte, rétention, Stripe EUR.",
     icon: "rgpd" as const,
-    detail: "Cadre orga — invisible dans Discord, utile à la vente.",
+    detail: "Cadre orga prêt pour vendre en FR/UE.",
   },
   {
     t: "Dashboard accès",
     d: "Tu configures Stripe→rôle sans coller de token.",
     icon: "dashboard" as const,
-    detail:
-      "Le premier écran utile : contrôle d’accès, pas une grille de modules hobby.",
+    detail: "Le premier écran utile : brancher l’accès, suivre les apprenants.",
   },
 ] as const;

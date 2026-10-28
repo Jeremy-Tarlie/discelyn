@@ -1,29 +1,23 @@
-import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
+import { describe, expect, it, beforeEach, vi } from "vitest";
 import { NextRequest } from "next/server";
 
-const requireUser = vi.fn();
+const requirePlatformAdmin = vi.fn();
 const deniedAuthResponse = vi.fn();
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    user: {
-      findFirst: vi.fn().mockResolvedValue({
-        discordId: "999",
-        email: "other@example.com",
-      }),
-    },
     cookieConsentLog: {
-      findMany: vi.fn(),
+      findMany: vi.fn().mockResolvedValue([]),
     },
   },
 }));
 
-vi.mock("@/lib/access", () => ({
-  requireUser: (...args: unknown[]) => requireUser(...args),
+vi.mock("@/lib/platform-admin", () => ({
+  requirePlatformAdmin: (...args: []) => requirePlatformAdmin(...args),
 }));
 
 vi.mock("@/lib/http-auth", () => ({
-  deniedAuthResponse: (...args: unknown[]) => deniedAuthResponse(...args),
+  deniedAuthResponse: (...args: []) => deniedAuthResponse(...args),
 }));
 
 vi.mock("@/lib/rate-limit", () => ({
@@ -34,38 +28,18 @@ vi.mock("@/lib/locale", () => ({
   getRequestLocale: () => "fr",
 }));
 
-vi.mock("@/lib/i18n-api", () => ({
-  tApi: (_locale: string, key: string) => key,
-}));
-
 describe("GET /api/admin/consents auth", () => {
-  const prevDiscord = process.env.LEADS_ADMIN_DISCORD_IDS;
-  const prevEmail = process.env.LEADS_ADMIN_EMAILS;
-
   beforeEach(() => {
-    process.env.LEADS_ADMIN_DISCORD_IDS = "111";
-    delete process.env.LEADS_ADMIN_EMAILS;
-    requireUser.mockReset();
+    requirePlatformAdmin.mockReset();
     deniedAuthResponse.mockReset();
-    requireUser.mockResolvedValue({
-      id: "u1",
-      email: "other@example.com",
-    });
     deniedAuthResponse.mockResolvedValue(
-      new Response(JSON.stringify({ code: "unauthenticated" }), { status: 401 })
+      new Response(JSON.stringify({ code: "unauthenticated" }), { status: 401 }),
     );
     vi.resetModules();
   });
 
-  afterEach(() => {
-    if (prevDiscord === undefined) delete process.env.LEADS_ADMIN_DISCORD_IDS;
-    else process.env.LEADS_ADMIN_DISCORD_IDS = prevDiscord;
-    if (prevEmail === undefined) delete process.env.LEADS_ADMIN_EMAILS;
-    else process.env.LEADS_ADMIN_EMAILS = prevEmail;
-  });
-
   it("renvoie 401 si challenge MFA / session absente", async () => {
-    requireUser.mockResolvedValue(null);
+    requirePlatformAdmin.mockResolvedValue(null);
     const { GET } = await import("@/app/api/admin/consents/route");
     const req = new NextRequest("http://localhost/api/admin/consents");
     const res = await GET(req);
@@ -73,7 +47,11 @@ describe("GET /api/admin/consents auth", () => {
     expect(deniedAuthResponse).toHaveBeenCalled();
   });
 
-  it("renvoie 403 si hors allowlist admin", async () => {
+  it("renvoie 403 via deniedAuthResponse si hors allowlist", async () => {
+    requirePlatformAdmin.mockResolvedValue(null);
+    deniedAuthResponse.mockResolvedValue(
+      new Response(JSON.stringify({ code: "unauthorized" }), { status: 403 }),
+    );
     const { GET } = await import("@/app/api/admin/consents/route");
     const req = new NextRequest("http://localhost/api/admin/consents");
     const res = await GET(req);

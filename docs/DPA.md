@@ -67,7 +67,7 @@ Discelyn traite des données pour le compte du client afin de :
 | Stripe | Paiements SaaS Discelyn + (optionnel) paiements formation côté client |
 | Discord | Plateforme de livraison des rôles |
 | Hébergeur (VPS / cloud) | Hébergement app + Postgres + Redis |
-| Resend (si activé) | Emails de claim / relance |
+| Resend (si activé) | Emails auth (vérification compte / reset mdp) et claim / relance apprenants |
 | Sentry (si activé) | Erreurs applicatives |
 
 Le client est informé via la privacy / ce DPA. Changement matériel = notification raisonnable.

@@ -1,7 +1,7 @@
 import Image from "next/image";
-import { getServerSession } from "next-auth";
 import { getTranslations } from "next-intl/server";
 import { redirect } from "next/navigation";
+import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getRequestTheme } from "@/lib/theme";
@@ -16,6 +16,7 @@ import { NotificationPrefsPanel } from "@/components/dashboard/NotificationPrefs
 import { OrgSummaryPanel } from "@/components/dashboard/OrgSummaryPanel";
 import { ActivityLogPanel } from "@/components/dashboard/ActivityLogPanel";
 import { CookieConsentPanel } from "@/components/dashboard/CookieConsentPanel";
+import { LinkDiscordButton } from "@/components/dashboard/LinkDiscordButton";
 
 export default async function AccountPage() {
   const session = await getServerSession(authOptions);
@@ -48,6 +49,7 @@ export default async function AccountPage() {
           notifyBillingEmail: true,
           notifySecurityEmail: true,
           notifyProductEmail: true,
+          marketingConsentAt: true,
         },
       }),
       prisma.organization.findFirst({
@@ -118,6 +120,11 @@ export default async function AccountPage() {
           </div>
         </div>
         <p className="mt-4 text-sm text-soft">{t("accountDiscordHint")}</p>
+        {user.discordId ? (
+          <p className="mt-2 text-sm text-[#57F287]">{t("accountDiscordLinked")}</p>
+        ) : (
+          <LinkDiscordButton />
+        )}
       </section>
 
       <OrgSummaryPanel
@@ -136,6 +143,7 @@ export default async function AccountPage() {
           notifyBillingEmail: user.notifyBillingEmail,
           notifySecurityEmail: user.notifySecurityEmail,
           notifyProductEmail: user.notifyProductEmail,
+          marketingConsent: user.marketingConsentAt != null,
         }}
       />
 

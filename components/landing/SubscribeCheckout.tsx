@@ -6,7 +6,10 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { SubscribeIntent } from "@/lib/auth-callback";
-import { loginWithSubscribeIntent } from "@/lib/auth-callback";
+import {
+  isSubscribePlanId,
+  loginWithSubscribeIntent,
+} from "@/lib/auth-callback";
 import { redirectIfMfaRequired } from "@/lib/api-client-auth";
 
 export function SubscribeCheckout({ intent }: { intent: SubscribeIntent }) {
@@ -16,6 +19,7 @@ export function SubscribeCheckout({ intent }: { intent: SubscribeIntent }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const started = useRef(false);
+  const subscription = isSubscribePlanId(intent.plan);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -32,10 +36,11 @@ export function SubscribeCheckout({ intent }: { intent: SubscribeIntent }) {
         const response = await fetch("/api/stripe/checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            planId: intent.plan,
-            interval: intent.interval,
-          }),
+          body: JSON.stringify(
+            subscription
+              ? { planId: intent.plan, interval: intent.interval }
+              : { planId: intent.plan }
+          ),
         });
         const data = (await response.json()) as {
           url?: string;
@@ -67,12 +72,14 @@ export function SubscribeCheckout({ intent }: { intent: SubscribeIntent }) {
         setError(tc("networkError"));
       }
     })();
-  }, [status, intent.plan, intent.interval, router, t, tc]);
+  }, [status, intent.plan, intent.interval, subscription, router, t, tc]);
 
   if (error) {
     return (
       <div className="space-y-4 text-center">
-        <p className="text-sm text-warn">{error}</p>
+        <p role="alert" className="text-sm text-warn">
+          {error}
+        </p>
         <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
           <Link
             href="/pricing"

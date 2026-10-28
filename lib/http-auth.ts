@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { tApi } from "@/lib/i18n-api";
 import type { Locale } from "@/i18n/config";
 import { userNeedsMfaChallenge } from "@/lib/mfa-session";
@@ -18,6 +16,8 @@ export async function deniedAuthResponse(
   _fallback: "unauthenticated" | "unauthorized" = "unauthenticated"
 ): Promise<NextResponse> {
   void _fallback;
+  const { getServerSession } = await import("next-auth");
+  const { authOptions } = await import("@/lib/auth");
   const session = await getServerSession(authOptions);
   if (session?.user?.id && (await userNeedsMfaChallenge(session.user.id))) {
     return NextResponse.json(

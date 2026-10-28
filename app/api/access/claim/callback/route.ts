@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { appBaseUrl, fulfillDiscordAccess } from "@/lib/learner-access";
+import { claimPageUrl, sanitizeClaimToken } from "@/lib/claim-redirect";
 import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -27,16 +28,12 @@ export async function GET(request: NextRequest) {
   if (!limited.ok) return limited.response;
 
   const code = request.nextUrl.searchParams.get("code");
-  const state = request.nextUrl.searchParams.get("state");
+  const stateRaw = request.nextUrl.searchParams.get("state");
   const oauthError = request.nextUrl.searchParams.get("error");
+  const state = sanitizeClaimToken(stateRaw);
 
   if (oauthError || !code || !state) {
-    return NextResponse.redirect(
-      new URL(
-        `/claim/${state ?? "unknown"}?error=oauth`,
-        appBaseUrl()
-      )
-    );
+    return NextResponse.redirect(claimPageUrl(state, { error: "oauth" }));
   }
 
   const access = await prisma.learnerAccess.findFirst({
@@ -48,17 +45,13 @@ export async function GET(request: NextRequest) {
     select: { id: true, claimToken: true },
   });
   if (!access?.claimToken) {
-    return NextResponse.redirect(
-      new URL(`/claim/${state}?error=invalid`, appBaseUrl())
-    );
+    return NextResponse.redirect(claimPageUrl(state, { error: "invalid" }));
   }
 
   const clientId = process.env.DISCORD_CLIENT_ID;
   const clientSecret = process.env.DISCORD_CLIENT_SECRET;
   if (!clientId || !clientSecret) {
-    return NextResponse.redirect(
-      new URL(`/claim/${state}?error=config`, appBaseUrl())
-    );
+    return NextResponse.redirect(claimPageUrl(state, { error: "config" }));
   }
 
   const redirectUri = `${appBaseUrl()}/api/access/claim/callback`;
@@ -77,9 +70,7 @@ export async function GET(request: NextRequest) {
 
   const tokenData = (await tokenRes.json()) as DiscordTokenResponse;
   if (!tokenRes.ok || !tokenData.access_token) {
-    return NextResponse.redirect(
-      new URL(`/claim/${state}?error=oauth`, appBaseUrl())
-    );
+    return NextResponse.redirect(claimPageUrl(state, { error: "oauth" }));
   }
 
   const userRes = await fetch("https://discord.com/api/users/@me", {
@@ -88,27 +79,17 @@ export async function GET(request: NextRequest) {
   });
   const userData = (await userRes.json()) as DiscordUserResponse;
   if (!userRes.ok || !userData.id) {
-    return NextResponse.redirect(
-      new URL(`/claim/${state}?error=oauth`, appBaseUrl())
-    );
+    return NextResponse.redirect(claimPageUrl(state, { error: "oauth" }));
   }
 
   const result = await fulfillDiscordAccess(access.id, userData.id);
   if (result.status === "ACTIVE") {
-    return NextResponse.redirect(
-      new URL(`/claim/${state}?ok=active`, appBaseUrl())
-    );
+    return NextResponse.redirect(claimPageUrl(state, { ok: "active" }));
   }
   if (result.status === "AWAITING_JOIN") {
-    const invite = result.inviteUrl
-      ? `&invite=${encodeURIComponent(result.inviteUrl)}`
-      : "";
-    return NextResponse.redirect(
-      new URL(`/claim/${state}?ok=join${invite}`, appBaseUrl())
-    );
+    // Invite uniquement en DB (page claim lit access.inviteUrl) — pas en query.
+    return NextResponse.redirect(claimPageUrl(state, { ok: "join" }));
   }
 
-  return NextResponse.redirect(
-    new URL(`/claim/${state}?error=grant`, appBaseUrl())
-  );
+  return NextResponse.redirect(claimPageUrl(state, { error: "grant" }));
 }

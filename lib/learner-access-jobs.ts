@@ -89,8 +89,6 @@ export async function sendClaimReminders(): Promise<number> {
       await notifyOutbound(access.bot.organizationId, "claim_reminder", {
         accessId: access.id,
         productId: access.accessProductId,
-        email: access.customerEmail,
-        claimUrl: url,
         productName: access.product.name,
         reminderCount: access.claimReminderCount + 1,
       });
@@ -153,14 +151,19 @@ export async function reconcileSeatsUsed(): Promise<number> {
   const products = await prisma.accessProduct.findMany({
     select: { id: true, seatsUsed: true },
   });
+  const grouped = await prisma.learnerAccess.groupBy({
+    by: ["accessProductId"],
+    where: {
+      status: { in: ["PENDING_CLAIM", "AWAITING_JOIN", "ACTIVE"] },
+    },
+    _count: { _all: true },
+  });
+  const countByProduct = new Map(
+    grouped.map((row) => [row.accessProductId, row._count._all])
+  );
   let fixed = 0;
   for (const product of products) {
-    const count = await prisma.learnerAccess.count({
-      where: {
-        accessProductId: product.id,
-        status: { in: ["PENDING_CLAIM", "AWAITING_JOIN", "ACTIVE"] },
-      },
-    });
+    const count = countByProduct.get(product.id) ?? 0;
     if (count === product.seatsUsed) continue;
     await prisma.accessProduct.update({
       where: { id: product.id },

@@ -10,14 +10,21 @@ export async function register() {
     const appEnv = getAppEnvironment();
     const required = [
       "DATABASE_URL",
-      "NEXTAUTH_SECRET",
-      "NEXTAUTH_URL",
       "DISCORD_CLIENT_ID",
       "DISCORD_CLIENT_SECRET",
       "DISCORD_BOT_TOKEN",
     ] as const;
 
     const missing: string[] = required.filter((name) => !process.env[name]);
+    if (
+      !process.env.AUTH_SECRET?.trim() &&
+      !process.env.NEXTAUTH_SECRET?.trim()
+    ) {
+      missing.push("AUTH_SECRET");
+    }
+    if (!process.env.AUTH_URL?.trim() && !process.env.NEXTAUTH_URL?.trim()) {
+      missing.push("AUTH_URL");
+    }
 
     // Aligné avec preflight : staging/prod exigent chiffrement + cron + runtime secret.
     if (appEnv === "production" || appEnv === "staging") {

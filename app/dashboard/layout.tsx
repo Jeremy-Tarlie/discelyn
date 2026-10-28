@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { getOrgSubscription } from "@/lib/access";
 import { getPlan, type PlanId } from "@/lib/plans";
 import { DashboardNav } from "@/components/dashboard/DashboardNav";
-import { isLeadsAdmin } from "@/lib/leads-admin";
+import { isPlatformAdmin } from "@/lib/platform-admin";
 import { prisma } from "@/lib/prisma";
 import { userNeedsMfaChallenge } from "@/lib/mfa-session";
 import { PastDueBanner } from "@/components/dashboard/PastDueBanner";
@@ -57,14 +57,18 @@ export default async function DashboardLayout({
     <div className="min-h-screen md:flex">
       <DashboardNav
         planName={plan.name}
-        showLeads={isLeadsAdmin({
+        showLeads={isPlatformAdmin({
           email: session.user.email,
           discordId: dbUser.discordId,
         })}
         organizations={organizations}
         activeOrganizationId={organizationId}
       />
-      <div className="flex-1 px-6 py-8 md:px-10">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex-1 px-6 py-8 md:px-10 outline-none"
+      >
         <PastDueBanner status={subscription.status} />
         <OwnerMfaSignupModal
           userId={session.user.id}
@@ -72,7 +76,7 @@ export default async function DashboardLayout({
           mfaEnabled={dbUser.totpEnabled}
         />
         {children}
-      </div>
+      </main>
     </div>
   );
 }

@@ -314,31 +314,60 @@ export async function listAffiliatesForOrg(
     orderBy: { createdAt: "desc" },
   });
 
-  return Promise.all(
-    affiliates.map(async (aff) => {
-      const [clicks, paid, claimed] = await Promise.all([
-        prisma.affiliateClick.count({ where: { affiliateId: aff.id } }),
-        prisma.learnerAccess.count({ where: { affiliateId: aff.id } }),
-        prisma.learnerAccess.count({
-          where: {
-            affiliateId: aff.id,
-            status: { in: ["ACTIVE", "AWAITING_JOIN"] },
-          },
-        }),
-      ]);
-      return {
-        id: aff.id,
-        code: aff.code,
-        label: aff.label,
-        commissionBps: aff.commissionBps,
-        refUrl: affiliateRefUrl(aff.code),
-        clicks,
-        paid,
-        claimed,
-        createdAt: aff.createdAt.toISOString(),
-      };
-    })
+  if (affiliates.length === 0) return [];
+
+  const affiliateIds = affiliates.map((aff) => aff.id);
+
+  const [clickGroups, paidGroups, claimedGroups] = await Promise.all([
+    prisma.affiliateClick.groupBy({
+      by: ["affiliateId"],
+      where: { affiliateId: { in: affiliateIds } },
+      _count: { _all: true },
+    }),
+    prisma.learnerAccess.groupBy({
+      by: ["affiliateId"],
+      where: { affiliateId: { in: affiliateIds } },
+      _count: { _all: true },
+    }),
+    prisma.learnerAccess.groupBy({
+      by: ["affiliateId"],
+      where: {
+        affiliateId: { in: affiliateIds },
+        status: { in: ["ACTIVE", "AWAITING_JOIN"] },
+      },
+      _count: { _all: true },
+    }),
+  ]);
+
+  const clicksById = new Map(
+    clickGroups.map((row) => [row.affiliateId, row._count._all])
   );
+  const paidById = new Map(
+    paidGroups
+      .filter((row): row is typeof row & { affiliateId: string } =>
+        row.affiliateId !== null
+      )
+      .map((row) => [row.affiliateId, row._count._all])
+  );
+  const claimedById = new Map(
+    claimedGroups
+      .filter((row): row is typeof row & { affiliateId: string } =>
+        row.affiliateId !== null
+      )
+      .map((row) => [row.affiliateId, row._count._all])
+  );
+
+  return affiliates.map((aff) => ({
+    id: aff.id,
+    code: aff.code,
+    label: aff.label,
+    commissionBps: aff.commissionBps,
+    refUrl: affiliateRefUrl(aff.code),
+    clicks: clicksById.get(aff.id) ?? 0,
+    paid: paidById.get(aff.id) ?? 0,
+    claimed: claimedById.get(aff.id) ?? 0,
+    createdAt: aff.createdAt.toISOString(),
+  }));
 }
 
 export type DashboardWebhook = {

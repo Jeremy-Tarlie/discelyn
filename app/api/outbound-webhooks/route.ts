@@ -77,10 +77,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const urlCheck = validateOutboundWebhookUrl(parsed.data.url);
+  const urlCheck = await validateOutboundWebhookUrl(parsed.data.url);
   if (!urlCheck.ok) {
     return NextResponse.json({ error: urlCheck.error }, { status: 400 });
   }
+
 
   let sealedSecret: string;
   try {

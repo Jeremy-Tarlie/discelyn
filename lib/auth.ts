@@ -9,7 +9,6 @@ import type { OrgRole, SubscriptionStatus } from "@/generated/prisma/client";
 import { effectivePlan } from "@/lib/billing-guards";
 import { isTokenEncryptionEnabled, requireSealToken } from "@/lib/token-crypto";
 import { cookies } from "next/headers";
-import { bootstrapOrganizationForUser } from "@/lib/org-access";
 import { ACTIVE_ORG_COOKIE, pickActiveMembership } from "@/lib/active-org";
 
 declare module "next-auth" {
@@ -43,19 +42,44 @@ function requireEnv(name: string): string {
   return value;
 }
 
+/** AUTH_* prioritaire ; NEXTAUTH_* accepté en alias. */
+export function authSecret(): string | undefined {
+  return (
+    process.env.AUTH_SECRET?.trim() ||
+    process.env.NEXTAUTH_SECRET?.trim() ||
+    undefined
+  );
+}
+
+export function authUrl(): string | undefined {
+  return (
+    process.env.AUTH_URL?.trim() ||
+    process.env.NEXTAUTH_URL?.trim() ||
+    undefined
+  );
+}
+
 export function assertAuthEnv(): void {
-  requireEnv("NEXTAUTH_SECRET");
+  if (!authSecret()) {
+    throw new Error("AUTH_SECRET (ou NEXTAUTH_SECRET) manquant");
+  }
   requireEnv("DISCORD_CLIENT_ID");
   requireEnv("DISCORD_CLIENT_SECRET");
 }
 
 export const authOptions: NextAuthOptions = {
-  // @auth/prisma-adapter types target Prisma 6 @prisma/client; Prisma 7 generated client is API-compatible.
+  // @auth/prisma-adapter types target Prisma 6; Prisma 7 client is API-compatible.
   adapter: PrismaAdapter(prisma as never) as Adapter,
+  // Auth email/mdp : sessions DB créées hors CredentialsProvider
+  // (lib/credentials-session) — compatible MFA + strategy database.
+  // Ne pas ajouter CredentialsProvider (forcerait souvent JWT).
   providers: [
     DiscordProvider({
       clientId: process.env.DISCORD_CLIENT_ID ?? "",
       clientSecret: process.env.DISCORD_CLIENT_SECRET ?? "",
+      // Discord renvoie `iss=https://discord.com` (RFC 9207). Sans issuer,
+      // openid-client lève « issuer must be configured on the issuer ».
+      issuer: "https://discord.com",
       authorization: {
         params: {
           scope: "identify email guilds",
@@ -71,6 +95,70 @@ export const authOptions: NextAuthOptions = {
     error: "/login",
   },
   callbacks: {
+    async signIn({ user, account, profile }) {
+      if (account?.provider !== "discord") return true;
+
+      const existingDiscord = await prisma.account.findUnique({
+        where: {
+          provider_providerAccountId: {
+            provider: "discord",
+            providerAccountId: account.providerAccountId,
+          },
+        },
+        select: { userId: true },
+      });
+      if (existingDiscord) return true;
+
+      const profileEmail =
+        typeof profile === "object" &&
+        profile &&
+        "email" in profile &&
+        typeof (profile as { email?: string }).email === "string"
+          ? (profile as { email: string }).email
+          : null;
+      const email = user.email ?? profileEmail;
+      if (!email) return true;
+
+      const { credentialsUserBlocksDiscordOAuth } = await import(
+        "@/lib/auth-credentials"
+      );
+      const { normalizeEmail } = await import("@/lib/disposable-email");
+      const blocked = await credentialsUserBlocksDiscordOAuth(email);
+      if (!blocked) return true;
+
+      const { getSessionTokenFromCookies } = await import("@/lib/mfa-session");
+      const token = await getSessionTokenFromCookies();
+      if (token) {
+        const sessionRow = await prisma.session.findUnique({
+          where: { sessionToken: token },
+          select: { userId: true, expires: true, mfaVerifiedAt: true },
+        });
+        if (sessionRow && sessionRow.expires.getTime() >= Date.now()) {
+          const cred = await prisma.user.findFirst({
+            where: {
+              email: {
+                equals: normalizeEmail(email),
+                mode: "insensitive",
+              },
+              deletedAt: null,
+              passwordHash: { not: null },
+            },
+            select: { id: true, totpEnabled: true },
+          });
+
+          const isLinking = cred !== null && sessionRow.userId === cred.id;
+
+          if (isLinking) {
+            if (cred.totpEnabled && !sessionRow.mfaVerifiedAt) {
+              return "/login/mfa";
+            }
+            return true;
+          }
+        }
+      }
+
+      return "/login?error=OAuthAccountNotLinked";
+    },
     async session({ session, user }) {
       const active = await prisma.user.findFirst({
         where: { id: user.id, deletedAt: null },
@@ -78,7 +166,6 @@ export const authOptions: NextAuthOptions = {
       });
       if (!active) {
         await prisma.session.deleteMany({ where: { userId: user.id } });
-        // Force unauthenticated côté clients qui lisent session.user.id.
         session.user.id = "";
         session.user.plan = "FREE";
         session.user.subscriptionStatus = "CANCELED";
@@ -119,14 +206,31 @@ export const authOptions: NextAuthOptions = {
       session.user.organizationId = preferred?.organizationId ?? null;
       session.user.orgRole = preferred?.role ?? null;
       session.user.plan = effectivePlan(subscription);
-      // Pas de row subscription (pas d’orga / race bootstrap) ≠ abo actif.
-      // FREE freemium a toujours une row `ACTIVE` via getOrgSubscription.
       session.user.subscriptionStatus = subscription?.status ?? "CANCELED";
       return session;
     },
   },
   events: {
     async createUser({ user }) {
+      if (user.id && user.email) {
+        const { normalizeEmail } = await import("@/lib/disposable-email");
+        const normalized = normalizeEmail(user.email);
+        if (normalized !== user.email) {
+          try {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { email: normalized },
+            });
+          } catch (err) {
+            console.error(
+              "[auth] createUser email normalize failed",
+              err instanceof Error ? err.message.slice(0, 120) : "unknown"
+            );
+          }
+        }
+      }
+      if (!user.id) return;
+      const { bootstrapOrganizationForUser } = await import("@/lib/org-access");
       await bootstrapOrganizationForUser({
         userId: user.id,
         name: user.name,
@@ -146,7 +250,6 @@ export const authOptions: NextAuthOptions = {
           data: { discordId: account.providerAccountId },
         });
 
-        // Chiffre les jetons OAuth juste après l’insertion NextAuth.
         if (isTokenEncryptionEnabled()) {
           const row = await prisma.account.findUnique({
             where: {
@@ -182,5 +285,5 @@ export const authOptions: NextAuthOptions = {
       }
     },
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: authSecret(),
 };

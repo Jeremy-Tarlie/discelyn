@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  discordCallbackForSignupPlan,
   loginWithSubscribeIntent,
+  parseSignupIntent,
   parseSubscribeIntent,
   safeAuthCallbackUrl,
+  signupWithPlanIntent,
   subscribePath,
 } from "@/lib/auth-callback";
 
@@ -32,13 +35,27 @@ describe("safeAuthCallbackUrl", () => {
     expect(
       safeAuthCallbackUrl("/subscribe?plan=STARTER&interval=month")
     ).toBe("/subscribe?plan=STARTER&interval=month");
+    expect(safeAuthCallbackUrl("/admin")).toBe("/admin");
+    expect(safeAuthCallbackUrl("/admin/customers")).toBe("/admin/customers");
   });
 
   it("rejette les open-redirects classiques", () => {
     expect(safeAuthCallbackUrl("/\\evil.com")).toBe("/dashboard");
     expect(safeAuthCallbackUrl("/dashboard@evil.com")).toBe("/dashboard");
   });
+
+  it("rejette la path confusion avec ..", () => {
+    expect(safeAuthCallbackUrl("/dashboard/../../../etc/passwd")).toBe(
+      "/dashboard"
+    );
+    expect(safeAuthCallbackUrl("/dashboard/../../login")).toBe("/dashboard");
+    expect(safeAuthCallbackUrl("/subscribe/../login")).toBe("/dashboard");
+    expect(safeAuthCallbackUrl("/dashboard/%2e%2e/etc/passwd")).toBe(
+      "/dashboard"
+    );
+  });
 });
+
 
 describe("subscribePath / loginWithSubscribeIntent", () => {
   it("encode l’intent plan", () => {
@@ -61,11 +78,50 @@ describe("parseSubscribeIntent", () => {
     ).toEqual({ plan: "SCALE", interval: "month" });
   });
 
+  it("accepte SETUP / DIAGNOSTIC (one-shot)", () => {
+    expect(
+      parseSubscribeIntent({ plan: "DIAGNOSTIC", interval: undefined })
+    ).toEqual({ plan: "DIAGNOSTIC", interval: "month" });
+    expect(parseSubscribeIntent({ plan: "SETUP", interval: "year" })).toEqual({
+      plan: "SETUP",
+      interval: "year",
+    });
+  });
+
   it("refuse FREE et plans inconnus", () => {
     expect(parseSubscribeIntent({ plan: "FREE", interval: "month" })).toBeNull();
     expect(
       parseSubscribeIntent({ plan: "GOLD", interval: "month" })
     ).toBeNull();
     expect(parseSubscribeIntent({ plan: null, interval: "month" })).toBeNull();
+  });
+});
+
+describe("signupWithPlanIntent / parseSignupIntent", () => {
+  it("FREE → /signup ; payant → query ; one-shot → offer", () => {
+    expect(signupWithPlanIntent("FREE")).toBe("/signup");
+    expect(signupWithPlanIntent("STARTER", "year")).toBe(
+      "/signup?plan=STARTER&interval=year"
+    );
+    expect(signupWithPlanIntent("DIAGNOSTIC")).toBe("/signup?offer=DIAGNOSTIC");
+    expect(subscribePath("SETUP")).toBe("/subscribe?plan=SETUP");
+    expect(loginWithSubscribeIntent("SETUP")).toBe(
+      `/login?callbackUrl=${encodeURIComponent("/subscribe?plan=SETUP")}`
+    );
+  });
+
+  it("discordCallbackForSignupPlan", () => {
+    expect(discordCallbackForSignupPlan("FREE")).toBe("/dashboard");
+    expect(discordCallbackForSignupPlan("OPS", "month")).toBe(
+      "/subscribe?plan=OPS&interval=month"
+    );
+  });
+
+  it("parseSignupIntent accepte FREE", () => {
+    expect(parseSignupIntent({ plan: "FREE", interval: "month" })).toEqual({
+      plan: "FREE",
+      interval: "month",
+    });
+    expect(parseSignupIntent({ plan: "GOLD", interval: "month" })).toBeNull();
   });
 });

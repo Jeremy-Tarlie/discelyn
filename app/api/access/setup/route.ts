@@ -37,7 +37,8 @@ export async function POST(request: NextRequest) {
   });
   if (!limited.ok) return limited.response;
 
-  const org = await requireOrg({ minRole: "ADMIN" });
+  // Secrets formation (sk_) : OWNER + MFA uniquement (pas ADMIN).
+  const org = await requireOrg({ minRole: "OWNER" });
   if (!org) {
     return deniedAuthResponse(locale);
   }

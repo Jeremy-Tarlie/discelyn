@@ -1,5 +1,6 @@
 export {
   extractDiscordUserIdFromSession,
+  extractPaidPriceIdFromLineItems,
   extractPriceIdFromSession,
 } from "@/lib/learner-access-parse";
 

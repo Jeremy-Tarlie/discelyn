@@ -1,22 +1,13 @@
-# Dev local : expose web + Postgres + Redis + runtime sur l'hôte.
-# Usage : docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+# Dev local full-stack Docker : seul le web est exposé sur l’hôte.
+# Usage : docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 #
-# Port 5434 (pas 5432) : évite le conflit avec un Postgres Windows natif
-# souvent déjà en écoute sur 5432.
-# Redis / Postgres / runtime bind loopback uniquement (pas d’exposition LAN).
+# db / redis / runtime restent sur le réseau Docker interne (pas de ports hôte)
+# → évite les collisions 5432/5433/6379 et force « tout dans Docker ».
 services:
   web:
     ports:
       - "3000:3000"
-
-  db:
-    ports:
-      - "127.0.0.1:5434:5432"
-
-  redis:
-    ports:
-      - "127.0.0.1:6379:6379"
-
-  runtime:
-    ports:
-      - "127.0.0.1:4001:4001"
+    environment:
+      # Dev derrière aucun reverse-proxy public ; rate-limit IP = direct.
+      APP_ENV: development
+      NEXT_PUBLIC_APP_ENV: development

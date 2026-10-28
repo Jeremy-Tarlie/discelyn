@@ -18,7 +18,7 @@ export default async function PrivacyPage() {
   return (
     <div className="min-h-screen bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
       <SiteHeader />
-      <main className="mx-auto max-w-3xl space-y-8 px-6 py-16 text-[color:var(--muted)]">
+      <main id="main-content" className="mx-auto max-w-3xl space-y-8 px-6 py-16 text-[color:var(--muted)]">
         <h1 className="font-display text-4xl text-[color:var(--page-fg)]">
           {t("privacyTitle")}
         </h1>
@@ -63,7 +63,11 @@ export default async function PrivacyPage() {
           </h2>
           {isEn ? (
             <ul className="list-disc space-y-2 pl-5">
-              <li>Account: Discord ID, name, email, avatar (OAuth).</li>
+              <li>
+                Account: Discord ID, name, email, avatar (OAuth Discord and/or
+                email + hashed password); email verification / password-reset
+                tokens (short-lived).
+              </li>
               <li>
                 Discord OAuth session: access_token and refresh_token stored
                 server-side (Account table, NextAuth), encrypted at rest when
@@ -79,13 +83,24 @@ export default async function PrivacyPage() {
               </li>
               <li>Billing: Stripe IDs (no card data stored by Discelyn).</li>
               <li>
+                Learners (training access sold by an organization): email
+                collected via Stripe Checkout, Discord user ID after claim,
+                claim token / invite URL, reminder timestamps, org outbound
+                webhook deliveries related to access events. After status
+                REVOKED or EXPIRED, learner PII is anonymized after 365 days.
+              </li>
+              <li>
                 Commercial leads (landing form): email, name, company, role,
-                message, requested offer, marketing consent timestamp — kept for
+                message, requested offer; optional marketing consent timestamp —
+                kept for
                 follow-up until manual deletion or erasure request (max 24 months).
               </li>
               <li>
                 Product analytics (internal events) — first-party only; recorded
-                only with the analytics cookie category.
+                with the analytics cookie category. Server-side billing events
+                (e.g. checkout_completed from Stripe webhooks) are recorded
+                under legitimate interest / contract and do not rely on cookie
+                consent (meta flag serverSideBilling).
               </li>
               <li>
                 Cookie consent log: per-category choices (analytics / Sentry /
@@ -99,7 +114,11 @@ export default async function PrivacyPage() {
             </ul>
           ) : (
             <ul className="list-disc space-y-2 pl-5">
-              <li>Compte : ID Discord, nom, email, avatar (OAuth).</li>
+              <li>
+                Compte : ID Discord, nom, email, avatar (OAuth Discord et/ou
+                e-mail + mot de passe haché) ; jetons de vérification e-mail /
+                reset mot de passe (durée limitée).
+              </li>
               <li>
                 Session OAuth Discord : access_token et refresh_token stockés
                 côté serveur (table Account, NextAuth), chiffrés au repos si
@@ -116,13 +135,24 @@ export default async function PrivacyPage() {
               </li>
               <li>Facturation : IDs Stripe (pas de carte chez Discelyn).</li>
               <li>
-                Leads commerciaux : email, nom, société, message, offre,
-                horodatage du consentement marketing — suivi jusqu’à
+                Apprenants (accès formation vendu par une organisation) : e-mail
+                collecté via Stripe Checkout, ID Discord après claim, jeton /
+                URL de claim, horodatages de relances, livraisons de webhooks
+                sortants orga liés aux événements d’accès. Après statut REVOKED
+                ou EXPIRED, les PII apprenant sont anonymisées après 365 jours.
+              </li>
+              <li>
+                Leads commerciaux : email, nom, société, message, offre ;
+                horodatage marketing optionnel (case distincte) — suivi jusqu’à
                 suppression / demande d’effacement (max 24 mois).
               </li>
               <li>
-                Analytics produit (événements internes) — first-party ; uniquement
-                avec la catégorie cookies « analytics ».
+                Analytics produit (événements internes) — first-party ;
+                enregistrés avec la catégorie cookies « analytics ». Les
+                événements facturation serveur (ex. checkout_completed depuis
+                les webhooks Stripe) sont enregistrés au titre du contrat /
+                intérêt légitime et ne dépendent pas du consentement cookies
+                (drapeau meta serverSideBilling).
               </li>
               <li>
                 Journal des consentements cookies : choix par catégorie
@@ -149,6 +179,12 @@ export default async function PrivacyPage() {
           {isEn ? (
             <ul className="list-disc space-y-2 pl-5">
               <li>Contract: account, bot configs, paid subscription.</li>
+              <li>
+                Contract between the organization and its learners (Discelyn as
+                processor / technical provider for training access); Discelyn
+                legitimate interest for platform security and reliability of
+                learner-access delivery.
+              </li>
               <li>Legal obligation: invoicing / accounting traces via Stripe.</li>
               <li>Legitimate interest: security, abuse prevention, rate-limiting.</li>
               <li>
@@ -156,10 +192,19 @@ export default async function PrivacyPage() {
                 affiliate); marketing contact via lead form; storage of the
                 cookie-consent log (proof of choice).
               </li>
+              <li>
+                Server-side billing analytics (checkout_completed via Stripe
+                webhook) — contract / legitimate interest; not cookie-based.
+              </li>
             </ul>
           ) : (
             <ul className="list-disc space-y-2 pl-5">
               <li>Contrat : compte, configs bot, abonnement payant.</li>
+              <li>
+                Contrat orga–apprenant (Discelyn sous-traitant / prestataire
+                technique pour l’accès formation) ; intérêt légitime Discelyn
+                pour la sécurité et la fiabilité de la délivrance des accès.
+              </li>
               <li>Obligation légale : facturation / traces comptables via Stripe.</li>
               <li>
                 Intérêt légitime : sécurité, anti-abus, rate-limiting.
@@ -168,6 +213,10 @@ export default async function PrivacyPage() {
                 Consentement : catégories cookies optionnelles (analytics, Sentry
                 navigateur, affilié) ; contact commercial via formulaire lead ;
                 conservation du journal de consentement (preuve du choix).
+              </li>
+              <li>
+                Analytics facturation serveur (checkout_completed via webhook
+                Stripe) — contrat / intérêt légitime ; hors cookies.
               </li>
             </ul>
           )}
@@ -178,8 +227,16 @@ export default async function PrivacyPage() {
             {t("processorsTitle")}
           </h2>
           <ul className="list-disc space-y-2 pl-5">
-            <li>Discord — OAuth and platform bot API</li>
-            <li>Stripe — payments (Stripe DPA)</li>
+            <li>
+              {isEn
+                ? "Discord — OAuth and platform bot API"
+                : "Discord — OAuth et API du bot plateforme"}
+            </li>
+            <li>
+              {isEn
+                ? "Stripe — payments (Stripe DPA)"
+                : "Stripe — paiements (DPA Stripe)"}
+            </li>
             <li>
               {entity
                 ? isEn
@@ -189,10 +246,65 @@ export default async function PrivacyPage() {
                   ? "Hosting provider of the instance (configure NEXT_PUBLIC_HOSTING_PROVIDER / REGION)"
                   : "Hébergeur de l’instance (configurer NEXT_PUBLIC_HOSTING_PROVIDER / REGION)"}
             </li>
-            <li>Sentry (optional) — application errors</li>
-            <li>Redis (optional) — distributed rate-limiting</li>
-            <li>Resend (optional) — claim / reminder emails</li>
+            <li>
+              {isEn
+                ? "Sentry (optional) — application errors"
+                : "Sentry (optionnel) — erreurs applicatives"}
+            </li>
+            <li>
+              {isEn
+                ? "Redis (optional) — distributed rate-limiting"
+                : "Redis (optionnel) — limitation de débit distribuée"}
+            </li>
+            <li>
+              {isEn
+                ? "Resend — account verification / password reset, claim / reminder emails, and optional marketing campaigns (opens/clicks webhooks when configured)"
+                : "Resend — vérification de compte / reset mot de passe, emails claim / relances, et campagnes marketing optionnelles (webhooks opens/clicks si configuré)"}
+            </li>
           </ul>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="font-display text-xl text-[color:var(--page-fg)]">
+            {isEn ? "Marketing emails" : "E-mails marketing"}
+          </h2>
+          {isEn ? (
+            <ul className="list-disc space-y-2 pl-5">
+              <li>
+                Sent only with an explicit marketing opt-in (account preferences
+                or optional lead-form checkbox — separate from contacting you
+                about a single request).
+              </li>
+              <li>
+                Delivery events (accepted/delivered/opened/clicked/bounced/
+                complained) may be stored as EmailEvent for up to 13 months, then
+                purged.
+              </li>
+              <li>
+                Every marketing message includes an unsubscribe link (and
+                List-Unsubscribe headers when supported). Spam complaints also
+                revoke marketing consent.
+              </li>
+            </ul>
+          ) : (
+            <ul className="list-disc space-y-2 pl-5">
+              <li>
+                Envois uniquement avec opt-in marketing explicite (préférences
+                compte ou case optionnelle du formulaire lead — distinct du
+                recontact sur une demande).
+              </li>
+              <li>
+                Les événements d’envoi (accepté / délivré / ouverture / clic /
+                bounce / plainte) peuvent être stockés (EmailEvent) jusqu’à 13
+                mois, puis purgés.
+              </li>
+              <li>
+                Chaque message marketing contient un lien de désinscription
+                (et en-têtes List-Unsubscribe si supportés). Une plainte spam
+                révoque aussi le consentement marketing.
+              </li>
+            </ul>
+          )}
         </section>
 
         <section className="space-y-3">
@@ -229,8 +341,8 @@ export default async function PrivacyPage() {
           </h2>
           <p>
             {isEn
-              ? "Owners must enable TOTP 2FA before billing actions and pasting training Stripe secret keys. OAuth and org Stripe secrets are encrypted at rest when TOKEN_ENCRYPTION_KEY is configured. A DPA template is available on request for Scale plans."
-              : "Les OWNER doivent activer la 2FA TOTP avant les actions billing et le collage d’une clé secrète Stripe formation. Les secrets OAuth et Stripe orga sont chiffrés au repos (TOKEN_ENCRYPTION_KEY). Un modèle de DPA est disponible sur demande pour le plan Scale."}
+              ? "Owners must enable TOTP 2FA before billing actions and pasting training Stripe secret keys. OAuth and org Stripe secrets are encrypted at rest when TOKEN_ENCRYPTION_KEY is configured. A DPA template is available on request for any plan with training (learner access) access — not only Scale."
+              : "Les OWNER doivent activer la 2FA TOTP avant les actions billing et le collage d’une clé secrète Stripe formation. Les secrets OAuth et Stripe orga sont chiffrés au repos (TOKEN_ENCRYPTION_KEY). Un modèle de DPA est disponible sur demande pour tout plan avec accès formation — pas seulement Scale."}
           </p>
         </section>
 
@@ -240,8 +352,8 @@ export default async function PrivacyPage() {
           </h2>
           <p>
             {isEn
-              ? "Access, rectification, erasure, portability, restriction, objection. From the dashboard → Account: cookie-consent history, JSON export and account deletion. Change cookie preferences anytime via the footer Cookies link. You may lodge a complaint with your supervisory authority (e.g. CNIL in France: "
-              : "Accès, rectification, effacement, portabilité, limitation, opposition. Depuis le dashboard → Compte : historique des consentements cookies, export JSON et suppression de compte. Modifie tes préférences cookies à tout moment via le lien Cookies du footer. Réclamation possible auprès de la "}
+              ? "Access, rectification, erasure, portability, restriction, objection. From the dashboard → Account: cookie-consent history, JSON export and account deletion. Change cookie preferences anytime via the footer Cookies link. Learners: contact the training organization first (controller for their purchase), then Discelyn support if needed. You may lodge a complaint with your supervisory authority (e.g. CNIL in France: "
+              : "Accès, rectification, effacement, portabilité, limitation, opposition. Depuis le dashboard → Compte : historique des consentements cookies, export JSON et suppression de compte. Modifie tes préférences cookies à tout moment via le lien Cookies du footer. Apprenants : contacter d’abord l’organisation formatrice (responsable de traitement de leur achat), puis le support Discelyn si besoin. Réclamation possible auprès de la "}
             <a
               className="text-signal underline"
               href="https://www.cnil.fr/fr/plaintes"
@@ -249,6 +361,9 @@ export default async function PrivacyPage() {
               rel="noopener noreferrer"
             >
               CNIL
+              <span className="sr-only">
+                {isEn ? " (new window)" : " (nouvelle fenêtre)"}
+              </span>
             </a>
             {isEn ? ")." : "."}
           </p>
@@ -260,8 +375,8 @@ export default async function PrivacyPage() {
           </h2>
           <p>
             {isEn
-              ? "Account data while the account is active. Moderation warns: max 90 days then automatic purge. Analytics events: max 24 months then purge. Cookie consent logs: max 24 months then purge (account deletion unlinks userId). Leads: max 24 months or earlier on request. Stripe billing traces per legal accounting rules. Account deletion erases bots, warns, sessions and linked analytics/leads where applicable."
-              : "Données compte tant que le compte est actif. Warns : max 90 jours puis purge. Analytics : max 24 mois puis purge. Journal consentements cookies : max 24 mois puis purge (la suppression de compte détache le userId). Leads : max 24 mois ou plus tôt sur demande. Traces Stripe selon obligations comptables. Suppression du compte = bots, warns, sessions et analytics/leads liés."}
+              ? "Account data while the account is active. Moderation warns: max 90 days then automatic purge (runtime cron — account soft-delete does not purge third-party Discord warns immediately). Analytics / activity logs / affiliate clicks: max 24 months. Cookie consent logs: max 24 months (account deletion unlinks userId). Leads: max 24 months or earlier on request. Learner PII: kept while access is ACTIVE under contract; anonymized 365 days after REVOKED/EXPIRED or after product accessEndsAt. Oversold emails follow the same learner retention. Outbound webhook deliveries and finished campaign recipients: TTL 90 days. Stripe billing traces per legal accounting rules. Account deletion = soft-delete + anonymisation (bots, sessions, org Stripe secrets, learner PII for sole-OWNER orgs)."
+              : "Données compte tant que le compte est actif. Warns : max 90 jours puis purge automatique (cron runtime — la suppression de compte soft-delete ne purge pas immédiatement les warns Discord tiers). Analytics / journaux d’activité / clics affiliés : max 24 mois. Journal consentements cookies : max 24 mois (détachement userId à la suppression). Leads : max 24 mois ou plus tôt sur demande. PII apprenants : conservées tant que l’accès est ACTIVE (contrat) ; anonymisation 365 jours après REVOKED/EXPIRED ou après accessEndsAt produit. Oversold : même rétention e-mail. Livraisons webhooks sortants et destinataires campagnes terminés : TTL 90 jours. Traces Stripe selon obligations comptables. Suppression compte = soft-delete + anonymisation (bots, sessions, secrets Stripe orga, PII apprenants si seul OWNER)."}
           </p>
         </section>
 
@@ -271,12 +386,25 @@ export default async function PrivacyPage() {
           </h2>
           <div className="overflow-x-auto rounded-xl border border-white/10">
             <table className="w-full min-w-[32rem] text-left text-sm">
+              <caption className="sr-only">
+                {isEn
+                  ? "Cookies used by Discelyn"
+                  : "Cookies utilisés par Discelyn"}
+              </caption>
               <thead className="bg-[#2b2d31] text-white">
                 <tr>
-                  <th className="px-3 py-2">{t("cookieTableName")}</th>
-                  <th className="px-3 py-2">{t("cookieTablePurpose")}</th>
-                  <th className="px-3 py-2">{t("cookieTableCategory")}</th>
-                  <th className="px-3 py-2">{t("cookieTableDuration")}</th>
+                  <th scope="col" className="px-3 py-2">
+                    {t("cookieTableName")}
+                  </th>
+                  <th scope="col" className="px-3 py-2">
+                    {t("cookieTablePurpose")}
+                  </th>
+                  <th scope="col" className="px-3 py-2">
+                    {t("cookieTableCategory")}
+                  </th>
+                  <th scope="col" className="px-3 py-2">
+                    {t("cookieTableDuration")}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -295,12 +423,28 @@ export default async function PrivacyPage() {
                   </td>
                 </tr>
                 <tr className="border-t border-white/5">
+                  <td className="px-3 py-2 font-mono text-xs">
+                    discelyn_plan_intent
+                  </td>
+                  <td className="px-3 py-2">
+                    {isEn
+                      ? "Remember plan chosen at signup (HttpOnly)"
+                      : "Mémoriser le plan choisi à l’inscription (HttpOnly)"}
+                  </td>
+                  <td className="px-3 py-2">
+                    {isEn ? "Essential" : "Essentiel"}
+                  </td>
+                  <td className="px-3 py-2">1 {isEn ? "hour" : "heure"}</td>
+                </tr>
+                <tr className="border-t border-white/5">
                   <td className="px-3 py-2 font-mono text-xs">discelyn_locale</td>
                   <td className="px-3 py-2">
                     {isEn ? "UI language" : "Langue de l’interface"}
                   </td>
                   <td className="px-3 py-2">
-                    {isEn ? "Essential" : "Essentiel"}
+                    {isEn
+                      ? "Preference (set after cookie choice)"
+                      : "Préférence (après choix cookies)"}
                   </td>
                   <td className="px-3 py-2">1 {isEn ? "year" : "an"}</td>
                 </tr>
@@ -310,7 +454,9 @@ export default async function PrivacyPage() {
                     {isEn ? "Light / dark theme" : "Thème clair / sombre"}
                   </td>
                   <td className="px-3 py-2">
-                    {isEn ? "Essential" : "Essentiel"}
+                    {isEn
+                      ? "Preference (set after cookie choice)"
+                      : "Préférence (après choix cookies)"}
                   </td>
                   <td className="px-3 py-2">1 {isEn ? "year" : "an"}</td>
                 </tr>

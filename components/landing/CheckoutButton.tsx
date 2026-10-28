@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { BillingInterval, PlanId } from "@/lib/plans";
 import {
-  loginWithSubscribeIntent,
+  isOneShotOfferId,
+  signupWithPlanIntent,
   type SubscribePlanId,
 } from "@/lib/auth-callback";
 import { redirectIfMfaRequired } from "@/lib/api-client-auth";
@@ -36,7 +37,7 @@ export function CheckoutButton({
 
   async function handleClick() {
     if (planId === "FREE") {
-      router.push("/login");
+      router.push(signupWithPlanIntent("FREE"));
       return;
     }
 
@@ -62,9 +63,11 @@ export function CheckoutButton({
       if (!response.ok || !data.url) {
         if (response.status === 401) {
           if (isSubscription) {
-            router.push(loginWithSubscribeIntent(planId, interval));
+            router.push(signupWithPlanIntent(planId, interval));
+          } else if (isOneShotOfferId(planId)) {
+            router.push(signupWithPlanIntent(planId));
           } else {
-            router.push("/login");
+            router.push("/signup");
           }
           return;
         }
@@ -98,11 +101,16 @@ export function CheckoutButton({
         type="button"
         onClick={() => void handleClick()}
         disabled={loading}
+        aria-busy={loading}
         className={`w-full rounded-lg px-5 py-3 text-sm font-semibold transition duration-300 disabled:opacity-60 ${classes}`}
       >
         {loading ? tc("redirecting") : label}
       </button>
-      {error ? <p className="text-center text-xs text-warn">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="text-center text-xs text-warn">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

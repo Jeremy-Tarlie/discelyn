@@ -1,9 +1,16 @@
+import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { currentTimeMs } from "@/lib/clock";
+import { resolveJoinCta } from "@/lib/claim-join-cta";
 import { SiteHeader } from "@/components/landing/SiteHeader";
 import { SiteFooter } from "@/components/landing/SiteFooter";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("meta");
+  return { title: t("claimTitle") };
+}
 
 type PageProps = {
   params: Promise<{ token: string }>;
@@ -34,7 +41,7 @@ export default async function ClaimPage({ params, searchParams }: PageProps) {
   const t = await getTranslations("claim");
   const ok = firstParam(query.ok);
   const error = firstParam(query.error);
-  const invite = firstParam(query.invite);
+  // `invite` query volontairement ignoré (anti open-redirect).
 
   const access = await prisma.learnerAccess.findFirst({
     where: { claimToken: token },
@@ -51,6 +58,7 @@ export default async function ClaimPage({ params, searchParams }: PageProps) {
       bot: { select: { name: true } },
     },
   });
+
 
   const orgBrand = access
     ? await prisma.orgStripeConfig.findUnique({
@@ -81,7 +89,13 @@ export default async function ClaimPage({ params, searchParams }: PageProps) {
       currentTimeMs()
     );
 
-  const showSuccess = ok === "active" || ok === "join";
+  const joinHref = resolveJoinCta(access);
+  // `ok=active` : claimToken souvent déjà null après ACTIVE → access peut être absent.
+  // `ok=join` seul : ignoré (CTA uniquement via inviteUrl DB).
+  const showActiveSuccess =
+    ok === "active" && (!access || access.status === "ACTIVE");
+  const showSuccess = showActiveSuccess || joinHref !== null;
+
 
   let errorMessage: string | null = null;
   if (error === "oauth") errorMessage = t("errors.oauth");
@@ -90,9 +104,10 @@ export default async function ClaimPage({ params, searchParams }: PageProps) {
   else if (error) errorMessage = t("errors.invalid");
 
   return (
+
     <div className="min-h-screen bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
       <SiteHeader signedIn={false} />
-      <main className="mx-auto max-w-lg px-6 py-16">
+      <main id="main-content" tabIndex={-1} className="mx-auto max-w-lg px-6 py-16">
         <div className="flex items-center gap-3">
           {brandLogo ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -115,11 +130,14 @@ export default async function ClaimPage({ params, searchParams }: PageProps) {
         {showSuccess ? (
           <div className="mt-8 space-y-4 rounded-2xl border border-line bg-surface p-6">
             <p className="text-page-fg">
-              {ok === "active" ? t("successActive") : t("successJoin")}
+              {showActiveSuccess && !joinHref
+                ? t("successActive")
+                : t("successJoin")}
             </p>
-            {ok === "join" && invite ? (
+
+            {joinHref ? (
               <a
-                href={invite}
+                href={joinHref}
                 className="inline-flex rounded-full px-5 py-3 text-sm font-semibold text-white"
                 style={{ backgroundColor: brandColor }}
               >
@@ -135,13 +153,19 @@ export default async function ClaimPage({ params, searchParams }: PageProps) {
         ) : null}
 
         {!showSuccess && errorMessage ? (
-          <div className="mt-8 rounded-2xl border border-warn/40 bg-surface p-6 text-warn">
+          <div
+            className="mt-8 rounded-2xl border border-warn/40 bg-surface p-6 text-warn"
+            role="alert"
+          >
             {errorMessage}
           </div>
         ) : null}
 
         {!showSuccess && !errorMessage && !canClaim ? (
-          <div className="mt-8 space-y-3 rounded-2xl border border-warn/40 bg-surface p-6 text-warn">
+          <div
+            className="mt-8 space-y-3 rounded-2xl border border-warn/40 bg-surface p-6 text-warn"
+            role="alert"
+          >
             <p>
               {!access
                 ? t("errors.notFound")
@@ -180,7 +204,17 @@ export default async function ClaimPage({ params, searchParams }: PageProps) {
             >
               {t("connectDiscord")}
             </a>
-            <p className="text-xs text-soft">{t("privacyHint")}</p>
+            <p className="text-xs text-soft">
+              {t("privacyHint", {
+                support: process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || "support",
+              })}
+            </p>
+            <p className="text-xs text-soft">{t("rightsHint")}</p>
+            <p className="text-xs">
+              <Link href="/privacy" className="underline hover:text-page-fg">
+                {t("privacyLink")}
+              </Link>
+            </p>
           </div>
         ) : null}
 

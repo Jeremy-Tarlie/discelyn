@@ -1,10 +1,9 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getServerSession = vi.fn();
-const userNeedsMfaChallenge = vi.fn();
 
 vi.mock("next-auth", () => ({
-  getServerSession: (...args: unknown[]) => getServerSession(...args),
+  getServerSession: () => getServerSession(),
 }));
 
 vi.mock("@/lib/auth", () => ({
@@ -12,41 +11,36 @@ vi.mock("@/lib/auth", () => ({
 }));
 
 vi.mock("@/lib/mfa-session", () => ({
-  userNeedsMfaChallenge: (...args: unknown[]) =>
-    userNeedsMfaChallenge(...args),
+  userNeedsMfaChallenge: vi.fn(async () => false),
 }));
+
+import { userNeedsMfaChallenge } from "@/lib/mfa-session";
+import { deniedAuthResponse } from "./http-auth";
 
 describe("deniedAuthResponse", () => {
   beforeEach(() => {
     getServerSession.mockReset();
-    userNeedsMfaChallenge.mockReset();
+    vi.mocked(userNeedsMfaChallenge).mockReset();
+    vi.mocked(userNeedsMfaChallenge).mockResolvedValue(false);
   });
 
-  it("renvoie 403 mfa_required si challenge MFA en attente", async () => {
-    getServerSession.mockResolvedValue({ user: { id: "u1" } });
-    userNeedsMfaChallenge.mockResolvedValue(true);
+  it("retourne 401 si pas de session", async () => {
+    getServerSession.mockResolvedValue(null);
+    const res = await deniedAuthResponse("fr");
+    expect(res.status).toBe(401);
+  });
 
-    const { deniedAuthResponse } = await import("@/lib/http-auth");
+  it("retourne 403 mfa_required si challenge MFA", async () => {
+    getServerSession.mockResolvedValue({ user: { id: "u1" } });
+    vi.mocked(userNeedsMfaChallenge).mockResolvedValue(true);
     const res = await deniedAuthResponse("fr");
     expect(res.status).toBe(403);
     const body = (await res.json()) as { code?: string };
     expect(body.code).toBe("mfa_required");
   });
 
-  it("renvoie 401 si non authentifié", async () => {
-    getServerSession.mockResolvedValue(null);
-    const { deniedAuthResponse } = await import("@/lib/http-auth");
-    const res = await deniedAuthResponse("fr");
-    expect(res.status).toBe(401);
-    const body = (await res.json()) as { code?: string };
-    expect(body.code).toBe("unauthenticated");
-  });
-
-  it("renvoie 403 unauthorized si session OK mais accès refusé", async () => {
+  it("retourne 403 unauthorized si session sans droit", async () => {
     getServerSession.mockResolvedValue({ user: { id: "u1" } });
-    userNeedsMfaChallenge.mockResolvedValue(false);
-
-    const { deniedAuthResponse } = await import("@/lib/http-auth");
     const res = await deniedAuthResponse("fr");
     expect(res.status).toBe(403);
     const body = (await res.json()) as { code?: string };

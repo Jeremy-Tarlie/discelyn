@@ -3,8 +3,12 @@
     "brand": "Discelyn",
     "tryFree": "Essayer gratuitement",
     "try": "Essayer",
+    "seeExample": "Voir un exemple",
     "login": "Connexion",
+    "signup": "Créer un compte",
+    "logout": "Déconnexion",
     "dashboard": "Dashboard",
+    "skipToContent": "Aller au contenu",
     "seePricing": "Voir les tarifs",
     "openDashboard": "Ouvrir le dashboard",
     "startNow": "Commencer maintenant",
@@ -17,6 +21,9 @@
     "dark": "Sombre",
     "openMenu": "Ouvrir le menu",
     "closeMenu": "Fermer le menu",
+    "menu": "Menu",
+    "mainNav": "Navigation principale",
+
     "remove": "Retirer",
     "confirmDelete": "Confirmer la suppression ?",
     "envBanner": "Environnement {env} — mode Stripe test uniquement (pas de sk_live_)."
@@ -28,38 +35,65 @@
     "legalNotice": "Mentions légales",
     "privacy": "Confidentialité",
     "terms": "CGU",
-    "cookies": "Cookies"
+    "cookies": "Cookies",
+    "footerNav": "Liens pied de page"
+  },
+  "notFound": {
+    "title": "Page introuvable",
+    "body": "Cette adresse n’existe pas ou a été déplacée. Reviens à l’accueil ou connecte-toi.",
+    "home": "Retour à l’accueil"
   },
   "home": {
-    "heroTitle": "Paiement formation → Discord. Setup en 3 minutes.",
-    "heroBody": "Pas Whop (commission). Pas LaunchPass (communauté US). Pas MEE6 (hobby). Colle ta clé Stripe, choisis le rôle, partage le lien. 0 % Discelyn.",
-    "whyTitle": "Pourquoi Discelyn ?",
-    "learnMore": "En savoir plus",
-    "stepsTitle": "Live en 3 étapes",
-    "stepsSubtitle": "Conçu pour un organisme de formation — pas une communauté hobby.",
+    "heroTitle": "Tes apprenants paient. Discord s’ouvre. Toi, tu gardes le contrôle.",
+    "heroBody": "Discelyn relie ton Stripe formation au rôle Discord : accès ouvert au paiement, retiré au remboursement ou en fin d’abonnement. 0 % de commission. Essai gratuit sur 1 formation.",
+    "trustTrial": "Essai gratuit : 1 formation",
+    "trustCancel": "Sans engagement — annulation via Stripe",
+    "whyTitle": "Ce que tu gagnes avec Discelyn",
+    "whySubtitle": "Moins de gestion manuelle, moins de litiges d’accès, plus de temps pour vendre et former.",
+    "opsNote": "Le socle ops (welcome, tickets…) est inclus — détail sur la page fonctionnalités.",
+    "betaProofTitle": "Teste sur ta vraie formation, gratuitement",
+    "betaProofBody": "Branche 1 produit Stripe → 1 rôle. Fais un paiement test, un claim, un remboursement test. Si le parcours ne tient pas, tu n’upgrades pas.",
+    "learnMore": "Voir toutes les fonctionnalités",
+    "stepsTitle": "En ligne en 3 étapes",
+    "stepsSubtitle": "Pensé pour les organismes et infopreneurs qui forment déjà sur Discord.",
     "stepsGuide": "Voir le guide complet →",
-    "step1Title": "Connecte Discord",
-    "step1Body": "Login OAuth, tu crées ta config bot dans le dashboard.",
-    "step2Title": "Mappe Stripe → rôle",
-    "step2Body": "Price ID de ta formation → rôle Apprenant. Webhook sur ton compte Stripe.",
-    "step3Title": "Tu es live",
-    "step3Body": "Paiement → claim Discord → rôle. Refund ou fin d’abo → accès retiré.",
-    "diffTitle": "Whop / LaunchPass / MEE6 : pas ton job.",
-    "diffSubtitle": "Toi, tu vends une formation FR — pas une communauté US ni des levels.",
-    "diffPublicLabel": "Les autres",
-    "diffPublicBody": "Marketplace à commission, bots hobby, ou setup webhook à la main pendant 2 h.",
-    "diffDiscelynLabel": "Discelyn",
-    "diffDiscelynBody": "3 minutes : sk_ → prix + rôle → lien. Ton Stripe, 0 % commission, claim Discord, révocation refund.",
-    "diffProof1Title": "Setup idiot-proof",
-    "diffProof1Body": "Pas de whsec à copier. Discelyn crée le webhook Stripe et le Payment Link.",
+    "step1Title": "Crée ton compte",
+    "step1Body": "Discord ou e-mail — tu arrives directement dans le dashboard.",
+    "step2Title": "Relie paiement et accès",
+    "step2Body": "Choisis le prix de ta formation et le rôle apprenant. Discelyn branche le reste.",
+    "step3Title": "Tu es en ligne",
+    "step3Body": "L’apprenant paie, réclame son Discord, reçoit le rôle. Remboursement ou fin d’abo : accès retiré.",
+    "diffTitle": "Ton Stripe. Ton Discord. Tes règles d’accès.",
+    "diffSubtitle": "Un outil conçu pour vendre et délivrer une formation — pas pour animer une communauté hobby.",
+    "diffPublicLabel": "Sans Discelyn",
+    "diffPublicBody": "Webhooks maison ou Zapier : ça ouvre souvent l’accès. Rarement la révocation propre (remboursement, fin d’abo, fin de cohorte) et un claim Discord sans ticket staff.",
+    "diffDiscelynLabel": "Avec Discelyn",
+    "diffDiscelynBody": "≈ 5 minutes : Stripe → prix + rôle → lien. Argent sur ton Stripe, 0 % commission, accès retiré si remboursement ou fin d’abo.",
+    "diffProof1Title": "Setup sans bricolage",
+    "diffProof1Body": "Discelyn crée le branchement Stripe et le lien de paiement pour toi.",
     "diffProof2Title": "Ton argent chez toi",
-    "diffProof2Body": "Pas de marketplace. Les fonds restent sur TON Stripe. Discelyn ne prend pas de cut.",
+    "diffProof2Body": "Les fonds restent sur TON Stripe. Discelyn ne prend aucune commission sur tes ventes.",
     "diffProof3Title": "Fait pour la formation",
-    "diffProof3Body": "Claim apprenant, fin de cohorte, facture UE — pas un store de rôles gaming.",
-    "pricingTitle": "Tarifs simples",
-    "pricingSubtitle": "Commence gratuit ou à 19,99 €. Diagnostic / setup optionnels.",
-    "ctaTitle": "Prêt à upgrader ton serveur formation ?",
-    "ctaBody": "Essai gratuit. Ou pose ta question — réponse sous 1 jour ouvré.",
+    "diffProof3Body": "Accès apprenant, fin de cohorte, facture UE — le métier formation, pas le gaming.",
+    "pricingTitle": "Un essai gratuit. Des plans qui suivent ta croissance.",
+    "pricingSubtitle": "Essai gratuit (1 formation) pour valider paiement → claim → révocation. Starter dès 19,99 €/mois quand tu enchaînes les sessions — 0 % commission sur ton CA. Annulation via Stripe.",
+    "ctaTitle": "Prêt à automatiser l’accès de ta formation ?",
+    "ctaBody": "Essai gratuit sur 1 formation. Ou pose ta question — réponse sous 1 jour ouvré.",
+    "claimFlow": {
+      "title": "Parcours apprenant",
+      "live": "exemple",
+      "stepPay": "Paiement reçu",
+      "stepClaim": "Réclamation Discord",
+      "stepRole": "Rôle attribué",
+      "detail": {
+        "pay": "L’apprenant paie sur ton Stripe.",
+        "claim": "Il connecte son Discord en un clic.",
+        "role": "Les salons formation s’ouvrent."
+      },
+      "footerPay": "En attente du paiement…",
+      "footerClaim": "Lien de claim envoyé…",
+      "footerRole": "Accès ouvert — coupé si remboursement."
+    },
     "preview": {
       "serverName": "Formation Ops",
       "catInfo": "Info",
@@ -84,21 +118,31 @@
   "features": {
     "eyebrow": "Produit",
     "title": "Fonctionnalités",
-    "subtitle": "Le cœur : paiement Stripe → rôle Discord. Le reste (welcome, tickets, mods) est le socle ops — pas la différenciation.",
-    "whyTitle": "Pourquoi Discelyn ?",
-    "whySubtitle": "Une brique que MEE6 n’a pas, plus le minimum pour faire tourner une formation.",
+    "subtitle": "Cœur produit : paiement Stripe → rôle Discord. Autour : le socle ops pour faire tourner ta formation.",
+    "whyTitle": "Ce que Discelyn te permet",
+    "whySubtitle": "Contrôle d’accès fiable, plus le minimum pour opérer une formation sur Discord.",
     "ctaTitle": "Prêt à brancher ton Stripe sur Discord ?",
-    "ctaBody": "Essai : 1 produit accès. Tu configures depuis le dashboard.",
+    "ctaBody": "Essai gratuit : 1 produit accès. Tu configures depuis le dashboard.",
     "items": {
       "access": {
         "t": "Paiement → accès Discord",
-        "d": "Webhook sur TON Stripe. L’apprenant paie, claim Discord, reçoit le rôle. Refund = accès coupé.",
-        "detail": "C’est ça la différence avec MEE6 / Carl : eux animent, toi tu gates l’accès."
+        "d": "Sur TON Stripe. L’apprenant paie, réclame son Discord, reçoit le rôle. Remboursement = accès coupé.",
+        "detail": "Le contrôle d’accès est le cœur : ouvrir et fermer Discord selon le paiement."
+      },
+      "revoke": {
+        "t": "Révocation automatique",
+        "d": "Remboursement, impayé, fin d’abonnement ou fin de cohorte : le rôle Discord est retiré.",
+        "detail": "Tu ne dépends plus d’un oubli manuel pour couper un accès."
+      },
+      "zeroCut": {
+        "t": "0 % commission Discelyn",
+        "d": "Les fonds restent sur ton compte Stripe formation. Pas de marketplace, pas de cut plateforme.",
+        "detail": "Tu paies un abonnement logiciel — pas une commission sur chaque apprenant."
       },
       "welcome": {
         "t": "Welcome apprenant",
-        "d": "Message d’accueil + rôle promo à l’arrivée — utile, mais pas unique.",
-        "detail": "Socle ops. Tous les bots le font ; chez Discelyn c’est secondaire derrière l’accès payant."
+        "d": "Message d’accueil + rôle promo dès l’arrivée sur le serveur.",
+        "detail": "Onboarding propre dès le premier message — après le claim."
       },
       "ticket": {
         "t": "Tickets support",
@@ -108,7 +152,7 @@
       "mod": {
         "t": "Modération traçable",
         "d": "Warns en base + preview ; export audit dès Starter.",
-        "detail": "Utile litige — complément, pas le wedge."
+        "detail": "Historique exploitable en cas de litige ou d’audit interne."
       },
       "commands": {
         "t": "Commandes FAQ",
@@ -118,12 +162,12 @@
       "rgpd": {
         "t": "RGPD & facture UE",
         "d": "Export / suppression compte, rétention, Stripe EUR.",
-        "detail": "Cadre orga — invisible dans Discord, utile à la vente."
+        "detail": "Cadre orga prêt pour vendre en FR/UE."
       },
       "dashboard": {
         "t": "Dashboard accès",
         "d": "Tu configures Stripe→rôle et le socle ops sans coller de token.",
-        "detail": "Le premier écran utile : contrôle d’accès, pas une grille de modules hobby."
+        "detail": "Le premier écran utile : brancher l’accès, suivre les apprenants."
       }
     }
   },
@@ -134,38 +178,40 @@
     "subtitle": "Quatre étapes. Le succès = un paiement test qui ouvre un rôle Discord — pas une grille de modules.",
     "seeSteps": "Voir les étapes",
     "stepsTitle": "Les 4 étapes",
-    "stepsSubtitle": "Du login jusqu’au premier accès payant — le parcours qui te différencie de MEE6.",
+    "stepsSubtitle": "Du compte jusqu’au premier accès payant — sans jargon technique en premier.",
     "scrollHint": "Scroll ou clique une étape ci-dessus",
     "stepLabel": "ÉTAPE {n}",
     "needsTitle": "Ce dont tu as besoin",
-    "needsSubtitle": "Rien d’exotique — uniquement Discord et quelques minutes.",
+    "needsSubtitle": "Rien d’exotique — Discord, ton Stripe formation, et ≈ 5 minutes.",
     "ctaEyebrow": "Essai gratuit",
     "ctaTitle": "Prêt à tester ?",
-    "ctaBody": "Tu configures depuis le dashboard, tu upgrades quand tu veux via Stripe. Aucun token à gérer.",
+    "ctaBody": "Tu configures depuis le dashboard, tu upgrades quand tu veux via Stripe. Aucun token Discord à coller.",
+    "techTitle": "Pour les techs (optionnel)",
+    "techBody": "Sous le capot : clé Stripe formation, webhook créé automatiquement, mapping prix → rôle Discord, claim Discord sécurisé, révocation sur remboursement / fin d’abo / fin de cohorte.",
     "steps": {
       "01": {
-        "short": "Connexion",
-        "t": "Connecte-toi avec Discord",
-        "d": "Tu cliques sur Essayer et tu te connectes avec ton compte Discord. Pas de mot de passe : OAuth Discord, session sécurisée.",
-        "points": ["OAuth Discord", "Session sécurisée", "Dashboard immédiat"]
+        "short": "Compte",
+        "t": "Crée ton compte",
+        "d": "Clique sur Essayer, connecte Discord ou inscris-toi avec e-mail. Tu arrives tout de suite dans le dashboard.",
+        "points": ["Discord ou e-mail", "Session sécurisée", "Dashboard immédiat"]
       },
       "02": {
-        "short": "Stripe → rôle",
-        "t": "Branche ton Stripe formation",
-        "d": "Webhook sur TON compte Stripe + mapping price_… → rôle Discord. C’est le cœur Discelyn — pas les modules welcome.",
-        "points": ["Webhook formation", "1 produit dès l’essai", "Claim OAuth"]
+        "short": "Paiement → accès",
+        "t": "Relie ton Stripe formation",
+        "d": "Indique le prix de ta formation et le rôle Discord apprenant. Discelyn branche le paiement à l’accès — c’est le cœur du produit.",
+        "points": ["Ton Stripe", "1 formation dès l’essai", "Lien de claim"]
       },
       "03": {
-        "short": "Invite",
-        "t": "Invite le bot sur ton serveur",
-        "d": "Lie la guild, invite le bot plateforme pour qu’il puisse poser / retirer les rôles.",
-        "points": ["Droits Manage Roles", "1 serveur / config", "Invite dashboard"]
+        "short": "Serveur",
+        "t": "Invite Discelyn sur ton serveur",
+        "d": "Choisis ton serveur de formation et invite le bot pour qu’il puisse ouvrir et retirer les accès.",
+        "points": ["Droit de gérer les rôles", "1 serveur / config", "Invite depuis le dashboard"]
       },
       "04": {
-        "short": "Live",
-        "t": "Paiement test → rôle",
-        "d": "Checkout test → lien claim → Discord connecté → rôle. Refund → rôle retiré. Ensuite seulement : welcome / tickets.",
-        "points": ["Claim apprenant", "Révocation auto", "Ops en second"]
+        "short": "En ligne",
+        "t": "Paiement test → rôle ouvert",
+        "d": "Un paiement test, l’apprenant réclame son Discord, le rôle s’ouvre. Un remboursement retire l’accès. Ensuite seulement : welcome / tickets.",
+        "points": ["Accès apprenant", "Révocation auto", "Ops en second"]
       }
     },
     "needs": {
@@ -178,54 +224,63 @@
         "d": "Ta communauté / promo — avec le droit d’inviter un bot."
       },
       "time": {
-        "t": "5 minutes",
-        "d": "Login → config → invite → modules. Upgrade quand tu veux."
+        "t": "≈ 5 minutes",
+        "d": "Compte → Stripe → invite → premier accès. Upgrade quand tu veux."
       }
     }
   },
   "pricing": {
     "eyebrow": "Offres",
     "title": "Tarifs simples",
-    "subtitle": "Self-serve dès {price} €/mois. Diagnostic et Setup restent optionnels. Annulation via Stripe.",
+    "subtitle": "Self-serve dès {price} €/mois. Essai gratuit (1 formation). Diagnostic et Setup optionnels. Annulation via Stripe.",
     "seePlans": "Voir les plans",
     "chooseTitle": "Choisis ton plan",
-    "chooseSubtitle": "Commence gratuit ou Starter. Passe à Ops / Scale quand tu scales les promos.",
+    "chooseSubtitle": "Choisis selon ton rythme de promos — pas seulement le nombre de « formations ».",
     "unsureTitle": "Pas sûr du plan ?",
-    "unsureBody": "Regarde le parcours en 4 étapes, ou démarre l’essai — tu upgrades plus tard.",
+    "unsureBody": "1 promo test → Essai. Plusieurs sessions / an → Starter. Volume + équipe → Ops / Scale.",
     "subscriptions": "Abonnements",
-    "subscriptionsHint": "Self-serve depuis le dashboard. Annulation via Stripe.",
+    "subscriptionsHint": "Self-serve depuis le dashboard. Annulation via Stripe à tout moment.",
     "billingToggleLabel": "Période de facturation",
     "billingMonthly": "Mensuel",
     "billingYearly": "Annuel",
-    "yearlyDiscount": "2 mois offerts",
+    "yearlyDiscount": "−{percent} % économisé",
+    "yearlyDiscountUpTo": "Jusqu’à −{percent} % économisé",
+    "yearlyDiscountTag": "−{percent} %",
+    "yearlyDiscountHint": "selon le plan",
     "perMonth": "/ mois",
     "perYear": "/ an",
+    "freePrice": "0 €",
+    "priceEur": "{amount} €",
     "yearlyEquivalent": "soit {price} € / mois",
     "recommended": "Recommandé",
     "subscribe": "S’abonner",
     "tryFree": "Essayer gratuitement",
     "optional": "Accompagnement (optionnel)",
-    "optionalHint": "Pas obligatoire — pour les équipes qui veulent une mise en place cadrée.",
+    "optionalHint": "Le mapping Stripe→rôle reste self-serve (≈ 5 min). Diagnostic / Setup = cadrage et ops équipe — pas le branchement paiement.",
     "oneShot": "one-shot",
     "orderDiagnostic": "Commander le diagnostic",
     "orderSetup": "Commander le Setup",
     "checkoutFailed": "Erreur Stripe",
     "freeBullets": [
-      "1 produit Stripe → rôle Discord",
-      "Claim OAuth + révocation refund",
-      "Socle ops (welcome, tickets, mods…)"
+      "Idéal : 1 promo live pour valider le parcours",
+      "Paiement → rôle Discord + révocation auto",
+      "Socle ops inclus (welcome, tickets…)"
     ],
     "starterBullets": [
-      "Jusqu’à 5 produits accès",
+      "Pour plusieurs sessions / an (jusqu’à 5 produits)",
       "Export audit modération",
-      "15 commandes FAQ"
+      "Upgrade quand Free ne suffit plus"
     ],
     "opsBullets": [
-      "Jusqu’à 20 produits accès",
-      "Export audit + 40 commandes",
-      "Pack ops formation"
+      "Recommandé si tu enchaînes les promos (jusqu’à 20)",
+      "Plus de FAQ + pack ops",
+      "Quand Starter devient un plafond"
     ],
-    "scaleBullets": ["Tout Ops + automod", "Jusqu’à 5 serveurs", "DPA sur demande + support prioritaire"],
+    "scaleBullets": [
+      "Multi-équipes / multi-serveurs + volume",
+      "Automod + jusqu’à 100 produits accès",
+      "DPA sur demande + support prioritaire"
+    ],
     "diagnosticBullets": [
       "Revue modération / tickets / onboarding",
       "Points de vigilance RGPD",
@@ -233,9 +288,9 @@
       "{credit} € déduits du Setup si vous enchaînez"
     ],
     "setupBullets": [
-      "Livraison sous 10 jours ouvrés",
-      "Configuration Ops sur votre serveur",
-      "1 h de formation équipe",
+      "≠ le branchement Stripe→rôle (déjà self-serve)",
+      "Config Ops livrée + 1 h formation équipe",
+      "Sous 10 jours ouvrés",
       "Crédit diagnostic si déjà payé"
     ],
     "guildsOne": "{n} serveur",
@@ -244,35 +299,129 @@
   "plans": {
     "FREE": {
       "name": "Essai",
-      "description": "1 mapping paiement→rôle + socle ops — la vraie différence vs MEE6."
+      "description": "1 promo test : paiement, claim Discord, révocation — sans carte."
     },
     "STARTER": {
       "name": "Starter",
-      "description": "5 produits accès, export audit, 15 commandes FAQ."
+      "description": "Plusieurs sessions / an : jusqu’à 5 produits accès + export audit."
     },
     "OPS": {
       "name": "Ops",
-      "description": "20 produits accès, export audit, 40 commandes."
+      "description": "Volume de promos : jusqu’à 20 produits — quand Starter plafonne."
     },
     "SCALE": {
       "name": "Scale",
-      "description": "Multi-serveurs, automod, DPA sur demande et support prioritaire."
+      "description": "Multi-serveurs / multi-équipes et fort volume d’accès."
     },
     "DIAGNOSTIC": {
       "name": "Diagnostic",
-      "description": "Revue de ton serveur formation + plan d’action."
+      "description": "Revue de ton serveur formation + plan d’action (90 min)."
     },
     "SETUP": {
       "name": "Setup",
-      "description": "Configuration Ops livrée sur ton Discord."
+      "description": "Ops équipe livrés sur ton Discord — pas le mapping Stripe→rôle self-serve."
     }
   },
   "login": {
     "title": "Connexion",
-    "subtitle": "Connecte-toi avec Discord pour accéder au dashboard Discelyn.",
+    "subtitle": "Connecte-toi avec Discord ou ton e-mail pour accéder au dashboard Discelyn.",
     "continueDiscord": "Continuer avec Discord",
+    "orEmail": "ou avec e-mail",
+    "emailLabel": "E-mail",
+    "passwordLabel": "Mot de passe",
+    "submit": "Se connecter",
+    "forgotPassword": "Mot de passe oublié ?",
+    "noAccount": "Pas encore de compte ?",
+    "signupLink": "Créer un compte",
+    "oauthLinkedError": "Un compte existe déjà avec cet e-mail. Connecte-toi avec ton mot de passe, puis lie Discord depuis Compte.",
+    "emailNotVerified": "Vérifie ton e-mail avant de te connecter.",
+    "invalidCredentials": "E-mail ou mot de passe incorrect.",
+    "resendVerification": "Renvoyer l’e-mail de vérification",
+    "resendOk": "Si un compte non vérifié existe, un e-mail a été envoyé.",
     "legal": "En continuant, tu acceptes les <terms>CGU</terms> et la <privacy>politique de confidentialité</privacy>."
   },
+  "signup": {
+    "title": "Créer un compte",
+    "subtitle": "Choisis ton plan, puis inscris-toi avec Discord ou e-mail.",
+    "stepsLabel": "Étapes d’inscription",
+    "stepPlan": "Plan",
+    "stepAccount": "Compte",
+    "stepAriaCurrent": "Étape {current} sur {total} : {label} (actuelle)",
+    "stepAriaDone": "Étape {current} sur {total} : {label} (terminée)",
+    "stepAriaUpcoming": "Étape {current} sur {total} : {label}",
+    "stepPlanTitle": "Choisis ton plan",
+    "stepPlanSubtitle": "Tu pourras changer d’offre plus tard depuis le dashboard.",
+    "stepAccountTitle": "Crée ton compte",
+    "stepAccountSubtitle": "Discord en un clic, ou e-mail et mot de passe.",
+    "verifyTitle": "Vérifie ta boîte mail",
+    "continue": "Continuer",
+    "back": "Modifier",
+    "selectedPlan": "Plan sélectionné",
+    "planLabel": "Plan",
+    "billingIntervalLabel": "Facturation mensuelle ou annuelle",
+    "intervalMonth": "Mensuel",
+    "intervalYear": "Annuel",
+    "nameLabel": "Nom (optionnel)",
+    "emailLabel": "E-mail",
+    "passwordLabel": "Mot de passe",
+    "weakPassword": "Mot de passe trop faible.",
+    "submit": "Créer mon compte",
+    "continueDiscord": "S’inscrire avec Discord",
+    "orEmail": "ou avec e-mail",
+    "hasAccount": "Déjà un compte ?",
+    "loginLink": "Se connecter",
+    "checkEmail": "Vérifie ta boîte mail pour activer ton compte.",
+    "emailTaken": "Cet e-mail est déjà utilisé.",
+    "emailNotAllowed": "Cette adresse e-mail n’est pas acceptée.",
+    "mailFailed": "Compte créé, mais l’e-mail n’a pas pu être envoyé. Réessaie depuis la page de connexion.",
+    "legal": "En continuant, tu acceptes les <terms>CGU</terms> et la <privacy>politique de confidentialité</privacy>."
+  },
+  "verifyEmail": {
+    "title": "Vérification e-mail",
+    "subtitle": "Activation de ton compte…",
+    "success": "E-mail vérifié. Redirection…",
+    "failed": "Lien invalide ou expiré.",
+    "alreadyVerified": "E-mail déjà vérifié. Connecte-toi.",
+    "loginLink": "Aller à la connexion"
+  },
+  "forgotPassword": {
+    "title": "Mot de passe oublié",
+    "subtitle": "Entre ton e-mail : si un compte existe, tu recevras un lien de réinitialisation.",
+    "emailLabel": "E-mail",
+    "submit": "Envoyer le lien",
+    "doneTitle": "Vérifie ta boîte mail",
+    "done": "Si un compte existe pour cet e-mail, un message a été envoyé.",
+    "backLogin": "Retour à la connexion"
+  },
+  "resetPassword": {
+    "title": "Nouveau mot de passe",
+    "subtitle": "Choisis un mot de passe robuste (12 caractères min., majuscule, minuscule, chiffre, caractère spécial).",
+    "passwordLabel": "Nouveau mot de passe",
+    "submit": "Enregistrer",
+    "successTitle": "Mot de passe mis à jour",
+    "success": "Tu peux te connecter avec ton nouveau mot de passe.",
+    "failedTitle": "Lien invalide",
+    "failed": "Ce lien est invalide ou a expiré. Demande-en un nouveau pour continuer.",
+    "weakPassword": "Mot de passe trop faible.",
+    "loginLink": "Se connecter",
+    "requestNewLink": "Demander un nouveau lien"
+  },
+  "password": {
+    "show": "Afficher le mot de passe",
+    "hide": "Masquer le mot de passe",
+    "confirmLabel": "Confirmer le mot de passe",
+    "mismatch": "Les mots de passe ne correspondent pas.",
+    "rulesLabel": "Exigences du mot de passe",
+    "ruleMinLength": "Au moins {n} caractères",
+    "ruleUpper": "Au moins 1 majuscule",
+    "ruleLower": "Au moins 1 minuscule",
+    "ruleDigit": "Au moins 1 chiffre",
+    "ruleSpecial": "Au moins 1 caractère spécial",
+    "ruleMet": "Respecté",
+    "ruleUnmet": "Non respecté"
+  },
+
+
   "subscribe": {
     "title": "Finaliser l’abonnement",
     "subtitle": "Redirection vers Stripe pour le plan {plan}…",
@@ -302,6 +451,7 @@
     "billing": "Abonnement",
     "accountNav": "Compte",
     "leads": "Leads",
+    "platformAdminNav": "Admin plateforme",
     "consentsNav": "Consentements",
     "logout": "Déconnexion",
     "hello": "Salut {name}",
@@ -341,7 +491,7 @@
     "botGuildLinked": "Serveur lié",
     "botGuildMissing": "Serveur non lié",
     "botsIntro": "Priorité : contrôle d’accès (Stripe→rôle). Le socle ops (welcome, tickets…) est en dessous.",
-    "trialValueHint": "La diff vs MEE6 = le panel « Contrôle d’accès » ci-dessous. Sans Stripe branché, tu as juste un bot classique — branche-le.",
+    "trialValueHint": "Priorité : branche Stripe → rôle dans le panel « Contrôle d’accès » ci-dessous. Sans ça, l’essai ne montre pas la valeur Discelyn.",
     "deleteBot": "Supprimer",
     "deletingBot": "Suppression…",
     "deleteBotFailed": "Suppression impossible",
@@ -473,7 +623,7 @@
     "billingPerMonth": "{price} € / mois",
     "billingStatus": "Statut : {status}",
     "billingRenewal": " · renouvellement {date}",
-    "billingDpa": "DPA Scale : modèle disponible sur demande (docs/DPA.md) — pas un PDF signé in-app. Contacte le support pour le process contractuel avant signature.",
+    "billingDpa": "DPA : modèle disponible sur demande (docs/DPA.md) pour tout plan avec accès apprenants — pas un PDF signé in-app. Contacte le support pour le process contractuel avant signature.",
     "billingAuditHint": "Export audit modération : page de chaque bot → section « Historique & export audit ».",
     "billingChangePlan": "Changer de plan",
     "changePlanTitle": "Changer de plan",
@@ -499,7 +649,9 @@
     "accountProfile": "Profil",
     "accountNoName": "Sans nom",
     "accountNoEmail": "Sans e-mail",
-    "accountDiscordHint": "Identité gérée via Discord OAuth — pas de mot de passe Discelyn.",
+    "accountDiscordHint": "Tu peux te connecter avec Discord et/ou e-mail + mot de passe. Lie Discord pour les fonctions serveur.",
+    "accountLinkDiscord": "Lier Discord",
+    "accountDiscordLinked": "Compte Discord lié.",
     "accountBillingLink": "Voir l’abonnement et les factures →",
     "mfaTitle": "Double authentification (TOTP)",
     "mfaIntro": "Après la connexion Discord, un code Authenticator est demandé. Protège le dashboard même si Discord est compromis.",
@@ -539,6 +691,8 @@
     "notifSecurityHint": "2FA, connexions sensibles.",
     "notifProduct": "Produit",
     "notifProductHint": "Alertes accès, quotas, webhooks.",
+    "notifMarketing": "Marketing Discelyn",
+    "notifMarketingHint": "Campagnes et actualités produit (opt-in).",
     "orgTitle": "Organisation",
     "orgIntro": "Résumé de ton espace Discelyn.",
     "orgName": "Nom",
@@ -575,24 +729,44 @@
     "sessionsLoadFailed": "Impossible de charger les sessions",
     "sessionsRevokeFailed": "Révocation impossible",
     "access": {
-      "badge": "≠ Whop / LaunchPass / MEE6",
+      "badge": "Cœur produit",
       "title": "Contrôle d’accès apprenant",
-      "wizardTitle": "Accès formation en 3 minutes",
-      "wizardBody": "Colle ta clé Stripe → prix + rôle → poste la boutique Discord. Webhook + Payment Link auto. 0 % commission Discelyn.",
+      "wizardTitle": "Accès formation",
+      "wizardBody": "Branche TON Stripe → choisis le rôle → crée l’offre (ou branche un paiement Stripe déjà en place) → partage le lien. Discelyn ne prend que l’abo SaaS.",
+      "zeroFee": "0 % commission sur ton CA formation — l’argent reste sur ton Stripe.",
       "quota": "{used} / {max} produits accès",
       "loading": "Chargement…",
       "loadFailed": "Chargement impossible",
       "saveFailed": "Échec",
       "needGuild": "Lie d’abord ton serveur Discord (étape au-dessus).",
       "step1Label": "Stripe",
-      "step2Label": "Prix + rôle",
-      "step3Label": "Boutique",
+      "step2Label": "Rôle",
+      "step3Label": "Offre",
+      "step4Label": "Distribuer",
       "step1Body": "Clé secrète de TON Stripe formation (pas celle de Discelyn). On crée le webhook tout seuls.",
       "stripeKey": "Clé secrète Stripe (sk_…)",
-      "step1Hint": "Dashboard Stripe → Developers → API keys. Préfère une clé restreinte (rk_) si tu en as une avec droits Products + Webhooks + Payment Links.",
+      "step1Hint": "Dashboard Stripe → Developers → API keys. Préfère une clé restreinte avec droits Products + Webhooks + Payment Links.",
       "step1Cta": "Activer en 1 clic",
       "setupDone": "Stripe branché — webhook créé.",
-      "step2Body": "Choisis le prix Stripe, le rôle Discord, et optionnellement le pitch boutique + DM de bienvenue.",
+      "step2Body": "Rôle Discord attribué après paiement. Le rôle du bot doit être au-dessus de ce rôle.",
+      "step2Cta": "Continuer vers l’offre",
+      "roleHierarchyHint": "Dans Discord : Paramètres serveur → Rôles — place le rôle du bot au-dessus du rôle vendu.",
+      "step3Body": "Crée une offre sur ton Stripe, ou branche un price_ / Payment Link que tu as déjà.",
+      "step3Cta": "Enregistrer l’offre",
+      "modeCreate": "Créer l’offre",
+      "modeBind": "Brancher un paiement existant",
+      "modeCreateHint": "Discelyn crée le produit, le prix et le lien de paiement sur TON Stripe.",
+      "modeBindHint": "Colle un price_… ou une URL buy.stripe.com de CE compte. Pas de scan de tout ton catalogue.",
+      "amount": "Montant",
+      "currency": "Devise",
+      "billingMode": "Type de paiement",
+      "billingOneTime": "Paiement unique",
+      "billingRecurring": "Abonnement",
+      "recurringInterval": "Période",
+      "intervalMonth": "Mensuel",
+      "intervalYear": "Annuel",
+      "bindPriceId": "Price ID Stripe (optionnel si tu colles un lien)",
+      "bindPaymentLink": "URL Payment Link (optionnel si tu colles un price_)",
       "productName": "Nom affiché",
       "productNamePlaceholder": "Formation SEO — Promo mars",
       "pitch": "Pitch boutique (optionnel)",
@@ -606,15 +780,12 @@
       "onboardingPlaceholder": "Lis #règles\nPrésente-toi dans #intro\nOuvre /ticket si besoin",
       "seatsLine": "{used} / {max} places",
       "viewLearners": "Voir apprenants",
-      "pickPrice": "Prix Stripe",
-      "pickPricePlaceholder": "Choisir un prix…",
       "pickRole": "Rôle Discord",
       "pickRolePlaceholder": "Choisir un rôle…",
-      "step2Cta": "Créer le lien de paiement",
-      "noPrices": "Aucun prix actif dans Stripe — crée un Produit + Prix dans ton dashboard Stripe.",
       "backStep": "Retour",
-      "skipToStep2": "Déjà branché → étape 2",
-      "step3Body": "Partage le lien, ou poste la boutique Discord (boutons Acheter). Les membres peuvent aussi taper /boutique.",
+      "skipToStep2": "Déjà branché → rôle Discord",
+      "step4Body": "Partage le lien, ou poste la boutique Discord. Les paiements ouvrent un claim — vois qui a payé dans Apprenants.",
+      "sourceExternal": "branché",
       "shopTitle": "Poster la boutique Discord",
       "shopBody": "Embed + boutons Payment Link dans un salon — zéro page externe à expliquer.",
       "shopChannel": "Salon Discord",
@@ -625,7 +796,7 @@
       "copyLink": "Copier le lien",
       "linkCopied": "Lien copié.",
       "addAnother": "Ajouter un autre produit",
-      "productCreated": "Produit + lien de paiement prêts.",
+      "productCreated": "Offre prête — lien de paiement disponible.",
       "body": "Paiement Stripe → rôle Discord.",
       "stripeTitle": "Webhook Stripe",
       "stripeBody": "URL de webhook à coller dans ton dashboard Stripe (Developers → Webhooks), ou créée automatiquement via la clé secrète.",
@@ -809,7 +980,7 @@
       "modulesTitle": "Socle ops (secondaire)",
       "modulesHint": "Welcome, tickets, mods… comme un bot classique. Utile, mais ce n’est PAS la différence Discelyn — le contrôle d’accès est au-dessus.",
       "opsSecondaryTitle": "Socle ops Discord",
-      "opsSecondaryHint": "Optionnel. MEE6 fait déjà ça. Configure-le après le mapping Stripe→rôle.",
+      "opsSecondaryHint": "Optionnel. Configure-le après le mapping Stripe→rôle.",
       "upgrade": "Upgrade",
       "on": "On",
       "off": "Off",
@@ -908,6 +1079,7 @@
   "gdpr": {
     "leadConsent": "J’accepte que Discelyn traite mes données pour me recontacter au sujet de cette demande (voir la <privacy>politique de confidentialité</privacy>).",
     "leadConsentRequired": "Le consentement est obligatoire pour envoyer le formulaire.",
+    "leadMarketingConsent": "J’accepte de recevoir occasionnellement des actualités et offres Discelyn par e-mail (désinscription possible).",
     "oauthNote": "En continuant avec Discord, tu acceptes les {terms} et la {privacy}."
   },
   "lead": {
@@ -955,7 +1127,9 @@
     "sessionSoldOutBody": "Le paiement a été reçu alors que la formation était complète. Contacte le support de ta formation — un remboursement devrait suivre.",
     "sessionSoldOutRefunded": "La formation était complète : ton paiement a été remboursé automatiquement. Tu ne seras pas débité.",
     "connectDiscord": "Connecter Discord",
-    "privacyHint": "Discelyn ne lit que ton ID Discord pour attribuer le rôle. Pas de message, pas de serveur en ton nom.",
+    "privacyHint": "Discelyn traite ton ID Discord (et l’e-mail Stripe déjà reçu) pour attribuer le rôle et t’envoyer les relances claim. Pas de message publié en ton nom. Droits RGPD : contacte le support de ta formation (responsable de traitement) ou {support} — procédure décrite dans la politique de confidentialité.",
+    "privacyLink": "Politique de confidentialité",
+    "rightsHint": "Pour accéder, rectifier ou effacer tes données d’accès formation, contacte d’abord l’organisme qui t’a vendu la formation. Discelyn peut relayer ta demande à l’orga (sous-traitant).",
     "successActive": "Accès activé — ton rôle est en place sur le serveur.",
     "successJoin": "Presque — rejoins le serveur pour recevoir ton rôle.",
     "joinDiscord": "Rejoindre le serveur",
@@ -978,7 +1152,11 @@
       "awaitingJoin": "Connecte-toi puis rejoins le serveur Discord pour recevoir ton rôle.",
       "oauth": "Connexion Discord annulée ou échouée. Réessaie.",
       "config": "Configuration OAuth incomplete. Contacte le support Discelyn.",
-      "grant": "Impossible d’attribuer le rôle. Contacte le support de ta formation."
+      "grant": "Impossible d’attribuer le rôle. Contacte le support de ta formation.",
+      "invalid_code": "Code invalide. Vérifie le code fourni par ta formation.",
+      "code_expired": "Ce code a expiré. Demande un nouveau code à ta formation.",
+      "code_exhausted": "Ce code a déjà été utilisé le nombre maximum de fois.",
+      "sold_out": "Plus de places disponibles pour cette formation."
     }
   },
   "api": {
@@ -986,6 +1164,8 @@
     "unauthorized": "Non autorisé",
     "invalidJson": "JSON invalide",
     "invalidData": "Données invalides",
+    "weakPassword": "Mot de passe trop faible (12 caractères min., majuscule, minuscule, chiffre, caractère spécial).",
+
     "botNotFound": "Bot introuvable",
     "accountNotFound": "Compte introuvable",
     "rateLimited": "Trop de requêtes. Réessaie plus tard.",
@@ -1030,6 +1210,7 @@
     "webhookNotConfigured": "Webhook non configuré",
     "invalidSignature": "Signature invalide",
     "marketingConsentRequired": "Le consentement marketing est obligatoire.",
+    "contactConsentRequired": "Le consentement pour être recontacté est obligatoire.",
     "discordSessionExpired": "Session Discord expirée. Reconnecte-toi.",
     "discordNotMember": "Tu n’es pas membre de ce serveur.",
     "discordNotAdmin": "Il te faut la permission « Gérer le serveur ».",
@@ -1042,23 +1223,103 @@
     "accessShopEmpty": "Aucun produit actif avec un lien de paiement — crée-en un d’abord.",
     "learnerNoStripeCustomer": "Cet apprenant n’a pas de client Stripe (paiement one-shot sans customer ou code manuel).",
     "orgStripeMissing": "Stripe formation non configuré (clé secrète manquante).",
+    "paymentLinkNotFound": "Payment Link introuvable sur ce compte Stripe. Colle un price_… ou un lien buy.stripe.com de CE compte.",
+    "paymentLinkNoPrice": "Ce Payment Link n’a pas de prix associé.",
+    "stripePriceInactive": "Ce prix Stripe est inactif.",
     "learnerPortalFailed": "Impossible d’ouvrir le portail Stripe. Active le Customer Portal dans le dashboard Stripe de la formation.",
     "tokenEncryptionRequired": "TOKEN_ENCRYPTION_KEY manquant ou invalide pour chiffrer les secrets Stripe.",
     "stripeSetupFailed": "Impossible de brancher Stripe (clé invalide ou droits insuffisants).",
-    "discordRolesUnavailable": "Impossible de lister les rôles Discord (bot présent + permission Gérer les rôles ?)."
+    "discordRolesUnavailable": "Impossible de lister les rôles Discord (bot présent + permission Gérer les rôles ?).",
+    "emailTaken": "Cet e-mail est déjà utilisé.",
+    "emailNotAllowed": "Cette adresse e-mail n’est pas acceptée.",
+    "authMailFailed": "Impossible d’envoyer l’e-mail. Réessaie plus tard.",
+    "invalidCredentials": "E-mail ou mot de passe incorrect.",
+    "emailNotVerified": "Vérifie ton e-mail avant de te connecter.",
+    "invalidVerifyToken": "Lien de vérification invalide ou expiré.",
+    "emailAlreadyVerified": "E-mail déjà vérifié.",
+    "invalidResetToken": "Lien de réinitialisation invalide ou expiré."
+  },
+  "admin": {
+    "badge": "Admin plateforme",
+    "backDashboard": "← Dashboard client",
+    "nav": {
+      "overview": "Vue d’ensemble",
+      "customers": "Clients",
+      "leads": "Leads",
+      "promos": "Codes promo",
+      "campaigns": "Campagnes",
+      "consents": "Consentements"
+    },
+    "overviewTitle": "Admin Discelyn",
+    "overviewBody": "Clients SaaS, promos Stripe et campagnes Resend.",
+    "statOrgs": "Organisations",
+    "statPaid": "Abonnés payants",
+    "statFree": "Essai / FREE",
+    "statPastDue": "Impayés",
+    "statCanceling": "Résiliation en cours",
+    "statLeads": "Leads",
+    "customersTitle": "Clients",
+    "customersBody": "Organisations, abonnements et signaux de retour.",
+    "colOrg": "Organisation",
+    "colPlan": "Plan",
+    "colStatus": "Statut",
+    "colOwner": "Owner",
+    "colLogin": "Dernier login",
+    "colBot": "Bot vu",
+    "colOpen": "Dernier open mail",
+    "colCreated": "Créée",
+    "emptyCustomers": "Aucune organisation.",
+    "customerDetail": "Détail client",
+    "members": "Membres",
+    "bots": "Bots",
+    "activity": "Activité récente (owner)",
+    "never": "Jamais",
+    "promosTitle": "Codes promo",
+    "promosBody": "Coupons Stripe plateforme (appliqués au checkout SaaS).",
+    "promoCode": "Code",
+    "promoPercent": "% de réduction",
+    "promoDuration": "Durée",
+    "promoDurationOnce": "Une fois",
+    "promoDurationForever": "Illimitée",
+    "promoCreate": "Créer le code",
+    "promoEmpty": "Aucun code ou Stripe indisponible.",
+    "promoActive": "Actif",
+    "promoInactive": "Inactif",
+    "campaignsTitle": "Campagnes e-mail",
+    "campaignsBody": "Envoi Resend aux leads / clients avec consentement marketing.",
+    "campaignSubject": "Sujet",
+    "campaignBody": "Message (texte)",
+    "campaignAudience": "Audience",
+    "audienceLeads": "Leads consentis",
+    "audienceCustomers": "Clients consentis",
+    "audienceBoth": "Les deux",
+    "campaignSend": "Envoyer",
+    "campaignEmpty": "Aucune campagne.",
+    "campaignQueued": "En file",
+    "campaignSending": "Envoi… ({n})",
+    "campaignSent": "Envoyée ({n})",
+    "campaignPartial": "Partielle ({n})",
+    "campaignFailed": "Échec",
+    "marketingNote": "Seuls les destinataires avec consentement marketing explicite sont ciblés (case marketing leads / prefs clients)."
   },
   "meta": {
     "defaultTitle": "Discelyn — Paiement formation → accès Discord",
-    "defaultDescription": "L’apprenant paie sur Stripe, Discelyn ouvre le Discord. Remboursement = accès coupé. Pas un MEE6 — pour organismes de formation FR/UE.",
+    "defaultDescription": "L’apprenant paie sur Stripe, Discelyn ouvre le Discord. Remboursement = accès coupé. Pour organismes de formation FR/UE. Essai gratuit (1 formation).",
     "featuresTitle": "Fonctionnalités",
-    "featuresDescription": "Paiement Stripe → rôle Discord, claim apprenant, révocation auto. Plus welcome, tickets, mods — pour organismes de formation FR/UE.",
+    "featuresDescription": "Paiement Stripe → rôle Discord, accès apprenant, révocation auto. Plus welcome, tickets, mods — pour organismes de formation FR/UE.",
     "howTitle": "Comment ça marche",
-    "howDescription": "Connecte Discord, branche ton Stripe formation, mappe price→rôle, teste un paiement. Ensuite welcome / tickets.",
+    "howDescription": "Crée ton compte, relie ton Stripe formation au rôle Discord, invite le bot, teste un paiement. ≈ 5 minutes.",
     "pricingTitle": "Tarifs",
-    "pricingDescription": "Essai : 1 produit accès. Starter / Ops / Scale pour scaler. Pas un MEE6.",
+    "pricingDescription": "Essai gratuit : 1 formation. Starter / Ops / Scale pour scaler. Annulation via Stripe.",
     "loginTitle": "Connexion",
+    "signupTitle": "Créer un compte",
+    "verifyEmailTitle": "Vérification e-mail",
+    "forgotPasswordTitle": "Mot de passe oublié",
+    "resetPasswordTitle": "Nouveau mot de passe",
     "privacyTitle": "Confidentialité",
     "termsTitle": "CGU",
-    "legalNoticeTitle": "Mentions légales"
+    "legalNoticeTitle": "Mentions légales",
+    "claimTitle": "Réclamer l’accès Discord",
+    "claimCodeTitle": "Code d’accès formation"
   }
 }

@@ -116,11 +116,26 @@ export async function listUserOrganizations(userId: string): Promise<
   }));
 }
 
-/** Crée une org + membership OWNER + abonnement FREE pour un nouvel utilisateur. */
+/**
+ * Crée une org + membership OWNER + abonnement FREE pour un nouvel utilisateur.
+ * Idempotent : si une membership active existe déjà, la réutilise (verify retry-safe).
+ */
 export async function bootstrapOrganizationForUser(input: {
   userId: string;
   name?: string | null;
 }): Promise<{ organizationId: string }> {
+  const existing = await prisma.organizationMembership.findFirst({
+    where: {
+      userId: input.userId,
+      organization: { deletedAt: null },
+    },
+    orderBy: { createdAt: "asc" },
+    select: { organizationId: true },
+  });
+  if (existing) {
+    return { organizationId: existing.organizationId };
+  }
+
   const orgName =
     input.name && input.name.trim().length > 0
       ? input.name.trim()

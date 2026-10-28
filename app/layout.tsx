@@ -1,20 +1,18 @@
-import type { Metadata } from "next";
-import { Outfit, Syne } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Outfit } from "next/font/google";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { shouldShowEnvironmentBanner, getAppEnvironment } from "@/lib/demo";
 import { getRequestTheme } from "@/lib/theme";
 import { Providers } from "@/components/Providers";
 import "./globals.css";
 
+/*
+  Une seule famille (Outfit) : Syne / Space Grotesk ont un « g » géométrique
+  à fond plat que les lecteurs prennent pour un bug de coupe.
+*/
 const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-outfit",
-  display: "swap",
-});
-
-const syne = Syne({
-  subsets: ["latin"],
-  variable: "--font-syne",
   display: "swap",
 });
 
@@ -33,12 +31,15 @@ export async function generateMetadata(): Promise<Metadata> {
       icon: [{ url: "/icon", type: "image/png" }],
       apple: [{ url: "/apple-icon", type: "image/png" }],
     },
-    themeColor: [
-      { media: "(prefers-color-scheme: light)", color: "#f3f5f8" },
-      { media: "(prefers-color-scheme: dark)", color: "#1a1c21" },
-    ],
   };
 }
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f3f5f8" },
+    { media: "(prefers-color-scheme: dark)", color: "#1a1c21" },
+  ],
+};
 
 export default async function RootLayout({
   children,
@@ -55,7 +56,7 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
-      className={`${outfit.variable} ${syne.variable}${theme === "dark" ? " dark" : ""}`}
+      className={`${outfit.variable}${theme === "dark" ? " dark" : ""}`}
       style={{ colorScheme: theme }}
       suppressHydrationWarning
     >

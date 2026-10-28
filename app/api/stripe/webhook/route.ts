@@ -168,6 +168,8 @@ export async function POST(request: NextRequest) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         const metaUserId = session.metadata?.userId ?? null;
+        // bypassConsent = événement facturation serveur (LIA / contrat), pas cookies.
+        // Nom historique checkout_completed (équivalent billing_checkout_completed).
         await trackEvent({
           name: "checkout_completed",
           userId: metaUserId,
@@ -176,6 +178,7 @@ export async function POST(request: NextRequest) {
             mode: session.mode,
             planId: session.metadata?.planId ?? null,
             organizationId: session.metadata?.organizationId ?? null,
+            serverSideBilling: true,
           },
         });
         if (session.mode === "subscription" && session.subscription) {

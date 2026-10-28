@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getServerSession } from "next-auth";
 import { getTranslations } from "next-intl/server";
+import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { SiteHeader } from "@/components/landing/SiteHeader";
 import { SiteFooter } from "@/components/landing/SiteFooter";
@@ -13,6 +13,8 @@ import { DiscelynMascot } from "@/components/landing/DiscelynMascot";
 
 const FEATURE_KEYS = [
   "access",
+  "revoke",
+  "zeroCut",
   "welcome",
   "ticket",
   "mod",
@@ -30,17 +32,17 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function FeaturesPage() {
   const session = await getServerSession(authOptions);
-  const ctaHref = session ? "/dashboard" : "/login";
+  const ctaHref = session ? "/dashboard" : "/signup";
   const t = await getTranslations("features");
   const tc = await getTranslations("common");
   const th = await getTranslations("nav");
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
+    <div className="min-h-screen overflow-x-clip bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
       <SiteHeader signedIn={Boolean(session)} />
 
-      <main>
-        <section className="relative bg-[#2a9e86]">
+      <main id="main-content">
+        <section className="relative bg-[#1f7a68]">
           <div
             className="pointer-events-none absolute inset-0 overflow-hidden"
             aria-hidden
@@ -49,13 +51,13 @@ export default async function FeaturesPage() {
           </div>
           <div className="relative mx-auto grid max-w-6xl items-end gap-8 px-6 pb-4 pt-14 md:grid-cols-[1.15fr_0.85fr] md:gap-6 md:pb-0 md:pt-16">
             <div className="relative z-10 pb-8 md:pb-14">
-              <p className="animate-fade-up inline-flex items-center gap-2 rounded-full bg-black/15 px-3 py-1 font-display text-xs font-semibold uppercase tracking-[0.2em] text-white/90">
+              <p className="animate-fade-up inline-flex items-center gap-2 rounded-full bg-black/15 px-3 py-1 font-display text-xs font-semibold uppercase tracking-[0.2em] text-white">
                 {t("eyebrow")}
               </p>
               <h1 className="animate-fade-up mt-5 max-w-xl font-display text-4xl font-bold text-white sm:text-5xl lg:text-6xl">
                 {t("title")}
               </h1>
-              <p className="animate-fade-up mt-5 max-w-lg text-base leading-relaxed text-white/90 sm:text-lg">
+              <p className="animate-fade-up mt-5 max-w-lg text-base leading-relaxed text-white sm:text-lg">
                 {t("subtitle")}
               </p>
               <div className="animate-fade-up mt-8 flex flex-wrap gap-3">
@@ -97,7 +99,7 @@ export default async function FeaturesPage() {
                   delay={(Math.min(i + 1, 4) as 1 | 2 | 3 | 4)}
                   className="h-full"
                 >
-                  <article className="group flex h-full flex-col overflow-hidden rounded-3xl border border-[color:var(--border)] bg-[color:var(--surface)] p-6 transition duration-300 hover:-translate-y-1.5">
+                  <article className="group flex h-full flex-col overflow-visible rounded-3xl border border-[color:var(--border)] bg-[color:var(--surface)] p-6 transition duration-300 hover:-translate-y-1.5">
                     <FeatureIcon name={key} className="h-14 w-14 rounded-2xl" />
                     <h3 className="mt-5 font-display text-xl font-semibold text-[color:var(--page-fg)]">
                       {t(`items.${key}.t`)}
@@ -117,7 +119,7 @@ export default async function FeaturesPage() {
 
         <section className="mx-auto max-w-6xl px-6 pb-16 md:pb-20">
           <Reveal>
-            <div className="relative rounded-[2rem] bg-[#2a9e86] px-6 py-12 sm:px-12 sm:py-14">
+            <div className="relative rounded-[2rem] bg-[#1f7a68] px-6 py-12 sm:px-12 sm:py-14">
               <div
                 className="pointer-events-none absolute inset-0 overflow-hidden rounded-[2rem]"
                 aria-hidden
@@ -129,7 +131,7 @@ export default async function FeaturesPage() {
                   <h2 className="font-display text-3xl font-bold text-white sm:text-4xl">
                     {t("ctaTitle")}
                   </h2>
-                  <p className="mt-4 text-lg text-white/90">{t("ctaBody")}</p>
+                  <p className="mt-4 text-lg text-white">{t("ctaBody")}</p>
                   <div className="mt-8 flex flex-wrap gap-3">
                     <Link
                       href={ctaHref}

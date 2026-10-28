@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { getServerSession } from "next-auth";
 import { getTranslations } from "next-intl/server";
 import { redirect } from "next/navigation";
+import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getOrgSubscription } from "@/lib/access";
@@ -185,7 +185,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                     <span
                       className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
                         step.done
-                          ? "bg-signal text-white"
+                          ? "bg-signal text-ink-950"
                           : isNext
                             ? "bg-[#5865F2] text-white"
                             : "bg-line text-soft"

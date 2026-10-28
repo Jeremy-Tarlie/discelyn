@@ -40,9 +40,13 @@ enum OrgRole {
 model User {
   id            String    @id @default(cuid())
   name          String?
+  /// Toujours stocké en lowercase (normalizeEmail). Index SQL partiel
+  /// User_email_lower_active_unique (migration 20261017110000) en filet CI.
   email         String?   @unique
   emailVerified DateTime?
   image         String?
+  /// Hash argon2id — null pour comptes Discord-only.
+  passwordHash  String?   @db.Text
   discordId     String?   @unique
   /// Soft-delete RGPD / résiliation — les rows liées restent pour audit.
   deletedAt     DateTime?
@@ -62,6 +66,8 @@ model User {
   notifySecurityEmail Boolean @default(true)
   /// E-mails produit (relances claim, alertes accès).
   notifyProductEmail  Boolean @default(true)
+  /// Consentement e-mails marketing plateforme (campagnes /admin).
+  marketingConsentAt DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -74,6 +80,7 @@ model User {
 
   @@index([discordId])
   @@index([deletedAt])
+  @@index([marketingConsentAt])
 }
 
 /// Journal des consentements cookies (preuve RGPD — choix + horodatage).
@@ -175,10 +182,13 @@ model Session {
 }
 
 model VerificationToken {
+  /// Un seul jeton actif par identifier (email-verify: / password-reset:).
   identifier String
   token      String   @unique
   expires    DateTime
 
+  @@unique([identifier])
+  /// Conservé pour compat Auth.js adapter (`identifier_token`).
   @@unique([identifier, token])
 }
 
@@ -294,6 +304,12 @@ enum AccessBillingMode {
   RECURRING
 }
 
+/// Origine de l’offre : créée par Discelyn sur le Stripe orga, ou branchée (price/PL existant).
+enum AccessPaymentSource {
+  DISCELYN_LINK
+  EXTERNAL_STRIPE
+}
+
 enum LearnerAccessSource {
   STRIPE
   ACCESS_CODE
@@ -324,24 +340,32 @@ model OrgStripeConfig {
 
 /// Produit formation : price Stripe client → rôle Discord.
 model AccessProduct {
-  id                 String            @id @default(cuid())
+  id                 String              @id @default(cuid())
   organizationId     String
   botId              String
   name               String
   /// Accroche courte affichée sur /boutique
   pitch              String?
   stripePriceId      String
+  /// Product Stripe (chemin création Discelyn)
+  stripeProductId    String?
   /// Rôle du bot primaire (backfill / compat)
   discordRoleId      String
-  active             Boolean           @default(true)
-  revokeOnRefund     Boolean           @default(true)
-  billingMode        AccessBillingMode @default(ONE_TIME)
+  active             Boolean             @default(true)
+  revokeOnRefund     Boolean             @default(true)
+  billingMode        AccessBillingMode   @default(ONE_TIME)
+  paymentSource      AccessPaymentSource @default(DISCELYN_LINK)
+  /// Montant en centimes (chemin create ; null si bind sans sync)
+  amountCents        Int?
+  currency           String?
+  /// month | year si RECURRING
+  recurringInterval  String?
   /// Places max (null = illimité)
   maxSeats           Int?
-  seatsUsed          Int               @default(0)
+  seatsUsed          Int                 @default(0)
   /// Fin d’accès cohorte (optionnel)
   accessEndsAt       DateTime?
-  reminderDaysBefore Int?              @default(7)
+  reminderDaysBefore Int?                @default(7)
   /// Lien de paiement Stripe généré par Discelyn (Payment Link)
   paymentLinkUrl     String?
   paymentLinkId      String?
@@ -521,6 +545,7 @@ model LearnerAccess {
   @@index([guildId, discordUserId])
   @@index([discordUserId, status])
   @@index([stripeSubscriptionId])
+  @@index([stripePaymentIntentId])
   @@index([customerEmail])
   @@index([accessProductId])
   @@index([affiliateId])
@@ -577,4 +602,65 @@ model StripeProcessedEvent {
   processedAt DateTime @default(now())
 
   @@index([processedAt])
+}
+
+/// Campagne e-mail marketing (admin plateforme → Resend).
+model MarketingCampaign {
+  id          String    @id @default(cuid())
+  subject     String
+  bodyText    String    @db.Text
+  bodyHtml    String?   @db.Text
+  /// leads | customers | both
+  audience    String
+  /// draft | queued | sending | sent | partial | failed
+  status      String    @default("draft")
+  sentCount   Int       @default(0)
+  failCount   Int       @default(0)
+  createdById String?
+  createdAt   DateTime  @default(now())
+  sentAt      DateTime?
+  events      EmailEvent[]
+  recipients  MarketingCampaignRecipient[]
+
+  @@index([createdAt])
+  @@index([status])
+}
+
+/// File d’envoi campagne (traitée par cron).
+model MarketingCampaignRecipient {
+  id         String    @id @default(cuid())
+  campaignId String
+  email      String
+  /// pending | sending | sent | failed
+  status     String    @default("pending")
+  attempts   Int       @default(0)
+  lastError  String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  sentAt     DateTime?
+
+  campaign MarketingCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, email])
+  @@index([status, createdAt])
+  @@index([campaignId, status])
+}
+
+/// Événements Resend (delivered / opened / clicked / bounced).
+model EmailEvent {
+  id         String   @id @default(cuid())
+  resendId   String?
+  email      String
+  /// accepted | delivered | opened | clicked | bounced | complained
+  type       String
+  campaignId String?
+  meta       Json?
+  createdAt  DateTime @default(now())
+
+  campaign MarketingCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  @@index([email, createdAt])
+  @@index([campaignId, type])
+  @@index([resendId])
+  @@index([type, createdAt])
 }

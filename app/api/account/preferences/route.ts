@@ -18,6 +18,7 @@ const prefsSchema = z.object({
   notifyBillingEmail: z.boolean().optional(),
   notifySecurityEmail: z.boolean().optional(),
   notifyProductEmail: z.boolean().optional(),
+  marketingConsent: z.boolean().optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -34,6 +35,7 @@ export async function GET(request: NextRequest) {
       notifyBillingEmail: true,
       notifySecurityEmail: true,
       notifyProductEmail: true,
+      marketingConsentAt: true,
     },
   });
   if (!row) {
@@ -44,7 +46,11 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.json({
-    ...row,
+    timezone: row.timezone,
+    notifyBillingEmail: row.notifyBillingEmail,
+    notifySecurityEmail: row.notifySecurityEmail,
+    notifyProductEmail: row.notifyProductEmail,
+    marketingConsent: row.marketingConsentAt != null,
     timezones: TIMEZONE_OPTIONS,
   });
 }
@@ -86,7 +92,8 @@ export async function PATCH(request: NextRequest) {
     data.timezone === undefined &&
     data.notifyBillingEmail === undefined &&
     data.notifySecurityEmail === undefined &&
-    data.notifyProductEmail === undefined
+    data.notifyProductEmail === undefined &&
+    data.marketingConsent === undefined
   ) {
     return NextResponse.json(
       { error: tApi(locale, "invalidPrefs") },
@@ -107,12 +114,18 @@ export async function PATCH(request: NextRequest) {
       ...(data.notifyProductEmail !== undefined
         ? { notifyProductEmail: data.notifyProductEmail }
         : {}),
+      ...(data.marketingConsent !== undefined
+        ? {
+            marketingConsentAt: data.marketingConsent ? new Date() : null,
+          }
+        : {}),
     },
     select: {
       timezone: true,
       notifyBillingEmail: true,
       notifySecurityEmail: true,
       notifyProductEmail: true,
+      marketingConsentAt: true,
     },
   });
 
@@ -124,8 +137,18 @@ export async function PATCH(request: NextRequest) {
       notifyBillingEmail: data.notifyBillingEmail ?? null,
       notifySecurityEmail: data.notifySecurityEmail ?? null,
       notifyProductEmail: data.notifyProductEmail ?? null,
+      marketingConsent: data.marketingConsent ?? null,
     },
   });
 
-  return NextResponse.json({ ok: true, prefs: updated });
+  return NextResponse.json({
+    ok: true,
+    prefs: {
+      timezone: updated.timezone,
+      notifyBillingEmail: updated.notifyBillingEmail,
+      notifySecurityEmail: updated.notifySecurityEmail,
+      notifyProductEmail: updated.notifyProductEmail,
+      marketingConsent: updated.marketingConsentAt != null,
+    },
+  });
 }

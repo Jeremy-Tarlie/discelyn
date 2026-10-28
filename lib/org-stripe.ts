@@ -183,6 +183,7 @@ export async function createAccessPaymentLink(input: {
   organizationId: string;
   stripePriceId: string;
   productName: string;
+  accessProductId?: string | null;
   customText?: string | null;
 }): Promise<{ url: string; id: string }> {
   const stripe = await getOrgStripeClient(input.organizationId);
@@ -194,6 +195,14 @@ export async function createAccessPaymentLink(input: {
   const price = await stripe.prices.retrieve(input.stripePriceId);
   const isRecurring = price.type === "recurring";
 
+  const meta: Record<string, string> = {
+    discelyn_price_id: input.stripePriceId,
+    discelyn_product: input.productName.slice(0, 400),
+  };
+  if (input.accessProductId) {
+    meta.discelyn_access_product_id = input.accessProductId;
+  }
+
   const link = await stripe.paymentLinks.create({
     line_items: [{ price: input.stripePriceId, quantity: 1 }],
     after_completion: {
@@ -201,16 +210,11 @@ export async function createAccessPaymentLink(input: {
       redirect: { url: successUrl },
     },
     allow_promotion_codes: true,
-    metadata: {
-      discelyn_price_id: input.stripePriceId,
-      discelyn_product: input.productName.slice(0, 400),
-    },
+    metadata: meta,
     ...(isRecurring
       ? {
           subscription_data: {
-            metadata: {
-              discelyn_price_id: input.stripePriceId,
-            },
+            metadata: { ...meta },
           },
         }
       : {}),

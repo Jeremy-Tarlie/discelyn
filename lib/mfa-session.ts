@@ -1,13 +1,14 @@
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { sessionCookieReadNames } from "@/lib/credentials-session";
 
 export async function getSessionTokenFromCookies(): Promise<string | null> {
   const jar = await cookies();
-  return (
-    jar.get("__Secure-next-auth.session-token")?.value ??
-    jar.get("next-auth.session-token")?.value ??
-    null
-  );
+  for (const name of sessionCookieReadNames()) {
+    const value = jar.get(name)?.value;
+    if (value) return value;
+  }
+  return null;
 }
 
 export async function getCurrentDbSession() {

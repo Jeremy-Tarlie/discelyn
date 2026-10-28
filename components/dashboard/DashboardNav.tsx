@@ -8,6 +8,7 @@ import {
   type OrgSwitcherItem,
 } from "@/components/dashboard/OrgSwitcher";
 import { getRequestTheme } from "@/lib/theme";
+import { SignOutButton } from "@/components/auth/SignOutButton";
 
 export async function DashboardNav({
   planName,
@@ -21,6 +22,7 @@ export async function DashboardNav({
   activeOrganizationId?: string;
 }) {
   const t = await getTranslations("dashboard");
+  const tc = await getTranslations("common");
   const theme = await getRequestTheme();
 
   const items = [
@@ -34,15 +36,18 @@ export async function DashboardNav({
     { href: "/dashboard/billing", label: t("billing") },
     { href: "/dashboard/account", label: t("accountNav") },
     ...(showLeads
-      ? [
-          { href: "/dashboard/leads", label: t("leads") },
-          { href: "/dashboard/consents", label: t("consentsNav") },
-        ]
+      ? [{ href: "/admin", label: t("platformAdminNav") }]
       : []),
   ];
 
   return (
     <aside className="flex w-full flex-col gap-6 border-b border-line bg-surface p-4 sm:p-6 md:min-h-screen md:w-64 md:border-b-0 md:border-r md:gap-8">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-[#5865F2] focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
+      >
+        {tc("skipToContent")}
+      </a>
       <div>
         <Link href="/" className="font-display text-lg font-bold text-page-fg">
           Discelyn
@@ -64,12 +69,7 @@ export async function DashboardNav({
         </div>
       </div>
       <DashboardNavLinks items={items} />
-      <Link
-        href="/api/auth/signout"
-        className="mt-auto text-sm text-soft hover:text-warn"
-      >
-        {t("logout")}
-      </Link>
+      <SignOutButton variant="nav" labelNamespace="dashboard" />
     </aside>
   );
 }

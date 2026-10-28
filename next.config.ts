@@ -32,6 +32,8 @@ const nextConfig: NextConfig = {
         key: "Content-Security-Policy",
         value: [
           "default-src 'self'",
+          // unsafe-inline: requis Stripe.js / Next inline ; nonces = lot séparé.
+          // unsafe-eval: uniquement hors prod (HMR / turbopack).
           isProd
             ? "script-src 'self' 'unsafe-inline' https://js.stripe.com https://browser.sentry-cdn.com"
             : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://browser.sentry-cdn.com",
@@ -40,6 +42,8 @@ const nextConfig: NextConfig = {
           "img-src 'self' data: blob: https://cdn.discordapp.com https://*.stripe.com",
           "connect-src 'self' https://api.stripe.com https://discord.com https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://*.ingest.us.sentry.io",
           "frame-src https://js.stripe.com https://hooks.stripe.com",
+          "frame-ancestors 'none'",
+          "object-src 'none'",
           "worker-src 'self' blob:",
           "base-uri 'self'",
           "form-action 'self'",

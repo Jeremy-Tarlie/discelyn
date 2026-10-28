@@ -60,36 +60,37 @@ Modèle : **Organization** (plan, bots, Stripe formation) + **Memberships** (OWN
 Segment prioritaire : formations / infoproduits francophones déjà sur Discord.  
 Interlocuteur FR, facture UE, angle conformité — pas une course aux modules hobby.
 
-## Démarrage local
+## Démarrage local (100 % Docker)
 
 ```bash
 cp .env.example .env
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db redis
-npm install && npm run db:migrate:deploy && npm run dev
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 ```
 
-`DATABASE_URL` local = Postgres Docker sur le port **5434** (pas 5432 — souvent pris par un Postgres Windows).
+Seul le **web** est exposé sur l’hôte (`http://localhost:3000`).  
+db / redis / runtime / crons restent sur le réseau Docker interne (pas de ports
+hôte — évite collisions Windows 5432/5433/6379).
 
-Le compose de base **n’expose pas** le port 3000 (prod = overlay TLS). Pour un full-stack Docker local :  
-`docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d` (publie 3000 + loopback db/redis/runtime).
-
-Second terminal :
-
-```bash
-cd bot-runtime && npm install && npm run dev
-```
-
-Variables minimales : `NEXTAUTH_SECRET`, `DISCORD_CLIENT_ID`,
+Variables minimales dans `.env` : `NEXTAUTH_SECRET`, `DISCORD_CLIENT_ID`,
 `DISCORD_CLIENT_SECRET`, `DISCORD_BOT_TOKEN`, `BOT_RUNTIME_SECRET`,
-`APP_ENV=development`. Pour le grant-on-join runtime→web : `WEB_INTERNAL_URL`
-(défaut local `http://localhost:3000`). Voir `.env.example`.
+`POSTGRES_PASSWORD`, `APP_ENV=development`.  
+`WEB_INTERNAL_URL` (runtime→web) : en compose = `http://web:3000`. Voir `.env.example`.
+
+Ne pas lancer `npm run dev` sur l’hôte Windows si les optional deps natives
+(`@parcel/watcher-win32-x64`, Rollup) manquent — préférer le conteneur `web`.
 
 ### Tests
 
-`npm test` / `npm run test:db` démarrent (si besoin) un Postgres dédié via
-`docker-compose.test.yml` sur le port **5433** (`DISCELYN_TEST_DATABASE_URL`).
+`npm test` / `npm run test:db` utilisent Vitest **dans Docker Linux** sur Windows
+(Rollup). Postgres de test : port **5433** par défaut, ou **5436** si pris :
+
+```powershell
+$env:DISCELYN_TEST_DB_PORT="5436"
+node scripts/run-tests.mjs
+```
+
 `test:db` = money path + soft-delete sur Postgres (Discord mocké) — **pas** un E2E
-Stripe/Discord live. Docker doit tourner. En CI, `DATABASE_URL` du service Postgres est réutilisé.
+Stripe/Discord live. En CI, `DATABASE_URL` du service Postgres est réutilisé.
 
 En **production** et **staging** : `TOKEN_ENCRYPTION_KEY` + `CRON_SECRET` +
 `BOT_RUNTIME_SECRET` (fail-fast au boot). En **production** : `REDIS_URL`

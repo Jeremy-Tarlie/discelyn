@@ -5,6 +5,7 @@ import { DiscelynMark } from "@/components/landing/DiscelynMark";
 import { LocaleSwitcher } from "@/components/i18n/LocaleSwitcher";
 import { ThemeSwitcher } from "@/components/theme/ThemeSwitcher";
 import { SiteHeaderMobileNav } from "@/components/landing/SiteHeaderMobileNav";
+import { SignOutButton } from "@/components/auth/SignOutButton";
 import { getRequestTheme } from "@/lib/theme";
 
 export async function SiteHeader({
@@ -22,58 +23,81 @@ export async function SiteHeader({
     { href: "/comment-ca-marche", label: t("howItWorks") },
   ];
 
-  const ctaHref = signedIn ? "/dashboard" : "/login";
+  const ctaHref = signedIn ? "/dashboard" : "/signup";
   const ctaLabel = signedIn ? tc("dashboard") : tc("try");
-  const discordIcon = <DiscordIcon className="h-4 w-4 text-[#5865F2]" />;
+  const discordIcon = (
+    <DiscordIcon className="h-4 w-4 shrink-0 text-white" />
+  );
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[color:var(--border)] bg-[color:var(--header-bg)] backdrop-blur-xl">
-      <div className="relative mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-6 py-3">
+    <header className="sticky top-0 z-30 border-b border-[color:var(--border)]/70 bg-[color:var(--header-bg)]/90 backdrop-blur-xl">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-[#5865F2] focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white focus:outline-none"
+      >
+        {tc("skipToContent")}
+      </a>
+      <div className="relative mx-auto flex h-14 w-full max-w-6xl items-center gap-8 px-6">
         <Link
           href="/"
-          className="flex items-center gap-2.5 font-display text-lg font-bold tracking-tight text-[color:var(--page-fg)]"
+          className="flex shrink-0 items-center gap-2.5 font-display text-base font-bold tracking-tight text-[color:var(--page-fg)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5865F2]"
         >
           <DiscelynMark size="md" />
           Discelyn
         </Link>
 
-        <nav className="hidden items-center gap-6 text-sm text-[color:var(--muted)] md:flex">
+        <nav
+          className="hidden min-w-0 flex-1 items-center gap-6 md:flex"
+          aria-label={tc("mainNav")}
+        >
           {links.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="transition hover:text-[color:var(--page-fg)]"
+              className="whitespace-nowrap text-sm text-[color:var(--muted)] transition-colors hover:text-[color:var(--page-fg)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5865F2]"
             >
               {link.label}
             </Link>
           ))}
         </nav>
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          <ThemeSwitcher theme={theme} />
-          <LocaleSwitcher />
+        <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
+          <div className="hidden items-center sm:flex">
+            <ThemeSwitcher theme={theme} variant="icon" />
+            <LocaleSwitcher variant="icon" />
+          </div>
+
           {!signedIn ? (
             <Link
               href="/login"
-              className="hidden text-sm text-[color:var(--muted)] transition hover:text-[color:var(--page-fg)] sm:inline"
+              className="hidden whitespace-nowrap px-2.5 py-1.5 text-sm text-[color:var(--muted)] transition-colors hover:text-[color:var(--page-fg)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5865F2] md:inline"
             >
               {tc("login")}
             </Link>
-          ) : null}
+          ) : (
+            <div className="hidden md:block">
+              <SignOutButton variant="header" labelNamespace="common" />
+            </div>
+          )}
+
           <Link
             href={ctaHref}
-            className="hidden items-center gap-2 rounded-full bg-[#1a1c21] px-3.5 py-2 text-sm font-bold text-white transition hover:bg-[#2b2d31] sm:inline-flex dark:bg-white dark:text-[#1a1c21] dark:hover:bg-white/90"
+            className="hidden items-center gap-1.5 rounded-full bg-[#5865F2] px-3.5 py-1.5 text-sm font-semibold text-white transition hover:bg-[#4752C4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:inline-flex"
           >
-            {discordIcon}
+            {!signedIn ? discordIcon : null}
             {ctaLabel}
           </Link>
+
           <SiteHeaderMobileNav
             links={links}
             signedIn={signedIn}
             loginLabel={tc("login")}
+            signupLabel={tc("signup")}
             ctaHref={ctaHref}
             ctaLabel={ctaLabel}
-            ctaIcon={discordIcon}
+            ctaIcon={!signedIn ? discordIcon : null}
+            themeSwitcher={<ThemeSwitcher theme={theme} />}
+            localeSwitcher={<LocaleSwitcher />}
           />
         </div>
       </div>

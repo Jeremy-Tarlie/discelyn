@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getServerSession } from "next-auth";
 import { getTranslations } from "next-intl/server";
+import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { SiteHeader } from "@/components/landing/SiteHeader";
 import { SiteFooter } from "@/components/landing/SiteFooter";
@@ -21,16 +21,16 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function PricingPage() {
   const session = await getServerSession(authOptions);
-  const ctaHref = session ? "/dashboard" : "/login";
+  const ctaHref = session ? "/dashboard" : "/signup";
   const t = await getTranslations("pricing");
   const tc = await getTranslations("common");
   const th = await getTranslations("nav");
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
+    <div className="min-h-screen overflow-x-clip bg-[color:var(--page-bg)] text-[color:var(--page-fg)]">
       <SiteHeader signedIn={Boolean(session)} />
-      <main>
-        <section className="relative bg-[#2a9e86]">
+      <main id="main-content">
+        <section className="relative bg-[#1f7a68]">
           <div
             className="pointer-events-none absolute inset-0 overflow-hidden"
             aria-hidden
@@ -40,13 +40,13 @@ export default async function PricingPage() {
           </div>
           <div className="relative mx-auto grid max-w-6xl items-end gap-8 px-6 pb-4 pt-14 md:grid-cols-[1.15fr_0.85fr] md:gap-6 md:pb-0 md:pt-16">
             <div className="relative z-10 pb-8 md:pb-14">
-              <p className="animate-fade-up inline-flex items-center gap-2 rounded-full bg-black/15 px-3 py-1 font-display text-xs font-semibold uppercase tracking-[0.2em] text-white/90">
+              <p className="animate-fade-up inline-flex items-center gap-2 rounded-full bg-black/15 px-3 py-1 font-display text-xs font-semibold uppercase tracking-[0.2em] text-white">
                 {t("eyebrow")}
               </p>
               <h1 className="animate-fade-up mt-5 max-w-xl font-display text-4xl font-bold text-white sm:text-5xl lg:text-6xl">
                 {t("title")}
               </h1>
-              <p className="animate-fade-up mt-5 max-w-lg text-base leading-relaxed text-white/90 sm:text-lg">
+              <p className="animate-fade-up mt-5 max-w-lg text-base leading-relaxed text-white sm:text-lg">
                 {t("subtitle", { price: "19,99" })}
               </p>
               <div className="animate-fade-up mt-8 flex flex-wrap gap-3">
@@ -87,7 +87,7 @@ export default async function PricingPage() {
 
         <section className="mx-auto max-w-6xl px-6 pb-16 md:pb-20">
           <Reveal>
-            <div className="relative overflow-hidden rounded-[2rem] border border-[color:var(--border)] bg-[color:var(--surface)] px-6 py-10 sm:px-10">
+            <div className="relative overflow-visible rounded-[2rem] border border-[color:var(--border)] bg-[color:var(--surface)] px-6 py-10 sm:px-10">
               <div className="flex flex-wrap items-center justify-between gap-6">
                 <div>
                   <h2 className="font-display text-2xl font-bold text-[color:var(--page-fg)] sm:text-3xl">

@@ -33,8 +33,15 @@ export function getClientIp(request: NextRequest): string {
 }
 
 export function hasSessionCookie(request: NextRequest): boolean {
-  const standard = request.cookies.get("next-auth.session-token")?.value;
-  const secure = request.cookies.get("__Secure-next-auth.session-token")?.value;
-  const value = standard || secure;
-  return Boolean(value && value.length >= 16);
+  const names = [
+    "next-auth.session-token",
+    "__Secure-next-auth.session-token",
+    "authjs.session-token",
+    "__Secure-authjs.session-token",
+  ] as const;
+  for (const name of names) {
+    const value = request.cookies.get(name)?.value;
+    if (value && value.length >= 16) return true;
+  }
+  return false;
 }

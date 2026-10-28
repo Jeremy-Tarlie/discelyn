@@ -26,6 +26,8 @@ export function Reveal({
       return;
     }
 
+    node.classList.add("js-animate");
+
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {

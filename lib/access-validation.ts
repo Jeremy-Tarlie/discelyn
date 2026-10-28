@@ -17,17 +17,146 @@ const optionalText = (max: number) =>
     .nullable()
     .transform((v) => (v && v.length > 0 ? v : null));
 
+/** http(s) only — refuse javascript:/data: (stored XSS claim branding). */
+const optionalSafeHttpUrl = (locale: Locale, max = 500) =>
+  z
+    .union([
+      z
+        .string()
+        .trim()
+        .max(max)
+        .refine((v) => {
+          try {
+            const u = new URL(v);
+            return u.protocol === "https:" || u.protocol === "http:";
+          } catch {
+            return false;
+          }
+        }, tApi(locale, "invalidData")),
+      z.literal(""),
+      z.null(),
+    ])
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : null));
+
+const sharedProductFields = (locale: Locale) => ({
+  name: z.string().trim().min(2).max(80),
+  discordRoleId: snowflakeFor(locale),
+  pitch: optionalText(280),
+  welcomeDm: optionalText(1000),
+  revokeOnRefund: z.boolean().optional().default(true),
+  maxSeats: z.number().int().min(1).max(100_000).nullable().optional(),
+  reminderDaysBefore: z.number().int().min(1).max(90).nullable().optional(),
+  onboardingSteps: z
+    .array(z.string().trim().min(1).max(1000))
+    .max(5)
+    .optional()
+    .nullable(),
+  brandName: optionalText(80),
+  brandLogoUrl: optionalSafeHttpUrl(locale),
+  brandColor: z
+    .union([
+      z.string().trim().regex(/^#[0-9A-Fa-f]{6}$/),
+      z.literal(""),
+      z.null(),
+    ])
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : null)),
+  accessEndsAt: z
+    .string()
+    .datetime()
+    .nullable()
+    .optional()
+    .transform((v) => (v ? new Date(v) : null)),
+  sortOrder: z.number().int().min(0).max(999).optional(),
+});
+
+/**
+ * Create = Discelyn crée product/price/link sur Stripe orga.
+ * Bind = brancher un price_… ou Payment Link déjà chez le formateur.
+ * Legacy (stripePriceId sans mode) → traité comme bind.
+ */
 export function accessProductCreateSchemaFor(locale: Locale) {
-  return z.object({
-    name: z.string().trim().min(2).max(80),
+  const shared = sharedProductFields(locale);
+
+  const createMode = z
+    .object({
+      mode: z.literal("create"),
+      ...shared,
+      amountCents: z.number().int().min(50).max(10_000_000),
+      currency: z.enum(["eur", "usd"]),
+      billingMode: z.enum(["ONE_TIME", "RECURRING"]).default("ONE_TIME"),
+      recurringInterval: z.enum(["month", "year"]).optional().nullable(),
+    })
+    .superRefine((data, ctx) => {
+      if (
+        data.billingMode === "RECURRING" &&
+        data.recurringInterval !== "month" &&
+        data.recurringInterval !== "year"
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: tApi(locale, "invalidData"),
+          path: ["recurringInterval"],
+        });
+      }
+    });
+
+  const bindMode = z
+    .object({
+      mode: z.literal("bind"),
+      ...shared,
+      stripePriceId: z
+        .string()
+        .trim()
+        .regex(/^price_[a-zA-Z0-9]+$/, tApi(locale, "invalidStripePrice"))
+        .optional()
+        .nullable(),
+      paymentLinkUrl: z
+        .string()
+        .trim()
+        .url()
+        .max(500)
+        .optional()
+        .nullable(),
+    })
+    .superRefine((data, ctx) => {
+      if (!data.stripePriceId && !data.paymentLinkUrl) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: tApi(locale, "invalidStripePrice"),
+          path: ["stripePriceId"],
+        });
+      }
+    });
+
+  /** Rétrocompat API : body avec stripePriceId sans mode. */
+  const legacyBind = z.object({
+    mode: z.undefined().optional(),
+    ...shared,
     stripePriceId: z
       .string()
       .trim()
       .regex(/^price_[a-zA-Z0-9]+$/, tApi(locale, "invalidStripePrice")),
-    discordRoleId: snowflakeFor(locale),
+  });
+
+  return z.union([createMode, bindMode, legacyBind]);
+}
+
+export const accessProductCreateSchema = accessProductCreateSchemaFor("fr");
+
+export function accessProductUpdateSchemaFor(locale: Locale) {
+  return z.object({
+    name: z.string().trim().min(2).max(80).optional(),
+    stripePriceId: z
+      .string()
+      .trim()
+      .regex(/^price_[a-zA-Z0-9]+$/, tApi(locale, "invalidStripePrice"))
+      .optional(),
+    discordRoleId: snowflakeFor(locale).optional(),
     pitch: optionalText(280),
     welcomeDm: optionalText(1000),
-    revokeOnRefund: z.boolean().optional().default(true),
+    revokeOnRefund: z.boolean().optional(),
     maxSeats: z.number().int().min(1).max(100_000).nullable().optional(),
     reminderDaysBefore: z.number().int().min(1).max(90).nullable().optional(),
     onboardingSteps: z
@@ -36,10 +165,7 @@ export function accessProductCreateSchemaFor(locale: Locale) {
       .optional()
       .nullable(),
     brandName: optionalText(80),
-    brandLogoUrl: z
-      .union([z.string().trim().url().max(500), z.literal(""), z.null()])
-      .optional()
-      .transform((v) => (v && v.length > 0 ? v : null)),
+    brandLogoUrl: optionalSafeHttpUrl(locale),
     brandColor: z
       .union([
         z.string().trim().regex(/^#[0-9A-Fa-f]{6}$/),
@@ -55,13 +181,6 @@ export function accessProductCreateSchemaFor(locale: Locale) {
       .optional()
       .transform((v) => (v ? new Date(v) : null)),
     sortOrder: z.number().int().min(0).max(999).optional(),
-  });
-}
-
-export const accessProductCreateSchema = accessProductCreateSchemaFor("fr");
-
-export function accessProductUpdateSchemaFor(locale: Locale) {
-  return accessProductCreateSchemaFor(locale).partial().extend({
     active: z.boolean().optional(),
   });
 }
@@ -165,10 +284,7 @@ export function orgStripeConfigSchemaFor(locale: Locale) {
       .optional(),
     label: z.string().trim().max(80).optional().nullable(),
     displayName: optionalText(80),
-    logoUrl: z
-      .union([z.string().trim().url().max(500), z.literal(""), z.null()])
-      .optional()
-      .transform((v) => (v && v.length > 0 ? v : null)),
+    logoUrl: optionalSafeHttpUrl(locale),
     primaryColor: z
       .union([
         z.string().trim().regex(/^#[0-9A-Fa-f]{6}$/),
@@ -177,10 +293,7 @@ export function orgStripeConfigSchemaFor(locale: Locale) {
       ])
       .optional()
       .transform((v) => (v && v.length > 0 ? v : null)),
-    supportUrl: z
-      .union([z.string().trim().url().max(500), z.literal(""), z.null()])
-      .optional()
-      .transform((v) => (v && v.length > 0 ? v : null)),
+    supportUrl: optionalSafeHttpUrl(locale),
   });
 }
 

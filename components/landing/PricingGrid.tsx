@@ -5,6 +5,7 @@ import {
   DIAGNOSTIC_OFFER,
   formatPriceEur,
   planDisplayPriceEur,
+  maxPlanYearlySavingsPercent,
   PLANS,
   SETUP_OFFER,
   type BillingInterval,
@@ -85,8 +86,10 @@ export function PricingGrid() {
             </button>
           </div>
           {interval === "year" ? (
-            <span className="rounded-full bg-signal/15 px-3 py-1 text-xs font-semibold text-signal">
-              {t("yearlyDiscount")}
+            <span className="rounded-full bg-signal/15 px-3 py-1 text-xs font-semibold text-signal-dim">
+              {t("yearlyDiscountUpTo", {
+                percent: maxPlanYearlySavingsPercent(),
+              })}
             </span>
           ) : null}
         </div>
